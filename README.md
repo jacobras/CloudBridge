@@ -34,7 +34,47 @@ This library is not yet stable. The API will change.
 
 ## 🚀 Quick Start
 
-Not yet published.
+The library is not yet published.
+
+### Authenticating
+
+The main entry point is `CloudBridge.dropbox` or `CloudBridge.oneDrive`.
+
+```kotlin
+val authenticator = CloudBridge.dropbox.getAuthenticator(
+    clientId = "yourClientId",
+    redirectUri = "yourRedirectUri",
+    codeVerifier = "" // Pass in existing codeVerifier here, or "" if not available yet.
+)
+val authenticateUrl = authenticator.buildUrl()
+
+// Now save `authenticator.codeVerifier` to storage
+// and redirect user to `authenticateUrl`
+```
+
+### Getting token
+
+```kotlin
+val token = authenticator.getToken(
+    redirectUri = "yourRedirectUri", // Must match exactly the one passed in before
+    code = code // `code` param extracted from the redirect URL
+)
+```
+
+### Listing files
+
+```kotlin
+val service = CloudBridge.dropbox.getService(
+    clientId = "yourClientId",
+    token = "the token obtained above"
+)
+
+try {
+    service.listFiles()
+} catch (e: Exception) {
+    // Handle...
+}
+```
 
 ## 🔗 Underlying dependencies
 
