@@ -20,6 +20,7 @@ web, but desktop and Android support are planned.
 |                        | Mobile<br>(Android) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|------------------|------------------|
 | **Dropbox**            | ⏳                   | ⏳                | ✅                |
+| **Google Drive**       | ⏳                   | ⏳                | ⏳                |
 | **Microsoft OneDrive** | ⏳                   | ⏳                | ✅                |
 
 ⏳ = Not yet supported.
