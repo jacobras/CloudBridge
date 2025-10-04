@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          clean: ${{ github.ref == 'refs/heads/develop' }}
+
+      - name: Build setup
+        uses: ./.github/actions/build-setup
+
+      - name: Compile & run tests
+        run: ./gradlew kotlinUpgradeYarnLock check
+
+      - name: Publish unit test report
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          check_name: Unit test report
+          require_tests: true
+          report_paths: "**/build/test-results/**/TEST-*.xml"
