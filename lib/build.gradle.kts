@@ -15,7 +15,7 @@ kotlin {
     wasmJs {
         browser {
             testTask {
-                useKarma { useFirefox() }
+                useKarma { useChromeHeadless() }
             }
         }
     }
