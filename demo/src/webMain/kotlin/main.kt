@@ -38,6 +38,7 @@ fun main() {
         Row(Modifier.fillMaxSize()) {
             DropboxColumn(Modifier.weight(1f))
             OneDriveColumn(Modifier.weight(1f))
+            GoogleDriveColumn(Modifier.weight(1f))
         }
     }
 }
@@ -193,6 +194,84 @@ private fun OneDriveColumn(modifier: Modifier = Modifier) {
                 onClick = { uriHandler.openUri(authenticateUrl) }
             ) {
                 Text("Authenticate with OneDrive")
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoogleDriveColumn(modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text("Google Drive")
+
+        val googleDriveToken = window.localStorage["googleDriveToken"]
+        val googleDriveClientId = "218224394553-sgks2ok1rnh4r1i5ue4stba5dral9v1i.apps.googleusercontent.com"
+        val redirectUri = "http://localhost:8080"
+
+        if (googleDriveToken != null) {
+            Text("Google Drive: authenticated!")
+            Button(onClick = {
+                window.localStorage.removeItem("googleDriveToken")
+                window.location.reload()
+            }) { Text("Log out") }
+
+            val service = CloudBridge.googleDrive.getService(
+                clientId = googleDriveClientId,
+                token = googleDriveToken
+            )
+
+            val files by produceState(emptyList()) {
+                value = try {
+                    service.listFiles()
+                } catch (e: Exception) {
+                    listOf("Error: ${e.message}")
+                }
+            }
+
+            Text("Files:")
+            for (file in files) {
+                Text(file)
+            }
+        } else {
+            val authenticator = CloudBridge.googleDrive.getAuthenticator(
+                clientId = googleDriveClientId,
+                redirectUri = redirectUri,
+                codeVerifier = window.localStorage["googleDriveCodeVerifier"] ?: ""
+            )
+            val authenticateUrl = authenticator.buildUrl()
+            window.localStorage["googleDriveCodeVerifier"] = authenticator.codeVerifier
+
+            SelectionContainer {
+                Text("URL: $authenticateUrl")
+            }
+
+            val params = URLSearchParams(window.location.search.toJsString())
+            val code = params.get("code")
+
+            if (code != null) {
+                Text("Code: $code")
+                val scope = rememberCoroutineScope()
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val token = authenticator.getToken(
+                                redirectUri = redirectUri,
+                                code = code
+                            )
+                            window.localStorage["googleDriveToken"] = token
+                            window.localStorage.removeItem("googleDriveCodeVerifier")
+                            window.location.href = window.location.origin + window.location.pathname
+                        }
+                    }
+                ) { Text("Request Google Drive token using code") }
+            }
+
+            val uriHandler = LocalUriHandler.current
+            Button(
+                onClick = { uriHandler.openUri(authenticateUrl) }
+            ) {
+                Text("Authenticate with Google Drive")
             }
         }
     }
