@@ -26,4 +26,9 @@ public interface CloudService {
      * Lists all files.
      */
     public suspend fun listFiles(): List<String>
+
+    /**
+     * Creates a file with name [filename] and text content [content].
+     */
+    public suspend fun createFile(filename: String, content: String)
 }
