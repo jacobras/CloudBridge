@@ -17,9 +17,8 @@ import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.logging.Logger
-import org.w3c.dom.get
-import org.w3c.dom.set
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
@@ -36,33 +35,46 @@ fun main() {
 
     ComposeViewport {
         Row(Modifier.fillMaxSize()) {
-            DropboxColumn(Modifier.weight(1f))
-            OneDriveColumn(Modifier.weight(1f))
-            GoogleDriveColumn(Modifier.weight(1f))
+            CloudServiceColumn(
+                name = "Dropbox",
+                service = CloudBridge.dropbox(
+                    clientId = "nw5f95uw77yrz3j"
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            CloudServiceColumn(
+                name = "Google Drive",
+                service = CloudBridge.googleDrive(
+                    clientId = "218224394553-sgks2ok1rnh4r1i5ue4stba5dral9v1i.apps.googleusercontent.com"
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            CloudServiceColumn(
+                name = "OneDrive",
+                service = CloudBridge.oneDrive(
+                    clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
+                ),
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
 
 @Composable
-private fun DropboxColumn(modifier: Modifier = Modifier) {
+private fun CloudServiceColumn(
+    name: String,
+    service: CloudService,
+    modifier: Modifier = Modifier
+) {
     Column(modifier) {
-        Text("Dropbox")
+        Text(name)
 
-        val dropboxToken = window.localStorage["dropboxToken"]
-        val dropboxClientId = "nw5f95uw77yrz3j"
-        val redirectUri = "http://localhost:8080"
-
-        if (dropboxToken != null) {
-            Text("Dropbox: authenticated!")
+        if (service.isAuthenticated()) {
+            Text("Authenticated!")
             Button(onClick = {
-                window.localStorage.removeItem("dropboxToken")
+                service.logout()
                 window.location.reload()
             }) { Text("Log out") }
-
-            val service = CloudBridge.dropbox.getService(
-                clientId = dropboxClientId,
-                token = dropboxToken
-            )
 
             val files by produceState(emptyList()) {
                 value = try {
@@ -77,13 +89,10 @@ private fun DropboxColumn(modifier: Modifier = Modifier) {
                 Text(file)
             }
         } else {
-            val authenticator = CloudBridge.dropbox.getAuthenticator(
-                clientId = dropboxClientId,
-                redirectUri = redirectUri,
-                codeVerifier = window.localStorage["dropboxCodeVerifier"] ?: ""
+            val authenticator = service.getAuthenticator(
+                redirectUri = "http://localhost:8080"
             )
-            val authenticateUrl = authenticator.buildUrl()
-            window.localStorage["dropboxCodeVerifier"] = authenticator.codeVerifier
+            val authenticateUrl = authenticator.buildUri()
 
             SelectionContainer {
                 Text("URL: $authenticateUrl")
@@ -99,179 +108,18 @@ private fun DropboxColumn(modifier: Modifier = Modifier) {
                 Button(
                     onClick = {
                         scope.launch {
-                            val token = authenticator.getToken(
-                                redirectUri = redirectUri,
-                                code = code
-                            )
-                            window.localStorage["dropboxToken"] = token
-                            window.localStorage.removeItem("dropboxCodeVerifier")
+                            authenticator.exchangeCodeForToken(code = code)
                             window.location.href = window.location.origin + window.location.pathname
                         }
                     }
-                ) { Text("Request Dropbox token using code") }
+                ) { Text("Request token using code") }
             }
 
             val uriHandler = LocalUriHandler.current
             Button(
                 onClick = { uriHandler.openUri(authenticateUrl) }
             ) {
-                Text("Authenticate with Dropbox")
-            }
-        }
-    }
-}
-
-@Composable
-private fun OneDriveColumn(modifier: Modifier = Modifier) {
-    Column(modifier) {
-        Text("OneDrive")
-
-        val oneDriveToken = window.localStorage["oneDriveToken"]
-        val oneDriveClientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
-        val redirectUri = "http://localhost:8080"
-
-        if (oneDriveToken != null) {
-            Text("OneDrive: authenticated!")
-            Button(onClick = {
-                window.localStorage.removeItem("oneDriveToken")
-                window.location.reload()
-            }) { Text("Log out") }
-
-            val service = CloudBridge.oneDrive.getService(
-                clientId = oneDriveClientId,
-                token = oneDriveToken
-            )
-
-            val files by produceState(emptyList()) {
-                value = try {
-                    service.listFiles()
-                } catch (e: Exception) {
-                    listOf("Error: ${e.message}")
-                }
-            }
-
-            Text("Files:")
-            for (file in files) {
-                Text(file)
-            }
-        } else {
-            val authenticator = CloudBridge.oneDrive.getAuthenticator(
-                clientId = oneDriveClientId,
-                redirectUri = redirectUri,
-                codeVerifier = window.localStorage["oneDriveCodeVerifier"] ?: ""
-            )
-            val authenticateUrl = authenticator.buildUrl()
-            window.localStorage["oneDriveCodeVerifier"] = authenticator.codeVerifier
-
-            SelectionContainer {
-                Text("URL: $authenticateUrl")
-            }
-
-            val params = URLSearchParams(window.location.search.toJsString())
-            val code = params.get("code")
-
-            if (code != null) {
-                Text("Code: $code")
-                val scope = rememberCoroutineScope()
-
-                Button(
-                    onClick = {
-                        scope.launch {
-                            val token = authenticator.getToken(
-                                redirectUri = redirectUri,
-                                code = code
-                            )
-                            window.localStorage["oneDriveToken"] = token
-                            window.localStorage.removeItem("oneDriveCodeVerifier")
-                            window.location.href = window.location.origin + window.location.pathname
-                        }
-                    }
-                ) { Text("Request OneDrive token using code") }
-            }
-
-            val uriHandler = LocalUriHandler.current
-            Button(
-                onClick = { uriHandler.openUri(authenticateUrl) }
-            ) {
-                Text("Authenticate with OneDrive")
-            }
-        }
-    }
-}
-
-@Composable
-private fun GoogleDriveColumn(modifier: Modifier = Modifier) {
-    Column(modifier) {
-        Text("Google Drive")
-
-        val googleDriveToken = window.localStorage["googleDriveToken"]
-        val googleDriveClientId = "218224394553-sgks2ok1rnh4r1i5ue4stba5dral9v1i.apps.googleusercontent.com"
-        val redirectUri = "http://localhost:8080"
-
-        if (googleDriveToken != null) {
-            Text("Google Drive: authenticated!")
-            Button(onClick = {
-                window.localStorage.removeItem("googleDriveToken")
-                window.location.reload()
-            }) { Text("Log out") }
-
-            val service = CloudBridge.googleDrive.getService(
-                clientId = googleDriveClientId,
-                token = googleDriveToken
-            )
-
-            val files by produceState(emptyList()) {
-                value = try {
-                    service.listFiles()
-                } catch (e: Exception) {
-                    listOf("Error: ${e.message}")
-                }
-            }
-
-            Text("Files:")
-            for (file in files) {
-                Text(file)
-            }
-        } else {
-            val authenticator = CloudBridge.googleDrive.getAuthenticator(
-                clientId = googleDriveClientId,
-                redirectUri = redirectUri,
-                codeVerifier = window.localStorage["googleDriveCodeVerifier"] ?: ""
-            )
-            val authenticateUrl = authenticator.buildUrl()
-            window.localStorage["googleDriveCodeVerifier"] = authenticator.codeVerifier
-
-            SelectionContainer {
-                Text("URL: $authenticateUrl")
-            }
-
-            val params = URLSearchParams(window.location.search.toJsString())
-            val code = params.get("code")
-
-            if (code != null) {
-                Text("Code: $code")
-                val scope = rememberCoroutineScope()
-
-                Button(
-                    onClick = {
-                        scope.launch {
-                            val token = authenticator.getToken(
-                                redirectUri = redirectUri,
-                                code = code
-                            )
-                            window.localStorage["googleDriveToken"] = token
-                            window.localStorage.removeItem("googleDriveCodeVerifier")
-                            window.location.href = window.location.origin + window.location.pathname
-                        }
-                    }
-                ) { Text("Request Google Drive token using code") }
-            }
-
-            val uriHandler = LocalUriHandler.current
-            Button(
-                onClick = { uriHandler.openUri(authenticateUrl) }
-            ) {
-                Text("Authenticate with Google Drive")
+                Text("Authenticate with $name")
             }
         }
     }

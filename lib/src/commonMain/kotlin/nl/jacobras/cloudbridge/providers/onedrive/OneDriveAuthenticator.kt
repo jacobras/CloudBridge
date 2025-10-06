@@ -2,21 +2,16 @@ package nl.jacobras.cloudbridge.providers.onedrive
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudAuthenticator
-import nl.jacobras.cloudbridge.security.SecurityUtil
+import nl.jacobras.cloudbridge.persistence.Settings
 
-public class OneDriveAuthenticator(
+internal class OneDriveAuthenticator(
+    private val api: OneDriveApi,
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
-) : CloudAuthenticator(
-    codeVerifier = codeVerifier.ifEmpty { SecurityUtil.createRandomCodeVerifier() }
-) {
-    private val service = OneDriveService(
-        clientId = clientId,
-        token = ""
-    )
+) : CloudAuthenticator(codeVerifier = codeVerifier) {
 
-    public fun buildUrl(): String {
+    override fun buildUri(): String {
         val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
 
         return buildString {
@@ -30,14 +25,17 @@ public class OneDriveAuthenticator(
         }
     }
 
-    public suspend fun getToken(
-        redirectUri: String,
-        code: String
-    ): String {
-        return service.getToken(
-            redirectUri = redirectUri,
-            code = code,
-            codeVerifier = codeVerifier
-        )
+    override suspend fun exchangeCodeForToken(code: String) {
+        return try {
+            val token = api.getToken(
+                clientId = clientId,
+                redirectUri = redirectUri,
+                code = code,
+                codeVerifier = codeVerifier
+            )
+            Settings.oneDriveToken = token.accessToken
+        } finally {
+            Settings.codeVerifier = null
+        }
     }
 }

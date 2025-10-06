@@ -1,6 +1,10 @@
 package nl.jacobras.cloudbridge.providers.googledrive
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Field
+import de.jensklingenberg.ktorfit.http.FormUrlEncoded
+import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -18,7 +22,6 @@ internal interface GoogleDriveApi {
 
     @GET("drive/v3/files")
     suspend fun listFiles(
-        @Header("Authorization") authorization: String,
         @Query("spaces") spaces: String = "appDataFolder",
         @Query("fields") fields: String = "files(id,name,mimeType)",
         @Query("pageSize") pageSize: Int = 100
