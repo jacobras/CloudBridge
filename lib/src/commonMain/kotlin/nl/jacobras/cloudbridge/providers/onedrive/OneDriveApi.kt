@@ -1,6 +1,10 @@
 package nl.jacobras.cloudbridge.providers.onedrive
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Field
+import de.jensklingenberg.ktorfit.http.FormUrlEncoded
+import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.POST
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -18,9 +22,7 @@ internal interface OneDriveApi {
     ): TokenResponse
 
     @GET("v1.0/me/drive/special/approot/children")
-    suspend fun listFiles(
-        @Header("Authorization") authorization: String,
-    ): FileResponse
+    suspend fun listFiles(): FileResponse
 }
 
 @Serializable

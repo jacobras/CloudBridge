@@ -3,14 +3,23 @@ package nl.jacobras.cloudbridge.providers.dropbox
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.persistence.Settings
+import nl.jacobras.cloudbridge.security.SecurityUtil
 
-internal class DropboxService(
-    private val clientId: String,
-    private val token: String
+public class DropboxService(
+    private val clientId: String
 ) : CloudService {
+
+    private val token: String?
+        get() = Settings.dropboxToken
 
     private val ktorfit = ktorfit {
         baseUrl("https://api.dropboxapi.com/")
@@ -24,27 +33,45 @@ internal class DropboxService(
                         }
                     )
                 }
+                defaultRequest {
+                    if (token != null) {
+                        header(HttpHeaders.Authorization, "Bearer $token")
+                    }
+                }
             }
         )
     }
-    private val dropboxApi = ktorfit.createDropboxApi()
+    private val api = ktorfit.createDropboxApi()
 
-    internal suspend fun getToken(
-        redirectUri: String,
-        code: String,
-        codeVerifier: String
-    ): String {
-        return dropboxApi.getToken(
+    private fun requireAuthHeader(): String {
+        val token = token ?: throw CloudServiceException.NotAuthenticatedException()
+        return "Bearer $token"
+    }
+
+    override fun isAuthenticated(): Boolean {
+        return Settings.dropboxToken != null
+    }
+
+    public override fun getAuthenticator(redirectUri: String): CloudAuthenticator {
+        val codeVerifier = Settings.codeVerifier ?: let {
+            val verifier = SecurityUtil.createRandomCodeVerifier()
+            Settings.codeVerifier = verifier
+            verifier
+        }
+        return DropboxAuthenticator(
+            api = api,
             clientId = clientId,
             redirectUri = redirectUri,
-            code = code,
             codeVerifier = codeVerifier
-        ).accessToken
+        )
+    }
+
+    override fun logout() {
+        Settings.dropboxToken = null
     }
 
     override suspend fun listFiles(): List<String> {
-        return dropboxApi.listFiles(
-            authorization = "Bearer $token"
-        ).entries.map { it.name }
+        requireAuthHeader()
+        return api.listFiles().entries.map { it.name }
     }
 }

@@ -21,7 +21,6 @@ internal interface DropboxApi {
 
     @POST("2/files/list_folder")
     suspend fun listFiles(
-        @Header("Authorization") authorization: String,
         @Header("Content-Type") contentType: String = "application/json",
         @Body data: String = "{\"include_deleted\": false,\"include_has_explicit_shared_members\": false,\"include_media_info\": false,\"include_mounted_folders\": true,\"include_non_downloadable_files\": true,\"path\": \"\",\"recursive\": false}"
     ): FileResponse

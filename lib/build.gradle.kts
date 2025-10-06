@@ -29,6 +29,7 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktorfit)
+            implementation(libs.multiplatform.settings)
             implementation(libs.urlencoder)
         }
         commonTest.dependencies {
