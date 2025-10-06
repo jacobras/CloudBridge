@@ -10,20 +10,23 @@ web, but desktop and Android support are planned.
 
 ## ✨ Features
 
-* ⚡ **Unified**: One library to access Dropbox and OneDrive.
+* ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms.
 * 📱 **Cross-platform**: Currently supports web, but mobile (Android) and
   desktop (JVM) are planned.
 
-## Cloud Providers
+Limited access scopes by using _app folders_ are preferred by the library wherever possible.
+
+## ☁️ Cloud Providers
 
 |                        | Mobile<br>(Android) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|------------------|------------------|
 | **Dropbox**            | ⏳                   | ⏳                | ✅                |
-| **Google Drive**       | ⏳                   | ⏳                | ⏳                |
+| **Google Drive**       | ⏳                   | ⏳                | ✅                |
 | **Microsoft OneDrive** | ⏳                   | ⏳                | ✅                |
 
-⏳ = Not yet supported.
+✅ = Supported.<br>
+⏳ = Planned.
 
 ## 💾 Supported operations
 
@@ -39,7 +42,7 @@ The library is not yet published.
 
 ### Authenticating
 
-The main entry point is `CloudBridge.dropbox` or `CloudBridge.oneDrive`.
+The main entry point is `CloudBridge.dropbox`, `CloudBridge.googleDrive` or `CloudBridge.oneDrive`.
 
 ```kotlin
 val authenticator = CloudBridge.dropbox.getAuthenticator(
