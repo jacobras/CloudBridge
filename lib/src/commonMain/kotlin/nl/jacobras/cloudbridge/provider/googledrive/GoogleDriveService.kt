@@ -1,10 +1,14 @@
-package nl.jacobras.cloudbridge.providers.onedrive
+package nl.jacobras.cloudbridge.provider.googledrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.header
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -14,15 +18,15 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-public class OneDriveService(
+public class GoogleDriveService(
     private val clientId: String
 ) : CloudService {
 
     private val token: String?
-        get() = Settings.oneDriveToken
+        get() = Settings.googleDriveToken
 
     private val ktorfit = ktorfit {
-        baseUrl("https://graph.microsoft.com/")
+        baseUrl("https://www.googleapis.com/")
         httpClient(
             HttpClient {
                 install(ContentNegotiation) {
@@ -41,7 +45,7 @@ public class OneDriveService(
             }
         )
     }
-    private val api = ktorfit.createOneDriveApi()
+    private val api = ktorfit.createGoogleDriveApi()
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -58,7 +62,7 @@ public class OneDriveService(
             Settings.codeVerifier = verifier
             verifier
         }
-        return OneDriveAuthenticator(
+        return GoogleDriveAuthenticator(
             api = api,
             clientId = clientId,
             redirectUri = redirectUri,
@@ -67,7 +71,7 @@ public class OneDriveService(
     }
 
     override fun logout() {
-        Settings.oneDriveToken = null
+        Settings.googleDriveToken = null
     }
 
     override suspend fun listFiles(): List<String> {
@@ -77,9 +81,28 @@ public class OneDriveService(
 
     override suspend fun createFile(filename: String, content: String) {
         requireAuthHeader()
+
+        val metadata = DriveFileMetadata(
+            name = filename,
+            mimeType = "text/plain",
+            parents = listOf("appDataFolder")
+        )
+
+        val boundary = "cloud-bridge-boundary"
+
         api.uploadFile(
-            path = filename,
-            content = content
+            map = MultiPartFormDataContent(
+                boundary = boundary,
+                contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
+                parts = formData {
+                    append("metadata", Json.encodeToString(metadata), Headers.build {
+                        append(HttpHeaders.ContentType, "application/json")
+                    })
+                    append("file", content, Headers.build {
+                        append(HttpHeaders.ContentType, "text/plain")
+                    })
+                }
+            )
         )
     }
 }

@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.providers.onedrive
+package nl.jacobras.cloudbridge.provider.onedrive
 
 import de.jensklingenberg.ktorfit.http.Body
 import de.jensklingenberg.ktorfit.http.Field

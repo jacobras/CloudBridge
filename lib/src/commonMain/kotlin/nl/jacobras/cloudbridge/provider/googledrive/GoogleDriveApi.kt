@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.providers.googledrive
+package nl.jacobras.cloudbridge.provider.googledrive
 
 import de.jensklingenberg.ktorfit.http.Body
 import de.jensklingenberg.ktorfit.http.Field

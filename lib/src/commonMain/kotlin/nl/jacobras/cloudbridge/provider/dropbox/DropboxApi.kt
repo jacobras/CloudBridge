@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.providers.dropbox
+package nl.jacobras.cloudbridge.provider.dropbox
 
 import de.jensklingenberg.ktorfit.http.Body
 import de.jensklingenberg.ktorfit.http.Header

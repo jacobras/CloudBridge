@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.providers.dropbox
+package nl.jacobras.cloudbridge.provider.onedrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
@@ -7,7 +7,6 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
@@ -15,15 +14,15 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-public class DropboxService(
+public class OneDriveService(
     private val clientId: String
 ) : CloudService {
 
     private val token: String?
-        get() = Settings.dropboxToken
+        get() = Settings.oneDriveToken
 
     private val ktorfit = ktorfit {
-        baseUrl("https://api.dropboxapi.com/")
+        baseUrl("https://graph.microsoft.com/")
         httpClient(
             HttpClient {
                 install(ContentNegotiation) {
@@ -42,7 +41,7 @@ public class DropboxService(
             }
         )
     }
-    private val api = ktorfit.createDropboxApi()
+    private val api = ktorfit.createOneDriveApi()
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -50,7 +49,7 @@ public class DropboxService(
     }
 
     override fun isAuthenticated(): Boolean {
-        return Settings.dropboxToken != null
+        return token != null
     }
 
     public override fun getAuthenticator(redirectUri: String): CloudAuthenticator {
@@ -59,7 +58,7 @@ public class DropboxService(
             Settings.codeVerifier = verifier
             verifier
         }
-        return DropboxAuthenticator(
+        return OneDriveAuthenticator(
             api = api,
             clientId = clientId,
             redirectUri = redirectUri,
@@ -68,19 +67,19 @@ public class DropboxService(
     }
 
     override fun logout() {
-        Settings.dropboxToken = null
+        Settings.oneDriveToken = null
     }
 
     override suspend fun listFiles(): List<String> {
         requireAuthHeader()
-        return api.listFiles().entries.map { it.name }
+        return api.listFiles().files.map { it.name }
     }
 
     override suspend fun createFile(filename: String, content: String) {
         requireAuthHeader()
         api.uploadFile(
-            arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
-            content = content.toByteArray()
+            path = filename,
+            content = content
         )
     }
 }

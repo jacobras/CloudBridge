@@ -1,16 +1,13 @@
-package nl.jacobras.cloudbridge.providers.googledrive
+package nl.jacobras.cloudbridge.provider.dropbox
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
 import io.ktor.client.request.header
-import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
@@ -18,15 +15,15 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-public class GoogleDriveService(
+public class DropboxService(
     private val clientId: String
 ) : CloudService {
 
     private val token: String?
-        get() = Settings.googleDriveToken
+        get() = Settings.dropboxToken
 
     private val ktorfit = ktorfit {
-        baseUrl("https://www.googleapis.com/")
+        baseUrl("https://api.dropboxapi.com/")
         httpClient(
             HttpClient {
                 install(ContentNegotiation) {
@@ -45,7 +42,7 @@ public class GoogleDriveService(
             }
         )
     }
-    private val api = ktorfit.createGoogleDriveApi()
+    private val api = ktorfit.createDropboxApi()
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -53,7 +50,7 @@ public class GoogleDriveService(
     }
 
     override fun isAuthenticated(): Boolean {
-        return token != null
+        return Settings.dropboxToken != null
     }
 
     public override fun getAuthenticator(redirectUri: String): CloudAuthenticator {
@@ -62,7 +59,7 @@ public class GoogleDriveService(
             Settings.codeVerifier = verifier
             verifier
         }
-        return GoogleDriveAuthenticator(
+        return DropboxAuthenticator(
             api = api,
             clientId = clientId,
             redirectUri = redirectUri,
@@ -71,38 +68,19 @@ public class GoogleDriveService(
     }
 
     override fun logout() {
-        Settings.googleDriveToken = null
+        Settings.dropboxToken = null
     }
 
     override suspend fun listFiles(): List<String> {
         requireAuthHeader()
-        return api.listFiles().files.map { it.name }
+        return api.listFiles().entries.map { it.name }
     }
 
     override suspend fun createFile(filename: String, content: String) {
         requireAuthHeader()
-
-        val metadata = DriveFileMetadata(
-            name = filename,
-            mimeType = "text/plain",
-            parents = listOf("appDataFolder")
-        )
-
-        val boundary = "cloud-bridge-boundary"
-
         api.uploadFile(
-            map = MultiPartFormDataContent(
-                boundary = boundary,
-                contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
-                parts = formData {
-                    append("metadata", Json.encodeToString(metadata), Headers.build {
-                        append(HttpHeaders.ContentType, "application/json")
-                    })
-                    append("file", content, Headers.build {
-                        append(HttpHeaders.ContentType, "text/plain")
-                    })
-                }
-            )
+            arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
+            content = content.toByteArray()
         )
     }
 }
