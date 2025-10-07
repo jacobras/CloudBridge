@@ -1,5 +1,7 @@
 package nl.jacobras.cloudbridge
 
+import nl.jacobras.cloudbridge.model.CloudFile
+
 public interface CloudService {
 
     /**
@@ -25,7 +27,7 @@ public interface CloudService {
     /**
      * Lists all files.
      */
-    public suspend fun listFiles(): List<String>
+    public suspend fun listFiles(): List<CloudFile>
 
     /**
      * Creates a file with name [filename] and text content [content].

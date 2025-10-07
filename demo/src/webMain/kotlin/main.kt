@@ -1,5 +1,6 @@
 @file:OptIn(ExperimentalWasmJsInterop::class)
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -85,7 +88,7 @@ fun main() {
 
             Spacer(Modifier.height(32.dp))
 
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
@@ -122,17 +125,50 @@ private fun CloudServiceColumn(
                 window.location.reload()
             }) { Text("Log out") }
 
+            var error by remember { mutableStateOf("") }
+
             val files by produceState(emptyList()) {
                 value = try {
-                    service.listFiles()
+                    service.listFiles().also {
+                        error = ""
+                    }
                 } catch (e: Exception) {
-                    listOf("Error: ${e.message}")
+                    error = e.message.toString()
+                    emptyList()
                 }
             }
 
-            Text("Files:")
+            if (error.isNotEmpty()) {
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            Text(
+                text = "Files",
+                modifier = Modifier.padding(vertical = 8.dp),
+                style = MaterialTheme.typography.headlineMedium
+            )
             for (file in files) {
-                Text(file)
+                SelectionContainer {
+                    Column {
+                        Text(
+                            text = file.id,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${file.name} (${file.sizeInBytes} bytes)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (file != files.last()) {
+                            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                        }
+                    }
+                }
             }
         } else {
             val authenticator = service.getAuthenticator(

@@ -61,6 +61,9 @@ internal data class FileResponse(
 
 @Serializable
 internal data class FileEntry(
+    @SerialName("id")
+    val id: String,
+
     @SerialName("name")
     val name: String,
 
@@ -70,8 +73,8 @@ internal data class FileEntry(
     @SerialName("path_display")
     val pathDisplay: String,
 
-    @SerialName("id")
-    val id: String
+    @SerialName("size")
+    val size: Long
 )
 
 @Serializable

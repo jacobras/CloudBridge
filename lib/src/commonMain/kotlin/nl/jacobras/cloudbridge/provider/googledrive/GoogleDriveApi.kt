@@ -29,7 +29,7 @@ internal interface GoogleDriveApi {
     @GET("drive/v3/files")
     suspend fun listFiles(
         @Query("spaces") spaces: String = "appDataFolder",
-        @Query("fields") fields: String = "files(id,name,mimeType)",
+        @Query("fields") fields: String = "files(id,name,mimeType,size)",
         @Query("pageSize") pageSize: Int = 100
     ): FileResponse
 
@@ -66,6 +66,9 @@ internal data class DriveFile(
 
     @SerialName("mimeType")
     val mimeType: String,
+
+    @SerialName("size")
+    val size: String
 )
 
 

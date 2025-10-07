@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
@@ -71,9 +72,15 @@ public class DropboxService(
         Settings.dropboxToken = null
     }
 
-    override suspend fun listFiles(): List<String> {
+    override suspend fun listFiles(): List<CloudFile> {
         requireAuthHeader()
-        return api.listFiles().entries.map { it.name }
+        return api.listFiles().entries.map {
+            CloudFile(
+                id = it.id,
+                name = it.name,
+                sizeInBytes = it.size
+            )
+        }
     }
 
     override suspend fun createFile(filename: String, content: String) {
