@@ -8,6 +8,9 @@ import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Docs: https://developers.google.com/workspace/drive/api/reference/rest/v3/files
+ */
 internal interface GoogleDriveApi {
 
     @POST("https://oauth2.googleapis.com/token")

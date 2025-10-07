@@ -8,6 +8,9 @@ import de.jensklingenberg.ktorfit.http.POST
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_put_content
+ */
 internal interface OneDriveApi {
 
     @POST("https://login.microsoftonline.com/common/oauth2/v2.0/token")

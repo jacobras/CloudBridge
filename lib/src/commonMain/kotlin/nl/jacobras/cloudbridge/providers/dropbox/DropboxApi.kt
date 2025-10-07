@@ -8,6 +8,9 @@ import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Docs: https://www.dropbox.com/developers/documentation/http/documentation
+ */
 internal interface DropboxApi {
 
     @POST("oauth2/token")
