@@ -6,6 +6,7 @@ import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
 import de.jensklingenberg.ktorfit.http.Multipart
 import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.Path
 import de.jensklingenberg.ktorfit.http.Query
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import kotlinx.serialization.SerialName
@@ -38,6 +39,11 @@ internal interface GoogleDriveApi {
     suspend fun uploadFile(
         @Body map: MultiPartFormDataContent
     )
+
+    @GET("drive/v3/files/{fileId}?alt=media")
+    suspend fun downloadFile(
+        @Path("fileId") id: String
+    ): ByteArray
 }
 
 @Serializable

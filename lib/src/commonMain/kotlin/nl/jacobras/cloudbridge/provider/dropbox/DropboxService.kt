@@ -2,10 +2,12 @@ package nl.jacobras.cloudbridge.provider.dropbox
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
@@ -18,7 +20,7 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public class DropboxService(
     private val clientId: String
-) : CloudService {
+) : CloudService, CloudService.DownloadById {
 
     private val token: String?
         get() = Settings.dropboxToken
@@ -27,6 +29,7 @@ public class DropboxService(
         baseUrl("https://api.dropboxapi.com/")
         httpClient(
             HttpClient {
+                expectSuccess = true
                 install(ContentNegotiation) {
                     json(
                         Json {
@@ -72,9 +75,8 @@ public class DropboxService(
         Settings.dropboxToken = null
     }
 
-    override suspend fun listFiles(): List<CloudFile> {
-        requireAuthHeader()
-        return api.listFiles().entries.map {
+    override suspend fun listFiles(): List<CloudFile> = tryCall {
+        api.listFiles().entries.map {
             CloudFile(
                 id = it.id,
                 name = it.name,
@@ -83,11 +85,30 @@ public class DropboxService(
         }
     }
 
-    override suspend fun createFile(filename: String, content: String) {
-        requireAuthHeader()
+    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
         api.uploadFile(
             arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
             content = content.toByteArray()
         )
+    }
+
+    override suspend fun downloadFileById(id: String): String = tryCall {
+        api.downloadFile(
+            arguments = Json.encodeToString(DropboxDownloadArg(path = id))
+        )
+    }
+
+    private suspend fun <T> tryCall(block: suspend () -> T): T {
+        requireAuthHeader()
+
+        try {
+            return block()
+        } catch (e: ResponseException) {
+            throw if (e.response.status == HttpStatusCode.Unauthorized) {
+                CloudServiceException.NotAuthenticatedException()
+            } else {
+                CloudServiceException.Unknown(e)
+            }
+        }
     }
 }

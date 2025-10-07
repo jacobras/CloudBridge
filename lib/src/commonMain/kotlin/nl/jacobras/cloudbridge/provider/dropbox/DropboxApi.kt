@@ -29,6 +29,11 @@ internal interface DropboxApi {
         @Body data: String = "{\"include_deleted\": false,\"include_has_explicit_shared_members\": false,\"include_media_info\": false,\"include_mounted_folders\": true,\"include_non_downloadable_files\": true,\"path\": \"\",\"recursive\": false}"
     ): FileResponse
 
+    @POST("https://content.dropboxapi.com/2/files/download")
+    suspend fun downloadFile(
+        @Header("Dropbox-API-Arg") arguments: String,
+    ): String
+
     @POST("https://content.dropboxapi.com/2/files/upload")
     @Headers("Content-Type: application/octet-stream")
     suspend fun uploadFile(
@@ -90,4 +95,10 @@ internal data class DropboxUploadArg(
 
     @SerialName("mute")
     val mute: Boolean = false
+)
+
+@Serializable
+internal data class DropboxDownloadArg(
+    @SerialName("path")
+    val path: String
 )
