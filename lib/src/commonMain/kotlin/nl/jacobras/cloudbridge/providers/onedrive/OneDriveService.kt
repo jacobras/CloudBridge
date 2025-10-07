@@ -74,4 +74,12 @@ public class OneDriveService(
         requireAuthHeader()
         return api.listFiles().files.map { it.name }
     }
+
+    override suspend fun createFile(filename: String, content: String) {
+        requireAuthHeader()
+        api.uploadFile(
+            path = filename,
+            content = content
+        )
+    }
 }
