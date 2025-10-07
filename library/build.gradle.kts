@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktorfit)
     alias(libs.plugins.kotlin.serialization)
+    id("maven-publish")
 }
 
 group = "nl.jacobras"
@@ -37,4 +38,20 @@ kotlin {
             implementation(libs.assertK)
         }
     }
+}
+
+publishing {
+    publications {
+        withType<MavenPublication>().configureEach {
+            artifactId = if (name == "kotlinMultiplatform") {
+                "cloudbridge"
+            } else {
+                "cloudbridge-$name"
+            }
+        }
+    }
+}
+
+tasks.named("sourcesJar") {
+    dependsOn("kspCommonMainKotlinMetadata")
 }

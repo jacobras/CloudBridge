@@ -18,4 +18,4 @@ dependencyResolutionManagement {
 }
 
 include(":demo")
-include(":lib")
+include(":library")

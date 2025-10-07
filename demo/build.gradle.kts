@@ -26,7 +26,7 @@ kotlin {
             implementation(libs.kermit)
             implementation(libs.kotlinx.browser)
 
-            implementation(projects.lib)
+            implementation(projects.library)
         }
     }
 }
