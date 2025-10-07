@@ -1,13 +1,19 @@
-package nl.jacobras.cloudbridge.providers.googledrive
+package nl.jacobras.cloudbridge.provider.googledrive
 
+import de.jensklingenberg.ktorfit.http.Body
 import de.jensklingenberg.ktorfit.http.Field
 import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Multipart
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.Query
+import io.ktor.client.request.forms.MultiPartFormDataContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Docs: https://developers.google.com/workspace/drive/api/reference/rest/v3/files
+ */
 internal interface GoogleDriveApi {
 
     @POST("https://oauth2.googleapis.com/token")
@@ -26,6 +32,12 @@ internal interface GoogleDriveApi {
         @Query("fields") fields: String = "files(id,name,mimeType)",
         @Query("pageSize") pageSize: Int = 100
     ): FileResponse
+
+    @POST("upload/drive/v3/files?uploadType=multipart")
+    @Multipart
+    suspend fun uploadFile(
+        @Body map: MultiPartFormDataContent
+    )
 }
 
 @Serializable
@@ -54,4 +66,17 @@ internal data class DriveFile(
 
     @SerialName("mimeType")
     val mimeType: String,
+)
+
+
+@Serializable
+internal data class DriveFileMetadata(
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("mimeType")
+    val mimeType: String,
+
+    @SerialName("parents")
+    val parents: List<String>
 )

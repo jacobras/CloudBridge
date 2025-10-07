@@ -1,13 +1,19 @@
-package nl.jacobras.cloudbridge.providers.onedrive
+package nl.jacobras.cloudbridge.provider.onedrive
 
+import de.jensklingenberg.ktorfit.http.Body
 import de.jensklingenberg.ktorfit.http.Field
 import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
 import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.PUT
+import de.jensklingenberg.ktorfit.http.Path
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_put_content
+ */
 internal interface OneDriveApi {
 
     @POST("https://login.microsoftonline.com/common/oauth2/v2.0/token")
@@ -23,6 +29,13 @@ internal interface OneDriveApi {
 
     @GET("v1.0/me/drive/special/approot/children")
     suspend fun listFiles(): FileResponse
+
+    @PUT("v1.0/me/drive/special/approot:/{path}:/content")
+    @Headers("Content-Type: text/plain")
+    suspend fun uploadFile(
+        @Path("path") path: String,
+        @Body content: String
+    )
 }
 
 @Serializable

@@ -1,10 +1,14 @@
-package nl.jacobras.cloudbridge.providers.googledrive
+package nl.jacobras.cloudbridge.provider.googledrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.header
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -73,5 +77,32 @@ public class GoogleDriveService(
     override suspend fun listFiles(): List<String> {
         requireAuthHeader()
         return api.listFiles().files.map { it.name }
+    }
+
+    override suspend fun createFile(filename: String, content: String) {
+        requireAuthHeader()
+
+        val metadata = DriveFileMetadata(
+            name = filename,
+            mimeType = "text/plain",
+            parents = listOf("appDataFolder")
+        )
+
+        val boundary = "cloud-bridge-boundary"
+
+        api.uploadFile(
+            map = MultiPartFormDataContent(
+                boundary = boundary,
+                contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
+                parts = formData {
+                    append("metadata", Json.encodeToString(metadata), Headers.build {
+                        append(HttpHeaders.ContentType, "application/json")
+                    })
+                    append("file", content, Headers.build {
+                        append(HttpHeaders.ContentType, "text/plain")
+                    })
+                }
+            )
+        )
     }
 }

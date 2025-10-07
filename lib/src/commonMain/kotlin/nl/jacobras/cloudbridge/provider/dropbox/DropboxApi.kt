@@ -1,12 +1,16 @@
-package nl.jacobras.cloudbridge.providers.dropbox
+package nl.jacobras.cloudbridge.provider.dropbox
 
 import de.jensklingenberg.ktorfit.http.Body
 import de.jensklingenberg.ktorfit.http.Header
+import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Docs: https://www.dropbox.com/developers/documentation/http/documentation
+ */
 internal interface DropboxApi {
 
     @POST("oauth2/token")
@@ -20,10 +24,17 @@ internal interface DropboxApi {
     ): TokenResponse
 
     @POST("2/files/list_folder")
+    @Headers("Content-Type: application/json")
     suspend fun listFiles(
-        @Header("Content-Type") contentType: String = "application/json",
         @Body data: String = "{\"include_deleted\": false,\"include_has_explicit_shared_members\": false,\"include_media_info\": false,\"include_mounted_folders\": true,\"include_non_downloadable_files\": true,\"path\": \"\",\"recursive\": false}"
     ): FileResponse
+
+    @POST("https://content.dropboxapi.com/2/files/upload")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadFile(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    ): String
 }
 
 @Serializable
@@ -61,4 +72,19 @@ internal data class FileEntry(
 
     @SerialName("id")
     val id: String
+)
+
+@Serializable
+internal data class DropboxUploadArg(
+    @SerialName("path")
+    val path: String,
+
+    @SerialName("mode")
+    val mode: String = "add",
+
+    @SerialName("autorename")
+    val autoRename: Boolean = true,
+
+    @SerialName("mute")
+    val mute: Boolean = false
 )

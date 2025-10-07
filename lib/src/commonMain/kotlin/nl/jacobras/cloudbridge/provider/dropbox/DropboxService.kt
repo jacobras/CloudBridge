@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.providers.dropbox
+package nl.jacobras.cloudbridge.provider.dropbox
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
@@ -7,6 +7,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
@@ -73,5 +74,13 @@ public class DropboxService(
     override suspend fun listFiles(): List<String> {
         requireAuthHeader()
         return api.listFiles().entries.map { it.name }
+    }
+
+    override suspend fun createFile(filename: String, content: String) {
+        requireAuthHeader()
+        api.uploadFile(
+            arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
+            content = content.toByteArray()
+        )
     }
 }

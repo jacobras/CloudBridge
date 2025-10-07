@@ -1,11 +1,11 @@
-package nl.jacobras.cloudbridge.providers.googledrive
+package nl.jacobras.cloudbridge.provider.onedrive
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.persistence.Settings
 
-internal class GoogleDriveAuthenticator(
-    private val api: GoogleDriveApi,
+internal class OneDriveAuthenticator(
+    private val api: OneDriveApi,
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
@@ -15,9 +15,9 @@ internal class GoogleDriveAuthenticator(
         val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
 
         return buildString {
-            append("https://accounts.google.com/o/oauth2/v2/auth")
+            append("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
             append("?client_id=$clientId")
-            append("&scope=https://www.googleapis.com/auth/drive.appdata")
+            append("&scope=files.readwrite")
             append("&response_type=code")
             append("&code_challenge=$codeChallenge")
             append("&code_challenge_method=S256")
@@ -33,7 +33,7 @@ internal class GoogleDriveAuthenticator(
                 code = code,
                 codeVerifier = codeVerifier
             )
-            Settings.googleDriveToken = token.accessToken
+            Settings.oneDriveToken = token.accessToken
         } finally {
             Settings.codeVerifier = null
         }

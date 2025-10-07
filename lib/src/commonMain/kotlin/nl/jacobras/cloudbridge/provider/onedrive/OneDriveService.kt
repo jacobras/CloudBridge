@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.providers.onedrive
+package nl.jacobras.cloudbridge.provider.onedrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
@@ -73,5 +73,13 @@ public class OneDriveService(
     override suspend fun listFiles(): List<String> {
         requireAuthHeader()
         return api.listFiles().files.map { it.name }
+    }
+
+    override suspend fun createFile(filename: String, content: String) {
+        requireAuthHeader()
+        api.uploadFile(
+            path = filename,
+            content = content
+        )
     }
 }

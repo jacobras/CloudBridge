@@ -1,11 +1,11 @@
-package nl.jacobras.cloudbridge.providers.dropbox
+package nl.jacobras.cloudbridge.provider.googledrive
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.persistence.Settings
 
-internal class DropboxAuthenticator(
-    private val api: DropboxApi,
+internal class GoogleDriveAuthenticator(
+    private val api: GoogleDriveApi,
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
@@ -15,8 +15,9 @@ internal class DropboxAuthenticator(
         val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
 
         return buildString {
-            append("https://www.dropbox.com/oauth2/authorize")
+            append("https://accounts.google.com/o/oauth2/v2/auth")
             append("?client_id=$clientId")
+            append("&scope=https://www.googleapis.com/auth/drive.appdata")
             append("&response_type=code")
             append("&code_challenge=$codeChallenge")
             append("&code_challenge_method=S256")
@@ -32,7 +33,7 @@ internal class DropboxAuthenticator(
                 code = code,
                 codeVerifier = codeVerifier
             )
-            Settings.dropboxToken = token.accessToken
+            Settings.googleDriveToken = token.accessToken
         } finally {
             Settings.codeVerifier = null
         }
