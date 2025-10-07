@@ -77,7 +77,8 @@ public class DropboxService(
         return api.listFiles().entries.map {
             CloudFile(
                 id = it.id,
-                name = it.name
+                name = it.name,
+                sizeInBytes = it.size
             )
         }
     }

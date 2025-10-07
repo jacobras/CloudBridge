@@ -160,7 +160,7 @@ private fun CloudServiceColumn(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = file.name,
+                            text = "${file.name} (${file.sizeInBytes} bytes)",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )

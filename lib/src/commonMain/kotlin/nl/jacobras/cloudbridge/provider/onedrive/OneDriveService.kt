@@ -76,7 +76,8 @@ public class OneDriveService(
         return api.listFiles().files.map {
             CloudFile(
                 id = it.id,
-                name = it.name
+                name = it.name,
+                sizeInBytes = it.size
             )
         }
     }
