@@ -33,4 +33,20 @@ public interface CloudService {
      * Creates a file with name [filename] and text content [content].
      */
     public suspend fun createFile(filename: String, content: String)
+
+    public interface DownloadById {
+
+        /**
+         * Retrieves the file with [id].
+         */
+        public suspend fun downloadFileById(id: String): String
+    }
+
+    public interface DownloadByPath {
+
+        /**
+         * Retrieves the file at [path].
+         */
+        public suspend fun downloadFileByPath(path: String): String
+    }
 }

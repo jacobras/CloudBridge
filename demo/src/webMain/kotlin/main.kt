@@ -1,14 +1,18 @@
 @file:OptIn(ExperimentalWasmJsInterop::class)
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -109,12 +113,15 @@ fun main() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CloudServiceColumn(
     name: String,
     service: CloudService,
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
+
     Column(modifier) {
         Text(name)
 
@@ -152,8 +159,30 @@ private fun CloudServiceColumn(
                 style = MaterialTheme.typography.headlineMedium
             )
             for (file in files) {
+                var content by remember { mutableStateOf("") }
+                if (content.isNotEmpty()) {
+                    AlertDialog(
+                        onDismissRequest = { content = "" },
+                        confirmButton = { Button(onClick = { content = "" }) { Text("Close") } },
+                        title = { Text(file.name) },
+                        text = { Text(content) }
+                    )
+                }
+
                 SelectionContainer {
-                    Column {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                scope.launch {
+                                    if (service is CloudService.DownloadById) {
+                                        content = service.downloadFileById(file.id)
+                                    } else if (service is CloudService.DownloadByPath) {
+                                        content = service.downloadFileByPath(file.name)
+                                    }
+                                }
+                            }
+                    ) {
                         Text(
                             text = file.id,
                             style = MaterialTheme.typography.bodySmall,
@@ -185,7 +214,6 @@ private fun CloudServiceColumn(
 
             if (code != null) {
                 Text("Code: $code")
-                val scope = rememberCoroutineScope()
 
                 Button(
                     onClick = {

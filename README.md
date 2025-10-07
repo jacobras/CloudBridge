@@ -31,7 +31,8 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 ## 💾 Supported operations
 
 * List files
-* Create file
+* Download file
+* Upload file
 
 ## ⚠️ Under construction
 

@@ -2,6 +2,7 @@ package nl.jacobras.cloudbridge.provider.googledrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -10,6 +11,7 @@ import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudAuthenticator
@@ -21,7 +23,7 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public class GoogleDriveService(
     private val clientId: String
-) : CloudService {
+) : CloudService, CloudService.DownloadById {
 
     private val token: String?
         get() = Settings.googleDriveToken
@@ -30,6 +32,7 @@ public class GoogleDriveService(
         baseUrl("https://www.googleapis.com/")
         httpClient(
             HttpClient {
+                expectSuccess = true
                 install(ContentNegotiation) {
                     json(
                         Json {
@@ -75,9 +78,8 @@ public class GoogleDriveService(
         Settings.googleDriveToken = null
     }
 
-    override suspend fun listFiles(): List<CloudFile> {
-        requireAuthHeader()
-        return api.listFiles().files.map {
+    override suspend fun listFiles(): List<CloudFile> = tryCall {
+        api.listFiles().files.map {
             CloudFile(
                 id = it.id,
                 name = it.name,
@@ -86,9 +88,7 @@ public class GoogleDriveService(
         }
     }
 
-    override suspend fun createFile(filename: String, content: String) {
-        requireAuthHeader()
-
+    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
         val metadata = DriveFileMetadata(
             name = filename,
             mimeType = "text/plain",
@@ -111,5 +111,23 @@ public class GoogleDriveService(
                 }
             )
         )
+    }
+
+    override suspend fun downloadFileById(id: String): String = tryCall {
+        api.downloadFile(id = id).decodeToString()
+    }
+
+    private suspend fun <T> tryCall(block: suspend () -> T): T {
+        requireAuthHeader()
+
+        try {
+            return block()
+        } catch (e: ResponseException) {
+            throw if (e.response.status == HttpStatusCode.Unauthorized) {
+                CloudServiceException.NotAuthenticatedException()
+            } else {
+                CloudServiceException.Unknown(e)
+            }
+        }
     }
 }

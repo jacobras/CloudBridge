@@ -30,6 +30,11 @@ internal interface OneDriveApi {
     @GET("v1.0/me/drive/special/approot/children")
     suspend fun listFiles(): FileResponse
 
+    @GET("v1.0/me/drive/special/approot:/{path}:/content")
+    suspend fun downloadFile(
+        @Path("path") path: String
+    ): String
+
     @PUT("v1.0/me/drive/special/approot:/{path}:/content")
     @Headers("Content-Type: text/plain")
     suspend fun uploadFile(
@@ -37,24 +42,6 @@ internal interface OneDriveApi {
         @Body content: String
     )
 }
-
-@Serializable
-internal data class TokenRequest(
-    @SerialName("client_id")
-    val clientId: String,
-
-    @SerialName("redirect_uri")
-    val redirectUri: String,
-
-    @SerialName("code")
-    val code: String,
-
-    @SerialName("grant_type")
-    val grantType: String = "authorization_code",
-
-    @SerialName("code_verifier")
-    val codeVerifier: String,
-)
 
 @Serializable
 internal data class TokenResponse(
