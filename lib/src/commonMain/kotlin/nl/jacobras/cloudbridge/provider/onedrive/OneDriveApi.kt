@@ -74,6 +74,10 @@ internal data class FileResponse(
 
 @Serializable
 internal data class FileEntry(
+
+    @SerialName("id")
+    val id: String,
+
     @SerialName("name")
     val name: String,
 
