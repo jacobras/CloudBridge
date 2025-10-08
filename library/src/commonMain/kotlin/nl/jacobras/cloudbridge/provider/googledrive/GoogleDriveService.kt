@@ -14,15 +14,14 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
-import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public class GoogleDriveService(
     private val clientId: String
@@ -66,17 +65,10 @@ public class GoogleDriveService(
         return token != null
     }
 
-    public override fun getAuthenticator(redirectUri: String): CloudAuthenticator {
-        val codeVerifier = Settings.codeVerifier ?: let {
-            val verifier = SecurityUtil.createRandomCodeVerifier()
-            Settings.codeVerifier = verifier
-            verifier
-        }
+    public override fun getAuthenticator(redirectUri: String): ImplicitAuthenticator {
         return GoogleDriveAuthenticator(
-            api = api,
             clientId = clientId,
-            redirectUri = redirectUri,
-            codeVerifier = codeVerifier
+            redirectUri = redirectUri
         )
     }
 

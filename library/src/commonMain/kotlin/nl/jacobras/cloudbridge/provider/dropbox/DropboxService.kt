@@ -11,9 +11,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -60,7 +60,7 @@ public class DropboxService(
         return Settings.dropboxToken != null
     }
 
-    public override fun getAuthenticator(redirectUri: String): CloudAuthenticator {
+    public override fun getAuthenticator(redirectUri: String): PkceAuthenticator {
         val codeVerifier = Settings.codeVerifier ?: let {
             val verifier = SecurityUtil.createRandomCodeVerifier()
             Settings.codeVerifier = verifier

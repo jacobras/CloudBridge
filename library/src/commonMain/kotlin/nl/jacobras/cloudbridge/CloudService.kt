@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge
 
+import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.DirectoryPath
 
@@ -27,16 +28,22 @@ public interface CloudService {
 
     /**
      * Lists all files and folders.
+     *
+     * @throws CloudServiceException
      */
     public suspend fun listFiles(): List<CloudItem>
 
     /**
      * Creates a folder at [path].
+     *
+     * @throws CloudServiceException
      */
     public suspend fun createFolder(path: DirectoryPath)
 
     /**
      * Creates a file with name [filename] and text content [content].
+     *
+     * @throws CloudServiceException
      */
     public suspend fun createFile(filename: String, content: String)
 
@@ -44,6 +51,8 @@ public interface CloudService {
 
         /**
          * Retrieves the file with [id].
+         *
+         * @throws CloudServiceException
          */
         public suspend fun downloadFileById(id: String): String
     }
@@ -52,6 +61,8 @@ public interface CloudService {
 
         /**
          * Retrieves the file at [path].
+         *
+         * @throws CloudServiceException
          */
         public suspend fun downloadFileByPath(path: String): String
     }

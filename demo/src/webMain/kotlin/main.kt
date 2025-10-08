@@ -26,7 +26,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.window
@@ -34,6 +33,8 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
+import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
@@ -56,7 +57,7 @@ fun main() {
         clientId = "nw5f95uw77yrz3j"
     )
     val googleDriveService = CloudBridge.googleDrive(
-        clientId = "218224394553-sgks2ok1rnh4r1i5ue4stba5dral9v1i.apps.googleusercontent.com"
+        clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com"
     )
     val oneDriveService = CloudBridge.oneDrive(
         clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
@@ -244,24 +245,33 @@ private fun CloudServiceColumn(
             }
 
             val params = URLSearchParams(window.location.search.toJsString())
-            val code = params.get("code")
+            when (authenticator) {
+                is PkceAuthenticator -> {
+                    val code = params.get("code")
+                    if (code != null) {
+                        Text("Code: $code")
 
-            if (code != null) {
-                Text("Code: $code")
-
-                Button(
-                    onClick = {
-                        scope.launch {
-                            authenticator.exchangeCodeForToken(code = code)
-                            window.location.href = window.location.origin + window.location.pathname
-                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    authenticator.exchangeCodeForToken(code = code)
+                                    window.location.href = window.location.origin + window.location.pathname
+                                }
+                            }
+                        ) { Text("Request token using code") }
                     }
-                ) { Text("Request token using code") }
+                }
+                is ImplicitAuthenticator -> {
+                    val token = window.location.getHashParam("access_token")
+                    if (token != null) {
+                        authenticator.storeToken(token)
+                        window.location.href = window.location.origin + window.location.pathname
+                    }
+                }
             }
 
-            val uriHandler = LocalUriHandler.current
             Button(
-                onClick = { uriHandler.openUri(authenticateUrl) }
+                onClick = { window.location.href = authenticateUrl }
             ) {
                 Text("Authenticate with $name")
             }
