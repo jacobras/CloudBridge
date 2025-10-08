@@ -69,5 +69,15 @@ internal data class FileEntry(
     val name: String,
 
     @SerialName("size")
-    val size: Long
+    val size: Long,
+
+    @SerialName("folder")
+    val folder: Folder? = null
+)
+
+@Serializable
+internal data class Folder(
+
+    @SerialName("childCount")
+    val childCount: Int
 )
