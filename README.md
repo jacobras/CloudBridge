@@ -40,7 +40,13 @@ This library is not yet stable. The API will change.
 
 ## 💿 Installation
 
-The library is not yet published.
+The library is published to Maven Central.
+
+```kotlin
+dependencies {
+    implementation("nl.jacobras:cloudbridge:0.0.1")
+}
+```
 
 ## 🚀 Quick Start
 
