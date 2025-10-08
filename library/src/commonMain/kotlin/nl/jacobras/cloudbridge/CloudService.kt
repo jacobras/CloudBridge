@@ -1,6 +1,6 @@
 package nl.jacobras.cloudbridge
 
-import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudItem
 
 public interface CloudService {
 
@@ -25,9 +25,9 @@ public interface CloudService {
     public fun logout()
 
     /**
-     * Lists all files.
+     * Lists all files and folders.
      */
-    public suspend fun listFiles(): List<CloudFile>
+    public suspend fun listFiles(): List<CloudItem>
 
     /**
      * Creates a file with name [filename] and text content [content].

@@ -34,6 +34,8 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.logging.Logger
+import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
@@ -158,13 +160,13 @@ private fun CloudServiceColumn(
                 modifier = Modifier.padding(vertical = 8.dp),
                 style = MaterialTheme.typography.headlineMedium
             )
-            for (file in files) {
+            for (item in files) {
                 var content by remember { mutableStateOf("") }
                 if (content.isNotEmpty()) {
                     AlertDialog(
                         onDismissRequest = { content = "" },
                         confirmButton = { Button(onClick = { content = "" }) { Text("Close") } },
-                        title = { Text(file.name) },
+                        title = { Text(item.name) },
                         text = { Text(content) }
                     )
                 }
@@ -176,24 +178,28 @@ private fun CloudServiceColumn(
                             .clickable {
                                 scope.launch {
                                     if (service is CloudService.DownloadById) {
-                                        content = service.downloadFileById(file.id)
+                                        content = service.downloadFileById(item.id)
                                     } else if (service is CloudService.DownloadByPath) {
-                                        content = service.downloadFileByPath(file.name)
+                                        content = service.downloadFileByPath(item.name)
                                     }
                                 }
                             }
                     ) {
                         Text(
-                            text = file.id,
+                            text = item.id,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        val text = when (item) {
+                            is CloudFile -> "${item.name} (${item.sizeInBytes} bytes)"
+                            is CloudFolder -> "${item.name} (Folder)"
+                        }
                         Text(
-                            text = "${file.name} (${file.sizeInBytes} bytes)",
+                            text = text,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (file != files.last()) {
+                        if (item != files.last()) {
                             HorizontalDivider(Modifier.padding(vertical = 4.dp))
                         }
                     }
