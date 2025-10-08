@@ -1,0 +1,9 @@
+bugfix: [ "bugfix/*", "fix/*", "bug/*" ]
+dependencies: "dependencies/*"
+documentation: [ "documentation/*", "docs/*" ]
+feature: "feature/*"
+improvement: [ "improvement/*", "maintenance/*" ]
+poc: "poc/*"
+release-merge: [ "release/*", "merge/*" ]
+required-for-release:
+  base: "release/*"
