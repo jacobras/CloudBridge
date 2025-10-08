@@ -10,9 +10,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -62,7 +62,7 @@ public class OneDriveService(
         return token != null
     }
 
-    public override fun getAuthenticator(redirectUri: String): CloudAuthenticator {
+    public override fun getAuthenticator(redirectUri: String): PkceAuthenticator {
         val codeVerifier = Settings.codeVerifier ?: let {
             val verifier = SecurityUtil.createRandomCodeVerifier()
             Settings.codeVerifier = verifier
