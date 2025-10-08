@@ -79,10 +79,7 @@ Now the service is ready to be used!
 ### Listing files
 
 ```kotlin
-val service = CloudBridge.dropbox.getService(
-    clientId = "yourClientId",
-    token = "the token obtained above"
-)
+val service = CloudBridge.dropbox(clientId = "yourClientId")
 
 try {
     service.listFiles()
