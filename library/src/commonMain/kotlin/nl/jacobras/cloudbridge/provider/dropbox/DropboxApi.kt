@@ -29,6 +29,10 @@ internal interface DropboxApi {
         @Body data: String = "{\"include_deleted\": false,\"include_has_explicit_shared_members\": false,\"include_media_info\": false,\"include_mounted_folders\": true,\"include_non_downloadable_files\": true,\"path\": \"\",\"recursive\": false}"
     ): FileResponse
 
+    @POST("2/files/create_folder_v2")
+    @Headers("Content-Type: application/json")
+    suspend fun createFolder(@Body content: String)
+
     @POST("https://content.dropboxapi.com/2/files/download")
     suspend fun downloadFile(
         @Header("Dropbox-API-Arg") arguments: String,
@@ -106,6 +110,12 @@ internal data class DropboxUploadArg(
 
 @Serializable
 internal data class DropboxDownloadArg(
+    @SerialName("path")
+    val path: String
+)
+
+@Serializable
+internal data class CreateFolderRequest(
     @SerialName("path")
     val path: String
 )

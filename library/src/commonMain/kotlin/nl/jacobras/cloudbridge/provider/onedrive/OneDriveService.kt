@@ -16,6 +16,7 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
@@ -48,6 +49,9 @@ public class OneDriveService(
         )
     }
     private val api = ktorfit.createOneDriveApi()
+    private val json = Json {
+        encodeDefaults = true
+    }
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -87,10 +91,18 @@ public class OneDriveService(
                 CloudFile(
                     id = it.id,
                     name = it.name,
-                    sizeInBytes = it.size
+                    sizeInBytes = it.size ?: error("Missing size for folder")
                 )
             }
         }
+    }
+
+    override suspend fun createFolder(path: DirectoryPath) {
+        api.createFolder(
+            json.encodeToString(
+                CreateFolderArg(name = path.name)
+            )
+        )
     }
 
     override suspend fun createFile(filename: String, content: String): Unit = tryCall {

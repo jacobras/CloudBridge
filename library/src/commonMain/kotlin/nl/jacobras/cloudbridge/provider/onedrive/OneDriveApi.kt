@@ -30,6 +30,10 @@ internal interface OneDriveApi {
     @GET("v1.0/me/drive/special/approot/children")
     suspend fun listFiles(): FileResponse
 
+    @POST("v1.0/me/drive/special/approot/children")
+    @Headers("Content-Type: application/json")
+    suspend fun createFolder(@Body content: String)
+
     @GET("v1.0/me/drive/special/approot:/{path}:/content")
     suspend fun downloadFile(
         @Path("path") path: String
@@ -69,10 +73,20 @@ internal data class FileEntry(
     val name: String,
 
     @SerialName("size")
-    val size: Long,
+    val size: Long? = 0,
 
     @SerialName("folder")
     val folder: Folder? = null
+)
+
+@Serializable
+internal data class CreateFolderArg(
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("folder")
+    val folder: Folder = Folder(0)
 )
 
 @Serializable

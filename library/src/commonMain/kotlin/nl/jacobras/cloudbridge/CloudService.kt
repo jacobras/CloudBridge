@@ -1,6 +1,7 @@
 package nl.jacobras.cloudbridge
 
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.DirectoryPath
 
 public interface CloudService {
 
@@ -28,6 +29,11 @@ public interface CloudService {
      * Lists all files and folders.
      */
     public suspend fun listFiles(): List<CloudItem>
+
+    /**
+     * Creates a folder at [path].
+     */
+    public suspend fun createFolder(path: DirectoryPath)
 
     /**
      * Creates a file with name [filename] and text content [content].

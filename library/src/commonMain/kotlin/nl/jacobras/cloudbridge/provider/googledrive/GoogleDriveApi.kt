@@ -34,16 +34,15 @@ internal interface GoogleDriveApi {
         @Query("pageSize") pageSize: Int = 100
     ): FileResponse
 
+    @POST("drive/v3/files")
+    suspend fun createFolder(@Body content: String)
+
     @POST("upload/drive/v3/files?uploadType=multipart")
     @Multipart
-    suspend fun uploadFile(
-        @Body map: MultiPartFormDataContent
-    )
+    suspend fun uploadFile(@Body map: MultiPartFormDataContent)
 
     @GET("drive/v3/files/{fileId}?alt=media")
-    suspend fun downloadFile(
-        @Path("fileId") id: String
-    ): ByteArray
+    suspend fun downloadFile(@Path("fileId") id: String): ByteArray
 }
 
 @Serializable
@@ -57,7 +56,6 @@ internal data class TokenResponse(
 
 @Serializable
 internal data class FileResponse(
-
     @SerialName("files")
     val files: List<DriveFile>
 )
@@ -74,9 +72,8 @@ internal data class DriveFile(
     val mimeType: String,
 
     @SerialName("size")
-    val size: String
+    val size: String? = null
 )
-
 
 @Serializable
 internal data class DriveFileMetadata(
@@ -85,6 +82,18 @@ internal data class DriveFileMetadata(
 
     @SerialName("mimeType")
     val mimeType: String,
+
+    @SerialName("parents")
+    val parents: List<String>
+)
+
+@Serializable
+internal data class CreateFolderRequest(
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("mimeType")
+    val mimeType: String = "application/vnd.google-apps.folder",
 
     @SerialName("parents")
     val parents: List<String>

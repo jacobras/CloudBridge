@@ -17,6 +17,7 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
@@ -96,6 +97,14 @@ public class DropboxService(
                 else -> error("Unsupported tag: ${it.tag}")
             }
         }
+    }
+
+    override suspend fun createFolder(path: DirectoryPath) {
+        api.createFolder(
+            Json.encodeToString(
+                CreateFolderRequest(path = "/" + path.name)
+            )
+        )
     }
 
     override suspend fun createFile(filename: String, content: String): Unit = tryCall {

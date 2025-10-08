@@ -37,6 +37,7 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.asDirectoryPath
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
@@ -66,32 +67,54 @@ fun main() {
         val scope = rememberCoroutineScope()
 
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            var filename by remember { mutableStateOf("") }
-            var content by remember { mutableStateOf("") }
+            Row {
+                Column(Modifier.weight(1f)) {
+                    var filename by remember { mutableStateOf("") }
+                    var content by remember { mutableStateOf("") }
+                    TextField(
+                        value = filename,
+                        onValueChange = { filename = it },
+                        label = { Text("Filename") }
+                    )
+                    TextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Content") }
+                    )
 
-            TextField(
-                value = filename,
-                onValueChange = { filename = it },
-                label = { Text("Filename") }
-            )
-            TextField(
-                value = content,
-                onValueChange = { content = it },
-                label = { Text("Content") }
-            )
-
-            Button(
-                onClick = {
-                    for (service in allServices.filter { it.isAuthenticated() }) {
-                        scope.launch {
-                            service.createFile(
-                                filename = filename,
-                                content = content
-                            )
+                    Button(
+                        onClick = {
+                            for (service in allServices.filter { it.isAuthenticated() }) {
+                                scope.launch {
+                                    service.createFile(
+                                        filename = filename,
+                                        content = content
+                                    )
+                                }
+                            }
                         }
-                    }
+                    ) { Text("Upload file") }
                 }
-            ) { Text("Upload file") }
+
+                Column(Modifier.weight(1f)) {
+                    var name by remember { mutableStateOf("") }
+                    TextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Folder name") }
+                    )
+
+                    Button(
+                        onClick = {
+                            for (service in allServices.filter { it.isAuthenticated() }) {
+                                scope.launch {
+                                    service.createFolder(path = name.asDirectoryPath())
+                                }
+                            }
+                        }
+                    ) { Text("Create folder") }
+                }
+            }
 
             Spacer(Modifier.height(32.dp))
 
