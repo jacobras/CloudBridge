@@ -5,7 +5,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktorfit)
     alias(libs.plugins.kotlin.serialization)
-    id("maven-publish")
+    id("com.vanniktech.maven.publish") version "0.34.0"
+    signing
 }
 
 group = "nl.jacobras"
@@ -40,6 +41,34 @@ kotlin {
     }
 }
 
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+
+    pom {
+        name.set("CloudBridge")
+        description.set("Multiple clouds, one Kotlin Multiplatform bridge")
+        url.set("https://github.com/jacobras/CloudBridge")
+
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+        developers {
+            developer {
+                id.set("jacobras")
+                name.set("Jacob Ras")
+                email.set("info@jacobras.nl")
+            }
+        }
+        scm {
+            url.set("https://github.com/jacobras/CloudBridge")
+        }
+    }
+}
+
 publishing {
     publications {
         withType<MavenPublication>().configureEach {
@@ -49,6 +78,12 @@ publishing {
                 "cloudbridge-$name"
             }
         }
+    }
+}
+
+signing {
+    setRequired {
+        !gradle.taskGraph.allTasks.any { it is PublishToMavenLocal }
     }
 }
 
