@@ -1,0 +1,5 @@
+bugfix: [ "bugfix/*", "fix/*", "bug/*" ]
+dependencies: "dependencies/*"
+documentation: [ "documentation/*", "docs/*" ]
+feature: "feature/*"
+improvement: [ "improvement/*", "maintenance/*" ]
