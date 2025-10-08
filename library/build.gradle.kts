@@ -10,7 +10,6 @@ plugins {
 }
 
 group = "nl.jacobras"
-version = "0.0.1"
 
 kotlin {
     js { browser() }
