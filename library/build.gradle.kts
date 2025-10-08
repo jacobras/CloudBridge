@@ -44,6 +44,8 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
+    coordinates("nl.jacobras", "cloudbridge")
+
     pom {
         name.set("CloudBridge")
         description.set("Multiple clouds, one Kotlin Multiplatform bridge")
@@ -64,18 +66,6 @@ mavenPublishing {
         }
         scm {
             url.set("https://github.com/jacobras/CloudBridge")
-        }
-    }
-}
-
-publishing {
-    publications {
-        withType<MavenPublication>().configureEach {
-            artifactId = if (name == "kotlinMultiplatform") {
-                "cloudbridge"
-            } else {
-                "cloudbridge-$name"
-            }
         }
     }
 }
