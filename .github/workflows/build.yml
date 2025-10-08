@@ -34,5 +34,5 @@ jobs:
         uses: mikepenz/action-junit-report@v4
         with:
           check_name: Unit test report
-          require_tests: false
+          require_tests: true
           report_paths: "**/build/test-results/**/TEST-*.xml"

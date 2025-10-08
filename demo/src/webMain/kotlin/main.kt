@@ -33,7 +33,11 @@ import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.logging.Logger
+import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.asDirectoryPath
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
@@ -63,32 +67,54 @@ fun main() {
         val scope = rememberCoroutineScope()
 
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            var filename by remember { mutableStateOf("") }
-            var content by remember { mutableStateOf("") }
+            Row {
+                Column(Modifier.weight(1f)) {
+                    var filename by remember { mutableStateOf("") }
+                    var content by remember { mutableStateOf("") }
+                    TextField(
+                        value = filename,
+                        onValueChange = { filename = it },
+                        label = { Text("Filename") }
+                    )
+                    TextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Content") }
+                    )
 
-            TextField(
-                value = filename,
-                onValueChange = { filename = it },
-                label = { Text("Filename") }
-            )
-            TextField(
-                value = content,
-                onValueChange = { content = it },
-                label = { Text("Content") }
-            )
-
-            Button(
-                onClick = {
-                    for (service in allServices.filter { it.isAuthenticated() }) {
-                        scope.launch {
-                            service.createFile(
-                                filename = filename,
-                                content = content
-                            )
+                    Button(
+                        onClick = {
+                            for (service in allServices.filter { it.isAuthenticated() }) {
+                                scope.launch {
+                                    service.createFile(
+                                        filename = filename,
+                                        content = content
+                                    )
+                                }
+                            }
                         }
-                    }
+                    ) { Text("Upload file") }
                 }
-            ) { Text("Upload file") }
+
+                Column(Modifier.weight(1f)) {
+                    var name by remember { mutableStateOf("") }
+                    TextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Folder name") }
+                    )
+
+                    Button(
+                        onClick = {
+                            for (service in allServices.filter { it.isAuthenticated() }) {
+                                scope.launch {
+                                    service.createFolder(path = name.asDirectoryPath())
+                                }
+                            }
+                        }
+                    ) { Text("Create folder") }
+                }
+            }
 
             Spacer(Modifier.height(32.dp))
 
@@ -158,13 +184,13 @@ private fun CloudServiceColumn(
                 modifier = Modifier.padding(vertical = 8.dp),
                 style = MaterialTheme.typography.headlineMedium
             )
-            for (file in files) {
+            for (item in files) {
                 var content by remember { mutableStateOf("") }
                 if (content.isNotEmpty()) {
                     AlertDialog(
                         onDismissRequest = { content = "" },
                         confirmButton = { Button(onClick = { content = "" }) { Text("Close") } },
-                        title = { Text(file.name) },
+                        title = { Text(item.name) },
                         text = { Text(content) }
                     )
                 }
@@ -175,25 +201,33 @@ private fun CloudServiceColumn(
                             .fillMaxWidth()
                             .clickable {
                                 scope.launch {
-                                    if (service is CloudService.DownloadById) {
-                                        content = service.downloadFileById(file.id)
-                                    } else if (service is CloudService.DownloadByPath) {
-                                        content = service.downloadFileByPath(file.name)
+                                    try {
+                                        if (service is CloudService.DownloadById) {
+                                            content = service.downloadFileById(item.id)
+                                        } else if (service is CloudService.DownloadByPath) {
+                                            content = service.downloadFileByPath(item.name)
+                                        }
+                                    } catch (e: CloudServiceException) {
+                                        content = e.message.toString()
                                     }
                                 }
                             }
                     ) {
                         Text(
-                            text = file.id,
+                            text = item.id,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        val text = when (item) {
+                            is CloudFile -> "${item.name} (${item.sizeInBytes} bytes)"
+                            is CloudFolder -> "${item.name} (Folder)"
+                        }
                         Text(
-                            text = "${file.name} (${file.sizeInBytes} bytes)",
+                            text = text,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (file != files.last()) {
+                        if (item != files.last()) {
                             HorizontalDivider(Modifier.padding(vertical = 4.dp))
                         }
                     }

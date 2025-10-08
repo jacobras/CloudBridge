@@ -18,6 +18,9 @@ import nl.jacobras.cloudbridge.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
@@ -50,6 +53,9 @@ public class GoogleDriveService(
         )
     }
     private val api = ktorfit.createGoogleDriveApi()
+    private val json = Json {
+        encodeDefaults = true
+    }
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -78,14 +84,32 @@ public class GoogleDriveService(
         Settings.googleDriveToken = null
     }
 
-    override suspend fun listFiles(): List<CloudFile> = tryCall {
+    override suspend fun listFiles(): List<CloudItem> = tryCall {
         api.listFiles().files.map {
-            CloudFile(
-                id = it.id,
-                name = it.name,
-                sizeInBytes = it.size.toLongOrNull() ?: 0L
-            )
+            if (it.mimeType == "application/vnd.google-apps.folder") {
+                CloudFolder(
+                    id = it.id,
+                    name = it.name
+                )
+            } else {
+                CloudFile(
+                    id = it.id,
+                    name = it.name,
+                    sizeInBytes = it.size?.toLongOrNull() ?: 0L
+                )
+            }
         }
+    }
+
+    override suspend fun createFolder(path: DirectoryPath) {
+        api.createFolder(
+            json.encodeToString(
+                CreateFolderRequest(
+                    name = path.name,
+                    parents = listOf("appDataFolder")
+                )
+            )
+        )
     }
 
     override suspend fun createFile(filename: String, content: String): Unit = tryCall {
