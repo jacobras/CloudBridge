@@ -1,7 +1,7 @@
 package nl.jacobras.cloudbridge.provider.onedrive
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
-import nl.jacobras.cloudbridge.CloudAuthenticator
+import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.persistence.Settings
 
 internal class OneDriveAuthenticator(
@@ -9,7 +9,7 @@ internal class OneDriveAuthenticator(
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
-) : CloudAuthenticator(codeVerifier = codeVerifier) {
+) : PkceAuthenticator(codeVerifier = codeVerifier) {
 
     override fun buildUri(): String {
         val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)

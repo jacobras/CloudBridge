@@ -11,7 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudAuthenticator
+import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
