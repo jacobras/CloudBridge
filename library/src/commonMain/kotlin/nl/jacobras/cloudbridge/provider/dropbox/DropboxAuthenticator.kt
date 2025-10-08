@@ -1,7 +1,7 @@
 package nl.jacobras.cloudbridge.provider.dropbox
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
-import nl.jacobras.cloudbridge.CloudAuthenticator
+import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.persistence.Settings
 
 internal class DropboxAuthenticator(
@@ -9,7 +9,7 @@ internal class DropboxAuthenticator(
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
-) : CloudAuthenticator(codeVerifier = codeVerifier) {
+) : PkceAuthenticator(codeVerifier) {
 
     override fun buildUri(): String {
         val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)

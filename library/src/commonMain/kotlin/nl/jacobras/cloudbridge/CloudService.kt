@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge
 
+import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.DirectoryPath
 

@@ -34,6 +34,8 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 * Create folder
 * Download/upload file
 
+See [Compatibility.MD](docs/Compatibility.md) for details.
+
 ## ⚠️ Under construction
 
 This library is not yet stable. The API will change.
