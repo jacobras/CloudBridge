@@ -33,6 +33,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
@@ -177,10 +178,14 @@ private fun CloudServiceColumn(
                             .fillMaxWidth()
                             .clickable {
                                 scope.launch {
-                                    if (service is CloudService.DownloadById) {
-                                        content = service.downloadFileById(item.id)
-                                    } else if (service is CloudService.DownloadByPath) {
-                                        content = service.downloadFileByPath(item.name)
+                                    try {
+                                        if (service is CloudService.DownloadById) {
+                                            content = service.downloadFileById(item.id)
+                                        } else if (service is CloudService.DownloadByPath) {
+                                            content = service.downloadFileByPath(item.name)
+                                        }
+                                    } catch (e: CloudServiceException) {
+                                        content = e.message.toString()
                                     }
                                 }
                             }
