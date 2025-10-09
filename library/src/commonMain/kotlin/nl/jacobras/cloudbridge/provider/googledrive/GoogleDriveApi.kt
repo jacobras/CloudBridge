@@ -1,13 +1,6 @@
 package nl.jacobras.cloudbridge.provider.googledrive
 
-import de.jensklingenberg.ktorfit.http.Body
-import de.jensklingenberg.ktorfit.http.Field
-import de.jensklingenberg.ktorfit.http.FormUrlEncoded
-import de.jensklingenberg.ktorfit.http.GET
-import de.jensklingenberg.ktorfit.http.Multipart
-import de.jensklingenberg.ktorfit.http.POST
-import de.jensklingenberg.ktorfit.http.Path
-import de.jensklingenberg.ktorfit.http.Query
+import de.jensklingenberg.ktorfit.http.*
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -30,7 +23,7 @@ internal interface GoogleDriveApi {
     @GET("drive/v3/files")
     suspend fun listFiles(
         @Query("spaces") spaces: String = "appDataFolder",
-        @Query("fields") fields: String = "files(id,name,mimeType,size)",
+        @Query("fields") fields: String = "files(id,name,mimeType,size,modifiedTime)",
         @Query("pageSize") pageSize: Int = 100
     ): FileResponse
 
@@ -72,7 +65,10 @@ internal data class DriveFile(
     val mimeType: String,
 
     @SerialName("size")
-    val size: String? = null
+    val size: String? = null,
+
+    @SerialName("modifiedTime")
+    val modified: String
 )
 
 @Serializable

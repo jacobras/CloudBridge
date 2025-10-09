@@ -19,6 +19,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
+import kotlin.time.Instant
 
 public class OneDriveService(
     private val clientId: String
@@ -91,7 +92,8 @@ public class OneDriveService(
                 CloudFile(
                     id = it.id,
                     name = it.name,
-                    sizeInBytes = it.size ?: error("Missing size for folder")
+                    sizeInBytes = it.size ?: error("Missing size for folder"),
+                    modified = Instant.parse(it.lastModified)
                 )
             }
         }

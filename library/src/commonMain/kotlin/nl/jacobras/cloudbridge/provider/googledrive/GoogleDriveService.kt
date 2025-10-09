@@ -22,6 +22,7 @@ import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
+import kotlin.time.Instant
 
 public class GoogleDriveService(
     private val clientId: String
@@ -87,7 +88,8 @@ public class GoogleDriveService(
                 CloudFile(
                     id = it.id,
                     name = it.name,
-                    sizeInBytes = it.size?.toLongOrNull() ?: 0L
+                    sizeInBytes = it.size?.toLongOrNull() ?: 0L,
+                    modified = Instant.parse(it.modified)
                 )
             }
         }

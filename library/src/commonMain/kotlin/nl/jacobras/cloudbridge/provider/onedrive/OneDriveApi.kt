@@ -1,13 +1,6 @@
 package nl.jacobras.cloudbridge.provider.onedrive
 
-import de.jensklingenberg.ktorfit.http.Body
-import de.jensklingenberg.ktorfit.http.Field
-import de.jensklingenberg.ktorfit.http.FormUrlEncoded
-import de.jensklingenberg.ktorfit.http.GET
-import de.jensklingenberg.ktorfit.http.Headers
-import de.jensklingenberg.ktorfit.http.POST
-import de.jensklingenberg.ktorfit.http.PUT
-import de.jensklingenberg.ktorfit.http.Path
+import de.jensklingenberg.ktorfit.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -74,6 +67,9 @@ internal data class FileEntry(
 
     @SerialName("size")
     val size: Long? = 0,
+
+    @SerialName("lastModifiedDateTime")
+    val lastModified: String,
 
     @SerialName("folder")
     val folder: Folder? = null
