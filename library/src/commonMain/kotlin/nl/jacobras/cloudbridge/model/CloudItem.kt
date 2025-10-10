@@ -9,7 +9,7 @@ package nl.jacobras.cloudbridge.model
  * @param name The name of the item (filename and extension in case of file).
  */
 public sealed interface CloudItem {
-    public val id: String
+    public val id: Id
     public val path: Path
     public val name: String
 }

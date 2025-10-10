@@ -78,13 +78,13 @@ public class GoogleDriveService(
         api.listFiles().files.map {
             if (it.mimeType == "application/vnd.google-apps.folder") {
                 CloudFolder(
-                    id = it.id,
+                    id = Id(it.id),
                     path = it.parents.first().asFolderPath(),
                     name = it.name
                 )
             } else {
                 CloudFile(
-                    id = it.id,
+                    id = Id(it.id),
                     name = it.name,
                     path = "${it.parents.first()}/${it.name}".asFilePath(),
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
@@ -130,12 +130,12 @@ public class GoogleDriveService(
         )
     }
 
-    override suspend fun downloadFileById(id: String): String = tryCall {
-        api.downloadFile(id = id).decodeToString()
+    override suspend fun downloadFile(id: Id): String = tryCall {
+        api.downloadFile(id = id.value).decodeToString()
     }
 
-    override suspend fun deleteById(id: String): Unit = tryCall {
-        api.deleteById(id)
+    override suspend fun delete(id: Id): Unit = tryCall {
+        api.deleteById(id.value)
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

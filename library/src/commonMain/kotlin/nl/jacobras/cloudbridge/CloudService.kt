@@ -3,6 +3,7 @@ package nl.jacobras.cloudbridge
 import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
 
 public interface CloudService {
 
@@ -52,7 +53,7 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun downloadFileById(id: String): String
+    public suspend fun downloadFile(id: Id): String
 
 
     /**
@@ -60,5 +61,5 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun deleteById(id: String)
+    public suspend fun delete(id: Id)
 }

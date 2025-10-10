@@ -3,7 +3,13 @@ package nl.jacobras.cloudbridge.model
 import nl.jacobras.cloudbridge.util.ensurePrefix
 import kotlin.jvm.JvmInline
 
-public interface Path {
+/**
+ * Represents a file/folder path.
+ *
+ * @see FilePath
+ * @see FolderPath
+ */
+public sealed interface Path {
     public fun toFolderPath(): FolderPath
 }
 

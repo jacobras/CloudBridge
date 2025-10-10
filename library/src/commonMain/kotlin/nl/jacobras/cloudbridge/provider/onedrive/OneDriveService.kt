@@ -82,13 +82,13 @@ public class OneDriveService(
         api.listFiles().files.map {
             if (it.folder != null) {
                 CloudFolder(
-                    id = it.id,
+                    id = Id(it.id),
                     path = it.parent.path.asFolderPath(),
                     name = it.name,
                 )
             } else {
                 CloudFile(
-                    id = it.id,
+                    id = Id(it.id),
                     path = "${it.parent.path}/${it.name}".asFilePath(),
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
@@ -113,12 +113,12 @@ public class OneDriveService(
         )
     }
 
-    override suspend fun downloadFileById(id: String): String = tryCall {
-        api.downloadFileById(id)
+    override suspend fun downloadFile(id: Id): String = tryCall {
+        api.downloadFileById(id.value)
     }
 
-    override suspend fun deleteById(id: String): Unit = tryCall {
-        api.deleteById(id)
+    override suspend fun delete(id: Id): Unit = tryCall {
+        api.deleteById(id.value)
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

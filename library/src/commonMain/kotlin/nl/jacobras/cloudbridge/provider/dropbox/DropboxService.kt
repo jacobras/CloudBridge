@@ -81,7 +81,7 @@ public class DropboxService(
             when (it.tag) {
                 "file" -> {
                     CloudFile(
-                        id = it.id,
+                        id = Id(it.id),
                         path = it.pathLower.asFilePath(),
                         name = it.name,
                         sizeInBytes = it.size ?: error("Missing size for file"),
@@ -90,7 +90,7 @@ public class DropboxService(
                 }
                 "folder" -> {
                     CloudFolder(
-                        id = it.id,
+                        id = Id(it.id),
                         path = it.pathLower.asFolderPath(),
                         name = it.name
                     )
@@ -115,14 +115,14 @@ public class DropboxService(
         )
     }
 
-    override suspend fun downloadFileById(id: String): String = tryCall {
+    override suspend fun downloadFile(id: Id): String = tryCall {
         api.downloadFile(
-            arguments = Json.encodeToString(DropboxDownloadArg(path = id))
+            arguments = Json.encodeToString(DropboxDownloadArg(path = id.value))
         )
     }
 
-    override suspend fun deleteById(id: String): Unit = tryCall {
-        api.deleteByPath(DeleteRequest(path = id))
+    override suspend fun delete(id: Id): Unit = tryCall {
+        api.deleteByPath(DeleteRequest(path = id.value))
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

@@ -13,7 +13,7 @@ import kotlin.time.Instant
  * @param modified Last time the file was modified.
  */
 public data class CloudFile(
-    override val id: String,
+    override val id: Id,
     override val path: FilePath,
     override val name: String,
     val sizeInBytes: Long,

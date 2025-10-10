@@ -178,7 +178,7 @@ private fun CloudServiceColumn(
                             Button(onClick = {
                                 scope.launch {
                                     try {
-                                        service.deleteById(item.id)
+                                        service.delete(item.id)
                                         content = ""
                                     } catch (e: CloudServiceException) {
                                         Logger.e(e) { "Failed to delete ${item.name}" }
@@ -199,7 +199,7 @@ private fun CloudServiceColumn(
                             .clickable {
                                 scope.launch {
                                     content = try {
-                                        service.downloadFileById(item.id)
+                                        service.downloadFile(item.id)
                                     } catch (e: CloudServiceException) {
                                         e.message.toString()
                                     }
