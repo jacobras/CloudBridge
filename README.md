@@ -17,7 +17,7 @@ web, but desktop and Android support are planned.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 
-## ☁️ Cloud Providers
+## ☁️ Cloud Services
 
 |                        | Mobile<br>(Android) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|------------------|------------------|
@@ -28,13 +28,15 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 ✅ = Supported.<br>
 ⏳ = Planned.
 
+See [Compatibility.md](docs/Compatibility.md) for important remarks about each service.
+
 ## 💾 Supported operations
 
 * List folder content
 * Create folder
 * Download/upload file
 
-See [Compatibility.MD](docs/Compatibility.md) for details.
+See [Compatibility.md](docs/Compatibility.md) for details.
 
 ## ⚠️ Under construction
 
