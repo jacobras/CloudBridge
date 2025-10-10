@@ -14,10 +14,7 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
-import nl.jacobras.cloudbridge.model.CloudFile
-import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.*
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
@@ -85,19 +82,19 @@ public class DropboxService(
                 "file" -> {
                     CloudFile(
                         id = it.id,
+                        path = it.pathLower.asFilePath(),
                         name = it.name,
                         sizeInBytes = it.size ?: error("Missing size for file"),
                         modified = Instant.parse(it.clientModified ?: error("Missing modified time for file"))
                     )
                 }
-
                 "folder" -> {
                     CloudFolder(
                         id = it.id,
+                        path = it.pathLower.asFolderPath(),
                         name = it.name
                     )
                 }
-
                 else -> error("Unsupported tag: ${it.tag}")
             }
         }

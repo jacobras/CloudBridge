@@ -199,7 +199,7 @@ private fun CloudServiceColumn(
                             }
                     ) {
                         Text(
-                            text = item.id,
+                            text = item.path.toFolderPath().toString(),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_put_content
+ * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/resources/driveitem
  */
 internal interface OneDriveApi {
 
@@ -53,17 +53,20 @@ internal data class TokenResponse(
 internal data class FileResponse(
 
     @SerialName("value")
-    val files: List<FileEntry>
+    val files: List<DriveItem>
 )
 
 @Serializable
-internal data class FileEntry(
+internal data class DriveItem(
 
     @SerialName("id")
     val id: String,
 
     @SerialName("name")
     val name: String,
+
+    @SerialName("parentReference")
+    val parent: ParentReference,
 
     @SerialName("size")
     val size: Long? = 0,
@@ -73,6 +76,13 @@ internal data class FileEntry(
 
     @SerialName("folder")
     val folder: Folder? = null
+)
+
+@Serializable
+internal data class ParentReference(
+
+    @SerialName("path")
+    val path: String
 )
 
 @Serializable

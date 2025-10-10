@@ -6,8 +6,8 @@ import kotlin.time.Instant
  * Represents a file in the cloud.
  *
  * @param id Unique identifier of the file.
- * @param path The path of the item, including [name].
- * Beware of specific behaviour with Google Drive, see docs!
+ * @param path The path of the item, including [name]. Note: for Google Drive specifically,
+ * this contains IDs as parents. Please see library documentation.
  * @param name Name of the file, including extension.
  * @param sizeInBytes Size of the file in bytes.
  * @param modified Last time the file was modified.

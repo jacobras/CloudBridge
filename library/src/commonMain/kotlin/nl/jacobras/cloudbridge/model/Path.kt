@@ -3,7 +3,9 @@ package nl.jacobras.cloudbridge.model
 import nl.jacobras.cloudbridge.util.ensurePrefix
 import kotlin.jvm.JvmInline
 
-public interface Path
+public interface Path {
+    public fun toFolderPath(): FolderPath
+}
 
 /**
  * A file, always starting with a slash.
@@ -38,9 +40,11 @@ public value class FilePath(internal val value: String) : Path {
      * Returns the folder this file is in.
      * Example value: for "/Folder/Nested/file.txt" this returns "/Folder/Nested".
      */
-    public fun toFolderPath(): FolderPath {
+    public override fun toFolderPath(): FolderPath {
         return value.substringBeforeLast('/').asFolderPath()
     }
+
+    override fun toString(): String = value
 }
 
 public fun String.asFilePath(): FilePath {
@@ -101,6 +105,14 @@ public value class FolderPath(internal val value: String) : Path {
         require(value.startsWith('/')) { "Folder path '$value' should start with a /" }
         require(value.length == 1 || !value.endsWith('/')) { "Folder path '$value' should not end with a /" }
     }
+
+    /**
+     * Returns the folder this file is in.
+     * Example value: for "/Folder/Nested/file.txt" this returns "/Folder/Nested".
+     */
+    public override fun toFolderPath(): FolderPath = this
+
+    override fun toString(): String = value
 }
 
 public fun String.asFolderPath(): FolderPath {

@@ -13,10 +13,7 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
-import nl.jacobras.cloudbridge.model.CloudFile
-import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.*
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
@@ -86,11 +83,13 @@ public class OneDriveService(
             if (it.folder != null) {
                 CloudFolder(
                     id = it.id,
+                    path = it.parent.path.asFolderPath(),
                     name = it.name,
                 )
             } else {
                 CloudFile(
                     id = it.id,
+                    path = "${it.parent.path}/${it.name}".asFilePath(),
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
                     modified = Instant.parse(it.lastModified)

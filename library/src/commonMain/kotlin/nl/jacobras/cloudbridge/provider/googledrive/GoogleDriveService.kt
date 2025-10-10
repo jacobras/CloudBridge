@@ -17,10 +17,7 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
-import nl.jacobras.cloudbridge.model.CloudFile
-import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.*
 import nl.jacobras.cloudbridge.persistence.Settings
 import kotlin.time.Instant
 
@@ -82,12 +79,14 @@ public class GoogleDriveService(
             if (it.mimeType == "application/vnd.google-apps.folder") {
                 CloudFolder(
                     id = it.id,
+                    path = it.parents.first().asFolderPath(),
                     name = it.name
                 )
             } else {
                 CloudFile(
                     id = it.id,
                     name = it.name,
+                    path = "${it.parents.first()}/${it.name}".asFilePath(),
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
                     modified = Instant.parse(it.modified)
                 )
