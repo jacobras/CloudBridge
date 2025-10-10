@@ -38,6 +38,10 @@ kotlin {
             implementation(libs.assertK)
         }
     }
+
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
 }
 
 mavenPublishing {

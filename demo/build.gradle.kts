@@ -23,10 +23,15 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(libs.humanReadable)
             implementation(libs.kermit)
             implementation(libs.kotlinx.browser)
 
             implementation(projects.library)
         }
+    }
+
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
     }
 }

@@ -20,6 +20,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.DirectoryPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
+import kotlin.time.Instant
 
 public class DropboxService(
     private val clientId: String
@@ -85,15 +86,18 @@ public class DropboxService(
                     CloudFile(
                         id = it.id,
                         name = it.name,
-                        sizeInBytes = it.size ?: error("Missing size for file")
+                        sizeInBytes = it.size ?: error("Missing size for file"),
+                        modified = Instant.parse(it.clientModified ?: error("Missing modified time for file"))
                     )
                 }
+
                 "folder" -> {
                     CloudFolder(
                         id = it.id,
                         name = it.name
                     )
                 }
+
                 else -> error("Unsupported tag: ${it.tag}")
             }
         }

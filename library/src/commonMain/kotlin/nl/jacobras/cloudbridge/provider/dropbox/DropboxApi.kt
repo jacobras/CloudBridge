@@ -1,10 +1,6 @@
 package nl.jacobras.cloudbridge.provider.dropbox
 
-import de.jensklingenberg.ktorfit.http.Body
-import de.jensklingenberg.ktorfit.http.Header
-import de.jensklingenberg.ktorfit.http.Headers
-import de.jensklingenberg.ktorfit.http.POST
-import de.jensklingenberg.ktorfit.http.Query
+import de.jensklingenberg.ktorfit.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -90,7 +86,10 @@ internal data class FileEntry(
     val pathDisplay: String,
 
     @SerialName("size")
-    val size: Long? = null
+    val size: Long? = null,
+
+    @SerialName("client_modified")
+    val clientModified: String? = null
 )
 
 @Serializable
