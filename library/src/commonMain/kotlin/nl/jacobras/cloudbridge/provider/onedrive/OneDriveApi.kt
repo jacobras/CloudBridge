@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/resources/driveitem
+ *
+ * Note: paths must be surrounded by a :double colon: in the request URL.
  */
 internal interface OneDriveApi {
 
@@ -28,8 +30,13 @@ internal interface OneDriveApi {
     suspend fun createFolder(@Body content: String)
 
     @GET("v1.0/me/drive/special/approot:/{path}:/content")
-    suspend fun downloadFile(
+    suspend fun downloadFileByPath(
         @Path("path") path: String
+    ): String
+
+    @GET("v1.0/me/drive/items/{itemId}/content")
+    suspend fun downloadFileById(
+        @Path("itemId") id: String
     ): String
 
     @PUT("v1.0/me/drive/special/approot:/{path}:/content")
@@ -37,6 +44,16 @@ internal interface OneDriveApi {
     suspend fun uploadFile(
         @Path("path") path: String,
         @Body content: String
+    )
+
+    @DELETE("v1.0/me/drive/special/approot:/{path}")
+    suspend fun delete(
+        @Path("path", encoded = true) path: String
+    )
+
+    @DELETE("v1.0/me/drive/items/{itemId}")
+    suspend fun deleteById(
+        @Path("itemId") id: String
     )
 }
 

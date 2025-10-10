@@ -47,23 +47,18 @@ public interface CloudService {
      */
     public suspend fun createFile(filename: String, content: String)
 
-    public interface DownloadById {
+    /**
+     * Retrieves the file with [id].
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun downloadFileById(id: String): String
 
-        /**
-         * Retrieves the file with [id].
-         *
-         * @throws CloudServiceException
-         */
-        public suspend fun downloadFileById(id: String): String
-    }
 
-    public interface DownloadByPath {
-
-        /**
-         * Retrieves the file at [path].
-         *
-         * @throws CloudServiceException
-         */
-        public suspend fun downloadFileByPath(path: String): String
-    }
+    /**
+     * Deletes the file/folder with [id].
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun deleteById(id: String)
 }

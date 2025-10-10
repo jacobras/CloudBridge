@@ -20,7 +20,7 @@ import kotlin.time.Instant
 
 public class OneDriveService(
     private val clientId: String
-) : CloudService, CloudService.DownloadByPath {
+) : CloudService {
 
     private val token: String?
         get() = Settings.oneDriveToken
@@ -98,7 +98,7 @@ public class OneDriveService(
         }
     }
 
-    override suspend fun createFolder(path: FolderPath) {
+    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
         api.createFolder(
             json.encodeToString(
                 CreateFolderArg(name = path.name)
@@ -113,8 +113,12 @@ public class OneDriveService(
         )
     }
 
-    override suspend fun downloadFileByPath(path: String): String = tryCall {
-        api.downloadFile(path = path)
+    override suspend fun downloadFileById(id: String): String = tryCall {
+        api.downloadFileById(id)
+    }
+
+    override suspend fun deleteById(id: String): Unit = tryCall {
+        api.deleteById(id)
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

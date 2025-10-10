@@ -92,6 +92,17 @@ try {
 }
 ```
 
+## 📐 Design decisions
+
+* The library only supports limited/private app folders, no full access.
+* The library prefers to work with IDs over paths.
+* Only one account per service is supported as of now.
+* `id` and `path` variables are typed as much as possible, to prevent
+  accidental mix-ups.
+
+Feel free to open an issue if you have a different use case for any
+of these.
+
 ## 🔗 Underlying dependencies
 
 Next to [Kotlin Multiplatform](https://www.jetbrains.com/kotlin-multiplatform/), this library uses:

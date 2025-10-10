@@ -36,6 +36,9 @@ internal interface GoogleDriveApi {
 
     @GET("drive/v3/files/{fileId}?alt=media")
     suspend fun downloadFile(@Path("fileId") id: String): ByteArray
+
+    @DELETE("drive/v3/files/{fileId}")
+    suspend fun deleteById(@Path("fileId") fileId: String)
 }
 
 @Serializable

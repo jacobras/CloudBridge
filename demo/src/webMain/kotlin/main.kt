@@ -11,6 +11,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeViewport
+import co.touchlab.kermit.Logger
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
@@ -18,7 +19,6 @@ import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
-import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -27,9 +27,9 @@ import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
 
-private class KermitLogger : Logger {
+private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
     override fun log(message: String) {
-        co.touchlab.kermit.Logger.d(message)
+        Logger.d(message)
     }
 }
 
@@ -174,7 +174,19 @@ private fun CloudServiceColumn(
                 if (content.isNotEmpty()) {
                     AlertDialog(
                         onDismissRequest = { content = "" },
-                        confirmButton = { Button(onClick = { content = "" }) { Text("Close") } },
+                        confirmButton = {
+                            Button(onClick = {
+                                scope.launch {
+                                    try {
+                                        service.deleteById(item.id)
+                                        content = ""
+                                    } catch (e: CloudServiceException) {
+                                        Logger.e(e) { "Failed to delete ${item.name}" }
+                                    }
+                                }
+                            }) { Text("Delete") }
+                        },
+                        dismissButton = { Button(onClick = { content = "" }) { Text("Close") } },
                         title = { Text(item.name) },
                         text = { Text(content) }
                     )
@@ -186,14 +198,10 @@ private fun CloudServiceColumn(
                             .fillMaxWidth()
                             .clickable {
                                 scope.launch {
-                                    try {
-                                        if (service is CloudService.DownloadById) {
-                                            content = service.downloadFileById(item.id)
-                                        } else if (service is CloudService.DownloadByPath) {
-                                            content = service.downloadFileByPath(item.name)
-                                        }
+                                    content = try {
+                                        service.downloadFileById(item.id)
                                     } catch (e: CloudServiceException) {
-                                        content = e.message.toString()
+                                        e.message.toString()
                                     }
                                 }
                             }

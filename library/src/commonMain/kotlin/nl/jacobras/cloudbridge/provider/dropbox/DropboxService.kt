@@ -21,7 +21,7 @@ import kotlin.time.Instant
 
 public class DropboxService(
     private val clientId: String
-) : CloudService, CloudService.DownloadById {
+) : CloudService {
 
     private val token: String?
         get() = Settings.dropboxToken
@@ -100,7 +100,7 @@ public class DropboxService(
         }
     }
 
-    override suspend fun createFolder(path: FolderPath) {
+    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
         api.createFolder(
             Json.encodeToString(
                 CreateFolderRequest(path = "/" + path.name)
@@ -119,6 +119,10 @@ public class DropboxService(
         api.downloadFile(
             arguments = Json.encodeToString(DropboxDownloadArg(path = id))
         )
+    }
+
+    override suspend fun deleteById(id: String): Unit = tryCall {
+        api.deleteByPath(DeleteRequest(path = id))
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

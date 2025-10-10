@@ -23,7 +23,7 @@ import kotlin.time.Instant
 
 public class GoogleDriveService(
     private val clientId: String
-) : CloudService, CloudService.DownloadById {
+) : CloudService {
 
     private val token: String?
         get() = Settings.googleDriveToken
@@ -94,7 +94,7 @@ public class GoogleDriveService(
         }
     }
 
-    override suspend fun createFolder(path: FolderPath) {
+    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
         api.createFolder(
             json.encodeToString(
                 CreateFolderRequest(
@@ -132,6 +132,10 @@ public class GoogleDriveService(
 
     override suspend fun downloadFileById(id: String): String = tryCall {
         api.downloadFile(id = id).decodeToString()
+    }
+
+    override suspend fun deleteById(id: String): Unit = tryCall {
+        api.deleteById(id)
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

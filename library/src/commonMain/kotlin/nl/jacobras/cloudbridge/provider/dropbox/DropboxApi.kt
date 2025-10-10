@@ -40,6 +40,11 @@ internal interface DropboxApi {
         @Header("Dropbox-API-Arg") arguments: String,
         @Body content: ByteArray
     ): String
+
+    @POST("2/files/delete_v2")
+    @Headers("Content-Type: application/json")
+    suspend fun deleteByPath(@Body body: DeleteRequest)
+
 }
 
 @Serializable
@@ -115,6 +120,12 @@ internal data class DropboxDownloadArg(
 
 @Serializable
 internal data class CreateFolderRequest(
+    @SerialName("path")
+    val path: String
+)
+
+@Serializable
+internal data class DeleteRequest(
     @SerialName("path")
     val path: String
 )
