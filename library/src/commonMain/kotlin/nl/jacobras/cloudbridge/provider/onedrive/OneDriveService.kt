@@ -16,7 +16,7 @@ import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.DirectoryPath
+import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
@@ -99,7 +99,7 @@ public class OneDriveService(
         }
     }
 
-    override suspend fun createFolder(path: DirectoryPath) {
+    override suspend fun createFolder(path: FolderPath) {
         api.createFolder(
             json.encodeToString(
                 CreateFolderArg(name = path.name)

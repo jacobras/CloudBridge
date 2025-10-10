@@ -12,7 +12,7 @@ class PathsTest {
     fun files() {
         assertThat("file.txt".asFilePath().value).isEqualTo("/file.txt")
         assertThat("folder/file.txt".asFilePath().value).isEqualTo("/folder/file.txt")
-        assertThat("folder/file.txt".asFilePath().toDirectoryPath().value).isEqualTo("/folder")
+        assertThat("folder/file.txt".asFilePath().toFolderPath().value).isEqualTo("/folder")
     }
 
     @Test
@@ -22,45 +22,45 @@ class PathsTest {
     }
 
     @Test
-    fun directories() {
-        assertThat("".asDirectoryPath().value).isEqualTo("/")
-        assertThat("/".asDirectoryPath().value).isEqualTo("/")
-        assertThat("/myDir/".asDirectoryPath().value).isEqualTo("/myDir")
-        assertThat("/myDir".asDirectoryPath().value).isEqualTo("/myDir")
-        assertThat("myDir/".asDirectoryPath().value).isEqualTo("/myDir")
+    fun folders() {
+        assertThat("".asFolderPath().value).isEqualTo("/")
+        assertThat("/".asFolderPath().value).isEqualTo("/")
+        assertThat("/myDir/".asFolderPath().value).isEqualTo("/myDir")
+        assertThat("/myDir".asFolderPath().value).isEqualTo("/myDir")
+        assertThat("myDir/".asFolderPath().value).isEqualTo("/myDir")
     }
 
     @Test
-    fun directoryLevelCount() {
-        assertThat("".asDirectoryPath().levelCount).isEqualTo(0)
-        assertThat("/".asDirectoryPath().levelCount).isEqualTo(0)
-        assertThat("/myDir/".asDirectoryPath().levelCount).isEqualTo(1)
-        assertThat("/myDir".asDirectoryPath().levelCount).isEqualTo(1)
-        assertThat("/A/B".asDirectoryPath().levelCount).isEqualTo(2)
+    fun folderLevelCount() {
+        assertThat("".asFolderPath().levelCount).isEqualTo(0)
+        assertThat("/".asFolderPath().levelCount).isEqualTo(0)
+        assertThat("/myDir/".asFolderPath().levelCount).isEqualTo(1)
+        assertThat("/myDir".asFolderPath().levelCount).isEqualTo(1)
+        assertThat("/A/B".asFolderPath().levelCount).isEqualTo(2)
     }
 
     @Test
-    fun directoryParent() {
-        assertThat("".asDirectoryPath().parent.value).isEqualTo("/")
-        assertThat("/".asDirectoryPath().parent.value).isEqualTo("/")
-        assertThat("/myDir/".asDirectoryPath().parent.value).isEqualTo("/")
-        assertThat("/myDir".asDirectoryPath().parent.value).isEqualTo("/")
-        assertThat("/A/B".asDirectoryPath().parent.value).isEqualTo("/A")
+    fun folderParent() {
+        assertThat("".asFolderPath().parent.value).isEqualTo("/")
+        assertThat("/".asFolderPath().parent.value).isEqualTo("/")
+        assertThat("/myDir/".asFolderPath().parent.value).isEqualTo("/")
+        assertThat("/myDir".asFolderPath().parent.value).isEqualTo("/")
+        assertThat("/A/B".asFolderPath().parent.value).isEqualTo("/A")
     }
 
     @Test
-    fun directoryName() {
-        assertThat("".asDirectoryPath().name).isEqualTo("")
-        assertThat("/".asDirectoryPath().name).isEqualTo("")
-        assertThat("/myDir/".asDirectoryPath().name).isEqualTo("myDir")
-        assertThat("/myDir".asDirectoryPath().name).isEqualTo("myDir")
-        assertThat("/A/B".asDirectoryPath().name).isEqualTo("B")
+    fun folderName() {
+        assertThat("".asFolderPath().name).isEqualTo("")
+        assertThat("/".asFolderPath().name).isEqualTo("")
+        assertThat("/myDir/".asFolderPath().name).isEqualTo("myDir")
+        assertThat("/myDir".asFolderPath().name).isEqualTo("myDir")
+        assertThat("/A/B".asFolderPath().name).isEqualTo("B")
     }
 
     @Test
-    fun directoryIsRoot() {
-        assertThat("".asDirectoryPath().isRoot).isTrue()
-        assertThat("/".asDirectoryPath().isRoot).isTrue()
-        assertThat("/myDir/".asDirectoryPath().isRoot).isFalse()
+    fun folderIsRoot() {
+        assertThat("".asFolderPath().isRoot).isTrue()
+        assertThat("/".asFolderPath().isRoot).isTrue()
+        assertThat("/myDir/".asFolderPath().isRoot).isFalse()
     }
 }

@@ -21,7 +21,7 @@ import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.asDirectoryPath
+import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.humanreadable.HumanReadable
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
@@ -93,7 +93,7 @@ fun main() {
                         onClick = {
                             for (service in allServices.filter { it.isAuthenticated() }) {
                                 scope.launch {
-                                    service.createFolder(path = name.asDirectoryPath())
+                                    service.createFolder(path = name.asFolderPath())
                                 }
                             }
                         }

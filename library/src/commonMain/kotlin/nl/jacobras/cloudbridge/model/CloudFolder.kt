@@ -10,6 +10,6 @@ package nl.jacobras.cloudbridge.model
  */
 public data class CloudFolder(
     override val id: String,
-    override val path: DirectoryPath,
+    override val path: FolderPath,
     override val name: String
 ) : CloudItem

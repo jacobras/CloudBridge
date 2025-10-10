@@ -2,7 +2,7 @@ package nl.jacobras.cloudbridge
 
 import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.DirectoryPath
+import nl.jacobras.cloudbridge.model.FolderPath
 
 public interface CloudService {
 
@@ -38,7 +38,7 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun createFolder(path: DirectoryPath)
+    public suspend fun createFolder(path: FolderPath)
 
     /**
      * Creates a file with name [filename] and text content [content].
