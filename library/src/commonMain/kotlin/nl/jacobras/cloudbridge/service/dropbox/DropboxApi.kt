@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.dropbox
+package nl.jacobras.cloudbridge.service.dropbox
 
 import de.jensklingenberg.ktorfit.http.*
 import kotlinx.serialization.SerialName

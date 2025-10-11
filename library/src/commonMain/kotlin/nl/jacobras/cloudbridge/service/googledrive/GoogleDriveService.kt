@@ -1,33 +1,35 @@
-package nl.jacobras.cloudbridge.provider.dropbox
+package nl.jacobras.cloudbridge.service.googledrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.header
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.PkceAuthenticator
+import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.model.*
 import nl.jacobras.cloudbridge.persistence.Settings
-import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
 
-public class DropboxService(
+public class GoogleDriveService(
     private val clientId: String
 ) : CloudService {
 
     private val token: String?
-        get() = Settings.dropboxToken
+        get() = Settings.googleDriveToken
 
     private val ktorfit = ktorfit {
-        baseUrl("https://api.dropboxapi.com/")
+        baseUrl("https://www.googleapis.com/")
         httpClient(
             HttpClient {
                 expectSuccess = true
@@ -47,7 +49,10 @@ public class DropboxService(
             }
         )
     }
-    private val api = ktorfit.createDropboxApi()
+    private val api = ktorfit.createGoogleDriveApi()
+    private val json = Json {
+        encodeDefaults = true
+    }
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -55,74 +60,82 @@ public class DropboxService(
     }
 
     override fun isAuthenticated(): Boolean {
-        return Settings.dropboxToken != null
+        return token != null
     }
 
-    public override fun getAuthenticator(redirectUri: String): PkceAuthenticator {
-        val codeVerifier = Settings.codeVerifier ?: let {
-            val verifier = SecurityUtil.createRandomCodeVerifier()
-            Settings.codeVerifier = verifier
-            verifier
-        }
-        return DropboxAuthenticator(
-            api = api,
+    public override fun getAuthenticator(redirectUri: String): ImplicitAuthenticator {
+        return GoogleDriveAuthenticator(
             clientId = clientId,
-            redirectUri = redirectUri,
-            codeVerifier = codeVerifier
+            redirectUri = redirectUri
         )
     }
 
     override fun logout() {
-        Settings.dropboxToken = null
+        Settings.googleDriveToken = null
     }
 
     override suspend fun listFiles(): List<CloudItem> = tryCall {
-        api.listFiles().entries.map {
-            when (it.tag) {
-                "file" -> {
-                    CloudFile(
-                        id = Id(it.id),
-                        path = it.pathLower.asFilePath(),
-                        name = it.name,
-                        sizeInBytes = it.size ?: error("Missing size for file"),
-                        modified = Instant.parse(it.clientModified ?: error("Missing modified time for file"))
-                    )
-                }
-                "folder" -> {
-                    CloudFolder(
-                        id = Id(it.id),
-                        path = it.pathLower.asFolderPath(),
-                        name = it.name
-                    )
-                }
-                else -> error("Unsupported tag: ${it.tag}")
+        api.listFiles().files.map {
+            if (it.mimeType == "application/vnd.google-apps.folder") {
+                CloudFolder(
+                    id = Id(it.id),
+                    path = it.parents.first().asFolderPath(),
+                    name = it.name
+                )
+            } else {
+                CloudFile(
+                    id = Id(it.id),
+                    name = it.name,
+                    path = "${it.parents.first()}/${it.name}".asFilePath(),
+                    sizeInBytes = it.size?.toLongOrNull() ?: 0L,
+                    modified = Instant.parse(it.modified)
+                )
             }
         }
     }
 
     override suspend fun createFolder(path: FolderPath): Unit = tryCall {
         api.createFolder(
-            Json.encodeToString(
-                CreateFolderRequest(path = "/" + path.name)
+            json.encodeToString(
+                CreateFolderRequest(
+                    name = path.name,
+                    parents = listOf("appDataFolder")
+                )
             )
         )
     }
 
     override suspend fun createFile(filename: String, content: String): Unit = tryCall {
+        val metadata = DriveFileMetadata(
+            name = filename,
+            mimeType = "text/plain",
+            parents = listOf("appDataFolder")
+        )
+
+        val boundary = "cloud-bridge-boundary"
+
         api.uploadFile(
-            arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
-            content = content.toByteArray()
+            map = MultiPartFormDataContent(
+                boundary = boundary,
+                contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
+                parts = formData {
+                    append("metadata", Json.encodeToString(metadata), Headers.build {
+                        append(HttpHeaders.ContentType, "application/json")
+                    })
+                    append("file", content, Headers.build {
+                        append(HttpHeaders.ContentType, "text/plain")
+                    })
+                }
+            )
         )
     }
 
     override suspend fun downloadFile(id: Id): String = tryCall {
-        api.downloadFile(
-            arguments = Json.encodeToString(DropboxDownloadArg(path = id.value))
-        )
+        api.downloadFile(id = id.value).decodeToString()
     }
 
     override suspend fun delete(id: Id): Unit = tryCall {
-        api.deleteByPath(DeleteRequest(path = id.value))
+        api.deleteById(id.value)
     }
 
     private suspend fun <T> tryCall(block: suspend () -> T): T {

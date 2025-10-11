@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.googledrive
+package nl.jacobras.cloudbridge.service.googledrive
 
 import de.jensklingenberg.ktorfit.http.*
 import io.ktor.client.request.forms.MultiPartFormDataContent

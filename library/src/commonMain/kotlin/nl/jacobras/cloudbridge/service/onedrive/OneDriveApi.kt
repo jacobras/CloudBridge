@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.onedrive
+package nl.jacobras.cloudbridge.service.onedrive
 
 import de.jensklingenberg.ktorfit.http.*
 import kotlinx.serialization.SerialName

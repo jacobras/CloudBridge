@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.onedrive
+package nl.jacobras.cloudbridge.service.onedrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
