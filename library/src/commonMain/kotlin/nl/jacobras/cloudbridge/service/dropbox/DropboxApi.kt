@@ -1,6 +1,10 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Body
+import de.jensklingenberg.ktorfit.http.Header
+import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -115,7 +119,7 @@ internal data class DropboxUploadArg(
     val path: String,
 
     @SerialName("mode")
-    val mode: String = "add",
+    val mode: Mode,
 
     @SerialName("autorename")
     val autoRename: Boolean = true,
@@ -123,6 +127,18 @@ internal data class DropboxUploadArg(
     @SerialName("mute")
     val mute: Boolean = false
 )
+
+@Serializable
+internal enum class Mode {
+    @SerialName("add")
+    Add,
+
+    @SerialName("overwrite")
+    Overwrite,
+
+    @SerialName("update")
+    Update
+}
 
 @Serializable
 internal data class DropboxDownloadArg(

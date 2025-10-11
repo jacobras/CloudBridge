@@ -50,6 +50,13 @@ public interface CloudService {
     public suspend fun createFile(path: FilePath, content: String)
 
     /**
+     * Updates the file with id [id] to text content [content].
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun updateFile(id: Id, content: String)
+
+    /**
      * Retrieves the file with [id].
      *
      * @throws CloudServiceException

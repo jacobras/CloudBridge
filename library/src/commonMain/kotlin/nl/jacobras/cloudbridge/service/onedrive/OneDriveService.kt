@@ -130,8 +130,15 @@ public class OneDriveService(
     }
 
     override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
-        api.uploadFile(
+        api.createFile(
             path = path.toString(),
+            content = content
+        )
+    }
+
+    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+        api.updateFile(
+            id = id.value,
             content = content
         )
     }

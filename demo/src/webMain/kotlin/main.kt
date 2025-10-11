@@ -47,6 +47,7 @@ import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.humanreadable.HumanReadable
@@ -94,20 +95,55 @@ fun main() {
                         onValueChange = { content = it },
                         label = { Text("Content") }
                     )
-
                     Button(
                         onClick = {
                             for (service in allServices.filter { it.isAuthenticated() }) {
-                                scope.launch {
-                                    service.createFile(
-                                        path = path.asFilePath(),
-                                        content = content
-                                    )
+                                try {
+                                    scope.launch {
+                                        service.createFile(
+                                            path = path.asFilePath(),
+                                            content = content
+                                        )
+                                    }
+                                } catch (e: CloudServiceException) {
+                                    Logger.e(e) { "Failed to create file" }
                                 }
                             }
                         }
-                    ) { Text("Upload file") }
+                    ) { Text("Create file") }
                 }
+
+                Column(Modifier.weight(1f)) {
+                    var id by remember { mutableStateOf("") }
+                    var content by remember { mutableStateOf("") }
+                    TextField(
+                        value = id,
+                        onValueChange = { id = it },
+                        label = { Text("ID") }
+                    )
+                    TextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Content") }
+                    )
+                    Button(
+                        onClick = {
+                            for (service in allServices.filter { it.isAuthenticated() }) {
+                                try {
+                                    scope.launch {
+                                        service.updateFile(
+                                            id = Id(id),
+                                            content = content
+                                        )
+                                    }
+                                } catch (e: CloudServiceException) {
+                                    Logger.e(e) { "Failed to update file" }
+                                }
+                            }
+                        }
+                    ) { Text("Update file") }
+                }
+
 
                 Column(Modifier.weight(1f)) {
                     var name by remember { mutableStateOf("") }
@@ -232,8 +268,16 @@ private fun CloudServiceColumn(
                             }) { Text("Delete") }
                         },
                         dismissButton = { Button(onClick = { content = "" }) { Text("Close") } },
-                        title = { Text(item.name) },
-                        text = { Text(content) }
+                        title = {
+                            SelectionContainer {
+                                Text("${item.name} (${item.id})")
+                            }
+                        },
+                        text = {
+                            SelectionContainer {
+                                Text(content)
+                            }
+                        }
                     )
                 }
 

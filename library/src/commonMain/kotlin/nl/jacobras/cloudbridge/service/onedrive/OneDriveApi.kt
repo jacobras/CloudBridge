@@ -1,6 +1,14 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Body
+import de.jensklingenberg.ktorfit.http.DELETE
+import de.jensklingenberg.ktorfit.http.Field
+import de.jensklingenberg.ktorfit.http.FormUrlEncoded
+import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.PUT
+import de.jensklingenberg.ktorfit.http.Path
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -46,8 +54,15 @@ internal interface OneDriveApi {
 
     @PUT("v1.0/me/drive/special/approot:/{path}:/content")
     @Headers("Content-Type: text/plain")
-    suspend fun uploadFile(
+    suspend fun createFile(
         @Path("path") path: String,
+        @Body content: String
+    )
+
+    @PUT("v1.0/me/drive/items/{itemId}/content")
+    @Headers("Content-Type: text/plain")
+    suspend fun updateFile(
+        @Path("itemId") id: String,
         @Body content: String
     )
 

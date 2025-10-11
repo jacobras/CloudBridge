@@ -121,7 +121,24 @@ public class DropboxService(
 
     override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
         api.uploadFile(
-            arguments = Json.encodeToString(DropboxUploadArg(path = path.toString())),
+            arguments = Json.encodeToString(
+                DropboxUploadArg(
+                    path = path.toString(),
+                    mode = Mode.Add
+                )
+            ),
+            content = content.toByteArray()
+        )
+    }
+
+    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+        api.uploadFile(
+            arguments = Json.encodeToString(
+                DropboxUploadArg(
+                    path = id.value,
+                    mode = Mode.Overwrite
+                )
+            ),
             content = content.toByteArray()
         )
     }

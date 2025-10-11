@@ -1,6 +1,15 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Body
+import de.jensklingenberg.ktorfit.http.DELETE
+import de.jensklingenberg.ktorfit.http.Field
+import de.jensklingenberg.ktorfit.http.FormUrlEncoded
+import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Multipart
+import de.jensklingenberg.ktorfit.http.PATCH
+import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.Path
+import de.jensklingenberg.ktorfit.http.Query
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -33,7 +42,14 @@ internal interface GoogleDriveApi {
 
     @POST("upload/drive/v3/files?uploadType=multipart")
     @Multipart
-    suspend fun uploadFile(@Body map: MultiPartFormDataContent)
+    suspend fun createFile(@Body map: MultiPartFormDataContent)
+
+    @PATCH("upload/drive/v3/files/{fileId}?uploadType=media")
+    @Multipart
+    suspend fun updateFile(
+        @Path("fileId") id: String,
+        @Body content: ByteArray
+    )
 
     @GET("drive/v3/files/{fileId}?alt=media")
     suspend fun downloadFile(@Path("fileId") id: String): ByteArray

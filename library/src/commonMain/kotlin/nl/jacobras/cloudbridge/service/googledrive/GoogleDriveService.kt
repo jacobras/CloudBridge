@@ -13,6 +13,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
@@ -143,7 +144,7 @@ public class GoogleDriveService(
 
         val boundary = "cloud-bridge-boundary"
 
-        api.uploadFile(
+        api.createFile(
             map = MultiPartFormDataContent(
                 boundary = boundary,
                 contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
@@ -156,6 +157,13 @@ public class GoogleDriveService(
                     })
                 }
             )
+        )
+    }
+
+    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+        api.updateFile(
+            id = id.value,
+            content = content.toByteArray()
         )
     }
 
