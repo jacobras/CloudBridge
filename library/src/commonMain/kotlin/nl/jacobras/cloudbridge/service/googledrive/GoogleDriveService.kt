@@ -13,6 +13,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -149,6 +150,10 @@ public class GoogleDriveService(
             } else {
                 CloudServiceException.Unknown(e)
             }
+        } catch (e: IOException) {
+            throw CloudServiceException.ConnectionException(e)
+        } catch (e: Throwable) {
+            throw CloudServiceException.Unknown(e)
         }
     }
 }
