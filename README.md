@@ -32,9 +32,12 @@ See [Compatibility.md](docs/Compatibility.md) for important remarks about each s
 
 ## 💾 Supported operations
 
-* List folder content
-* Create folder
-* Download/upload file
+* **Folders**
+    * List content
+    * Create & delete folder
+* **Files**
+    * Create/update/delete file
+    * Download file content
 
 See [Compatibility.md](docs/Compatibility.md) for details.
 
@@ -48,7 +51,7 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.1.1")
+    implementation("nl.jacobras:cloudbridge:0.3.0")
 }
 ```
 

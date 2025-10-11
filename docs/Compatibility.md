@@ -1,14 +1,5 @@
 # Compatibility
 
-|                  | Dropbox | Google Drive | OneDrive |
-|------------------|---------|--------------|----------|
-| List files       | ✅       | ✅            | ✅        |
-| Create file      | ✅       | ✅            | ✅        |
-| Get file by ID   | ✅       | ✅            | ❌        |
-| Get file by path | ❌       | ❌            | ✅        |
-
-<hr>
-
 ## ☁️ Dropbox
 
 No remarks.
