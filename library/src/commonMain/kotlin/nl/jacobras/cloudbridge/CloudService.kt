@@ -2,6 +2,7 @@ package nl.jacobras.cloudbridge
 
 import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.Id
 
@@ -42,11 +43,11 @@ public interface CloudService {
     public suspend fun createFolder(path: FolderPath)
 
     /**
-     * Creates a file with name [filename] and text content [content].
+     * Creates a file at path [path] with text content [content].
      *
      * @throws CloudServiceException
      */
-    public suspend fun createFile(filename: String, content: String)
+    public suspend fun createFile(path: FilePath, content: String)
 
     /**
      * Retrieves the file with [id].

@@ -109,9 +109,9 @@ public class DropboxService(
         )
     }
 
-    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
+    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
         api.uploadFile(
-            arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
+            arguments = Json.encodeToString(DropboxUploadArg(path = path.toString())),
             content = content.toByteArray()
         )
     }

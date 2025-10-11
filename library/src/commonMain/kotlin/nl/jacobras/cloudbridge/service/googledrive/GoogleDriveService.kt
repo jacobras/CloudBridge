@@ -106,11 +106,17 @@ public class GoogleDriveService(
         )
     }
 
-    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
+    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
+        val folderPath = path.toFolderPath()
+        val parent = if (folderPath.isRoot) {
+            "appDataFolder"
+        } else {
+            folderPath.name
+        }
         val metadata = DriveFileMetadata(
-            name = filename,
+            name = path.name,
             mimeType = "text/plain",
-            parents = listOf("appDataFolder")
+            parents = listOf(parent)
         )
 
         val boundary = "cloud-bridge-boundary"

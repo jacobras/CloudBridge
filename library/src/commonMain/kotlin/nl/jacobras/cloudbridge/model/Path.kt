@@ -24,7 +24,7 @@ public value class FilePath(internal val value: String) : Path {
      * Last part of the path.
      * For example: "/A.txt" returns "A.txt" and "/A/B.txt" returns "B.txt".
      */
-    private val lastPart: String
+    public val name: String
         get() {
             return value.substringAfterLast('/')
         }
@@ -35,7 +35,7 @@ public value class FilePath(internal val value: String) : Path {
      */
     public val nameWithoutExtension: String
         get() {
-            return lastPart.substringBeforeLast('.')
+            return name.substringBeforeLast('.')
         }
 
     init {

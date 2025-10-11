@@ -107,9 +107,9 @@ public class OneDriveService(
         )
     }
 
-    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
+    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
         api.uploadFile(
-            path = filename,
+            path = path.toString(),
             content = content
         )
     }

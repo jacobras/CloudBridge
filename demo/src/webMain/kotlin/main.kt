@@ -21,6 +21,7 @@ import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.humanreadable.HumanReadable
 import org.w3c.dom.url.URLSearchParams
@@ -54,12 +55,12 @@ fun main() {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row {
                 Column(Modifier.weight(1f)) {
-                    var filename by remember { mutableStateOf("") }
+                    var path by remember { mutableStateOf("") }
                     var content by remember { mutableStateOf("") }
                     TextField(
-                        value = filename,
-                        onValueChange = { filename = it },
-                        label = { Text("Filename") }
+                        value = path,
+                        onValueChange = { path = it },
+                        label = { Text("Path") }
                     )
                     TextField(
                         value = content,
@@ -72,7 +73,7 @@ fun main() {
                             for (service in allServices.filter { it.isAuthenticated() }) {
                                 scope.launch {
                                     service.createFile(
-                                        filename = filename,
+                                        path = path.asFilePath(),
                                         content = content
                                     )
                                 }
