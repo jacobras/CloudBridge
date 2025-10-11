@@ -79,18 +79,33 @@ public class OneDriveService(
         Settings.oneDriveToken = null
     }
 
-    override suspend fun listFiles(): List<CloudItem> = tryCall {
-        api.listFiles().files.map {
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
+        val response = if (path.isRoot) {
+            api.listFiles()
+        } else {
+            api.listFiles(path.toString())
+        }
+        response.files.map {
             if (it.folder != null) {
+                val folderPath = if (path.isRoot) {
+                    it.name.asFolderPath()
+                } else {
+                    "${it.parent.path}/${it.name}".asFolderPath() // FIXME: parent includes internal Drive structure
+                }
                 CloudFolder(
                     id = Id(it.id),
-                    path = it.parent.path.asFolderPath(),
+                    path = folderPath,
                     name = it.name,
                 )
             } else {
+                val filePath = if (path.isRoot) {
+                    it.name.asFilePath()
+                } else {
+                    "${it.parent.path}/${it.name}".asFilePath()
+                }
                 CloudFile(
                     id = Id(it.id),
-                    path = "${it.parent.path}/${it.name}".asFilePath(),
+                    path = filePath,
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
                     modified = Instant.parse(it.lastModified)

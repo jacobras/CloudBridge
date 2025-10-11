@@ -22,6 +22,7 @@ internal interface GoogleDriveApi {
 
     @GET("drive/v3/files")
     suspend fun listFiles(
+        @Query("q") query: String,
         @Query("spaces") spaces: String = "appDataFolder",
         @Query("fields") fields: String = "files(id,name,mimeType,size,modifiedTime,parents)",
         @Query("pageSize") pageSize: Int = 100

@@ -77,8 +77,11 @@ public class DropboxService(
         Settings.dropboxToken = null
     }
 
-    override suspend fun listFiles(): List<CloudItem> = tryCall {
-        api.listFiles().entries.map {
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
+        val arg = Json.encodeToString(
+            ListFolderArg(path = path.toString(withLeadingSlash = !path.isRoot))
+        )
+        api.listFiles(arg).entries.map {
             when (it.tag) {
                 "file" -> {
                     CloudFile(
@@ -139,7 +142,7 @@ public class DropboxService(
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
-        } catch(e: Throwable) {
+        } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }
     }

@@ -33,7 +33,7 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun listFiles(): List<CloudItem>
+    public suspend fun listFiles(path: FolderPath): List<CloudItem>
 
     /**
      * Creates a folder at [path].

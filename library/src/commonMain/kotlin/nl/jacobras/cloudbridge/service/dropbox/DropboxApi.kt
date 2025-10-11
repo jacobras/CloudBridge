@@ -22,7 +22,7 @@ internal interface DropboxApi {
     @POST("2/files/list_folder")
     @Headers("Content-Type: application/json")
     suspend fun listFiles(
-        @Body data: String = "{\"include_deleted\": false,\"include_has_explicit_shared_members\": false,\"include_media_info\": false,\"include_mounted_folders\": true,\"include_non_downloadable_files\": true,\"path\": \"\",\"recursive\": false}"
+        @Body arg: String
     ): FileResponse
 
     @POST("2/files/create_folder_v2")
@@ -95,6 +95,18 @@ internal data class FileEntry(
 
     @SerialName("client_modified")
     val clientModified: String? = null
+)
+
+@Serializable
+internal data class ListFolderArg(
+    @SerialName("path")
+    val path: String,
+
+    @SerialName("include_deleted")
+    val includeDeleted: Boolean = false,
+
+    @SerialName("recursive")
+    val recursive: Boolean = false
 )
 
 @Serializable

@@ -119,6 +119,14 @@ public value class FolderPath(internal val value: String) : Path {
     public override fun toFolderPath(): FolderPath = this
 
     override fun toString(): String = value
+
+    public fun toString(withLeadingSlash: Boolean): String {
+        return if (withLeadingSlash) {
+            value
+        } else {
+            value.removePrefix("/")
+        }
+    }
 }
 
 public fun String.asFolderPath(): FolderPath {

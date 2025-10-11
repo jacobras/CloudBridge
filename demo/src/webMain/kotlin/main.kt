@@ -1,12 +1,37 @@
 @file:OptIn(ExperimentalWasmJsInterop::class)
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FilePresent
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -21,6 +46,7 @@ import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.humanreadable.HumanReadable
@@ -51,6 +77,7 @@ fun main() {
 
     ComposeViewport {
         val scope = rememberCoroutineScope()
+        var pathFilter by remember { mutableStateOf("") }
 
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row {
@@ -100,6 +127,15 @@ fun main() {
                         }
                     ) { Text("Create folder") }
                 }
+
+                Column(Modifier.weight(1f)) {
+                    TextField(
+                        value = pathFilter,
+                        onValueChange = { pathFilter = it },
+                        label = { Text("Path") },
+                        placeholder = { Text("/") }
+                    )
+                }
             }
 
             Spacer(Modifier.height(32.dp))
@@ -108,16 +144,22 @@ fun main() {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
+                    pathFilter = pathFilter.asFolderPath(),
+                    onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
                 )
                 CloudServiceColumn(
                     name = "Google Drive",
                     service = googleDriveService,
+                    pathFilter = pathFilter.asFolderPath(),
+                    onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
                 )
                 CloudServiceColumn(
                     name = "OneDrive",
                     service = oneDriveService,
+                    pathFilter = pathFilter.asFolderPath(),
+                    onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -130,6 +172,8 @@ fun main() {
 private fun CloudServiceColumn(
     name: String,
     service: CloudService,
+    pathFilter: FolderPath,
+    onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -146,9 +190,9 @@ private fun CloudServiceColumn(
 
             var error by remember { mutableStateOf("") }
 
-            val files by produceState(emptyList()) {
+            val files by produceState(emptyList(), pathFilter) {
                 value = try {
-                    service.listFiles().also {
+                    service.listFiles(pathFilter).also {
                         error = ""
                     }
                 } catch (e: Exception) {
@@ -194,37 +238,54 @@ private fun CloudServiceColumn(
                 }
 
                 SelectionContainer {
-                    Column(
-                        Modifier
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                scope.launch {
-                                    content = try {
-                                        service.downloadFile(item.id)
-                                    } catch (e: CloudServiceException) {
-                                        e.message.toString()
+                                if (item is CloudFolder) {
+                                    onNavigateToFolder(item.path)
+                                } else {
+                                    scope.launch {
+                                        content = try {
+                                            service.downloadFile(item.id)
+                                        } catch (e: CloudServiceException) {
+                                            e.message.toString()
+                                        }
                                     }
                                 }
                             }
                     ) {
-                        Text(
-                            text = item.path.toFolderPath().toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Icon(
+                            imageVector = when (item) {
+                                is CloudFolder -> Icons.Outlined.Folder
+                                is CloudFile -> Icons.Outlined.FilePresent
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline
                         )
-                        val text = when (item) {
-                            is CloudFile -> "${item.name} (${item.sizeInBytes} bytes, ${HumanReadable.timeAgo(item.modified)})"
-                            is CloudFolder -> "${item.name} (Folder)"
-                        }
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (item != files.last()) {
-                            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                        Spacer(Modifier.width(8.dp))
+
+                        Column {
+                            Text(
+                                text = item.path.toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            val text = when (item) {
+                                is CloudFile -> "${item.name} (${item.sizeInBytes} bytes, ${HumanReadable.timeAgo(item.modified)})"
+                                is CloudFolder -> item.name
+                            }
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
+                }
+                if (item != files.last()) {
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 }
             }
         } else {

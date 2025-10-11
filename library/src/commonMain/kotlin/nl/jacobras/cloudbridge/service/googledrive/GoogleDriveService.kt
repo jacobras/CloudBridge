@@ -75,19 +75,34 @@ public class GoogleDriveService(
         Settings.googleDriveToken = null
     }
 
-    override suspend fun listFiles(): List<CloudItem> = tryCall {
-        api.listFiles().files.map {
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
+        val query = if (path.isRoot) {
+            "'appDataFolder' in parents"
+        } else {
+            "'${path.name}' in parents"
+        }
+        api.listFiles(query = query).files.map {
             if (it.mimeType == "application/vnd.google-apps.folder") {
+                val folderPath = if (path.isRoot) {
+                    it.id.asFolderPath()
+                } else {
+                    "${it.parents.first()}/${it.id}".asFolderPath()
+                }
                 CloudFolder(
                     id = Id(it.id),
-                    path = it.parents.first().asFolderPath(),
+                    path = folderPath,
                     name = it.name
                 )
             } else {
+                val filePath = if (path.isRoot) {
+                    it.name.asFilePath()
+                } else {
+                    "${it.parents.first()}/${it.name}".asFilePath()
+                }
                 CloudFile(
                     id = Id(it.id),
                     name = it.name,
-                    path = "${it.parents.first()}/${it.name}".asFilePath(),
+                    path = filePath,
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
                     modified = Instant.parse(it.modified)
                 )
