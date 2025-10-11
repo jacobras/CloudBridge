@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.googledrive
+package nl.jacobras.cloudbridge.service.googledrive
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator

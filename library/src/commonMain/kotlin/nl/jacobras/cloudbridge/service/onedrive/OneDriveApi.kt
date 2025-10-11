@@ -1,11 +1,21 @@
-package nl.jacobras.cloudbridge.provider.onedrive
+package nl.jacobras.cloudbridge.service.onedrive
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Body
+import de.jensklingenberg.ktorfit.http.DELETE
+import de.jensklingenberg.ktorfit.http.Field
+import de.jensklingenberg.ktorfit.http.FormUrlEncoded
+import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.PUT
+import de.jensklingenberg.ktorfit.http.Path
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_put_content
+ * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/resources/driveitem
+ *
+ * Note: paths must be surrounded by a :double colon: in the request URL.
  */
 internal interface OneDriveApi {
 
@@ -23,20 +33,47 @@ internal interface OneDriveApi {
     @GET("v1.0/me/drive/special/approot/children")
     suspend fun listFiles(): FileResponse
 
+    @GET("v1.0/me/drive/special/approot:/{folderPath}:/children")
+    suspend fun listFiles(
+        @Path("folderPath", encoded = true) folderPath: String
+    ): FileResponse
+
     @POST("v1.0/me/drive/special/approot/children")
     @Headers("Content-Type: application/json")
     suspend fun createFolder(@Body content: String)
 
     @GET("v1.0/me/drive/special/approot:/{path}:/content")
-    suspend fun downloadFile(
+    suspend fun downloadFileByPath(
         @Path("path") path: String
+    ): String
+
+    @GET("v1.0/me/drive/items/{itemId}/content")
+    suspend fun downloadFileById(
+        @Path("itemId") id: String
     ): String
 
     @PUT("v1.0/me/drive/special/approot:/{path}:/content")
     @Headers("Content-Type: text/plain")
-    suspend fun uploadFile(
+    suspend fun createFile(
         @Path("path") path: String,
         @Body content: String
+    )
+
+    @PUT("v1.0/me/drive/items/{itemId}/content")
+    @Headers("Content-Type: text/plain")
+    suspend fun updateFile(
+        @Path("itemId") id: String,
+        @Body content: String
+    )
+
+    @DELETE("v1.0/me/drive/special/approot:/{path}")
+    suspend fun delete(
+        @Path("path", encoded = true) path: String
+    )
+
+    @DELETE("v1.0/me/drive/items/{itemId}")
+    suspend fun deleteById(
+        @Path("itemId") id: String
     )
 }
 
@@ -53,17 +90,20 @@ internal data class TokenResponse(
 internal data class FileResponse(
 
     @SerialName("value")
-    val files: List<FileEntry>
+    val files: List<DriveItem>
 )
 
 @Serializable
-internal data class FileEntry(
+internal data class DriveItem(
 
     @SerialName("id")
     val id: String,
 
     @SerialName("name")
     val name: String,
+
+    @SerialName("parentReference")
+    val parent: ParentReference,
 
     @SerialName("size")
     val size: Long? = 0,
@@ -73,6 +113,13 @@ internal data class FileEntry(
 
     @SerialName("folder")
     val folder: Folder? = null
+)
+
+@Serializable
+internal data class ParentReference(
+
+    @SerialName("path")
+    val path: String
 )
 
 @Serializable

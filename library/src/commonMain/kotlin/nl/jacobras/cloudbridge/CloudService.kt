@@ -2,7 +2,9 @@ package nl.jacobras.cloudbridge
 
 import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.DirectoryPath
+import nl.jacobras.cloudbridge.model.FilePath
+import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
 
 public interface CloudService {
 
@@ -31,39 +33,41 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun listFiles(): List<CloudItem>
+    public suspend fun listFiles(path: FolderPath): List<CloudItem>
 
     /**
      * Creates a folder at [path].
      *
      * @throws CloudServiceException
      */
-    public suspend fun createFolder(path: DirectoryPath)
+    public suspend fun createFolder(path: FolderPath)
 
     /**
-     * Creates a file with name [filename] and text content [content].
+     * Creates a file at path [path] with text content [content].
      *
      * @throws CloudServiceException
      */
-    public suspend fun createFile(filename: String, content: String)
+    public suspend fun createFile(path: FilePath, content: String)
 
-    public interface DownloadById {
+    /**
+     * Updates the file with id [id] to text content [content].
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun updateFile(id: Id, content: String)
 
-        /**
-         * Retrieves the file with [id].
-         *
-         * @throws CloudServiceException
-         */
-        public suspend fun downloadFileById(id: String): String
-    }
+    /**
+     * Retrieves the file with [id].
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun downloadFile(id: Id): String
 
-    public interface DownloadByPath {
 
-        /**
-         * Retrieves the file at [path].
-         *
-         * @throws CloudServiceException
-         */
-        public suspend fun downloadFileByPath(path: String): String
-    }
+    /**
+     * Deletes the file/folder with [id].
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun delete(id: Id)
 }

@@ -1,6 +1,10 @@
-package nl.jacobras.cloudbridge.provider.dropbox
+package nl.jacobras.cloudbridge.service.dropbox
 
-import de.jensklingenberg.ktorfit.http.*
+import de.jensklingenberg.ktorfit.http.Body
+import de.jensklingenberg.ktorfit.http.Header
+import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.POST
+import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,7 +26,7 @@ internal interface DropboxApi {
     @POST("2/files/list_folder")
     @Headers("Content-Type: application/json")
     suspend fun listFiles(
-        @Body data: String = "{\"include_deleted\": false,\"include_has_explicit_shared_members\": false,\"include_media_info\": false,\"include_mounted_folders\": true,\"include_non_downloadable_files\": true,\"path\": \"\",\"recursive\": false}"
+        @Body arg: String
     ): FileResponse
 
     @POST("2/files/create_folder_v2")
@@ -40,6 +44,11 @@ internal interface DropboxApi {
         @Header("Dropbox-API-Arg") arguments: String,
         @Body content: ByteArray
     ): String
+
+    @POST("2/files/delete_v2")
+    @Headers("Content-Type: application/json")
+    suspend fun deleteByPath(@Body body: DeleteRequest)
+
 }
 
 @Serializable
@@ -93,12 +102,24 @@ internal data class FileEntry(
 )
 
 @Serializable
+internal data class ListFolderArg(
+    @SerialName("path")
+    val path: String,
+
+    @SerialName("include_deleted")
+    val includeDeleted: Boolean = false,
+
+    @SerialName("recursive")
+    val recursive: Boolean = false
+)
+
+@Serializable
 internal data class DropboxUploadArg(
     @SerialName("path")
     val path: String,
 
     @SerialName("mode")
-    val mode: String = "add",
+    val mode: Mode,
 
     @SerialName("autorename")
     val autoRename: Boolean = true,
@@ -108,6 +129,18 @@ internal data class DropboxUploadArg(
 )
 
 @Serializable
+internal enum class Mode {
+    @SerialName("add")
+    Add,
+
+    @SerialName("overwrite")
+    Overwrite,
+
+    @SerialName("update")
+    Update
+}
+
+@Serializable
 internal data class DropboxDownloadArg(
     @SerialName("path")
     val path: String
@@ -115,6 +148,12 @@ internal data class DropboxDownloadArg(
 
 @Serializable
 internal data class CreateFolderRequest(
+    @SerialName("path")
+    val path: String
+)
+
+@Serializable
+internal data class DeleteRequest(
     @SerialName("path")
     val path: String
 )

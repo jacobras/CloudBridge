@@ -3,11 +3,19 @@ package nl.jacobras.cloudbridge.model
 import nl.jacobras.cloudbridge.util.ensurePrefix
 import kotlin.jvm.JvmInline
 
-public interface Path
+/**
+ * Represents a file/folder path.
+ *
+ * @see FilePath
+ * @see FolderPath
+ */
+public sealed interface Path {
+    public fun toFolderPath(): FolderPath
+}
 
 /**
  * A file, always starting with a slash.
- * Example value: "/Directory/file.txt" or just "/file.txt" for a file in the root folder.
+ * Example value: "/Folder/file.txt" or just "/file.txt" for a file in the root folder.
  */
 @JvmInline
 public value class FilePath(internal val value: String) : Path {
@@ -16,7 +24,7 @@ public value class FilePath(internal val value: String) : Path {
      * Last part of the path.
      * For example: "/A.txt" returns "A.txt" and "/A/B.txt" returns "B.txt".
      */
-    private val lastPart: String
+    public val name: String
         get() {
             return value.substringAfterLast('/')
         }
@@ -27,7 +35,7 @@ public value class FilePath(internal val value: String) : Path {
      */
     public val nameWithoutExtension: String
         get() {
-            return lastPart.substringBeforeLast('.')
+            return name.substringBeforeLast('.')
         }
 
     init {
@@ -35,12 +43,14 @@ public value class FilePath(internal val value: String) : Path {
     }
 
     /**
-     * Returns the directory this file is in.
+     * Returns the folder this file is in.
      * Example value: for "/Folder/Nested/file.txt" this returns "/Folder/Nested".
      */
-    public fun toDirectoryPath(): DirectoryPath {
-        return value.substringBeforeLast('/').asDirectoryPath()
+    public override fun toFolderPath(): FolderPath {
+        return value.substringBeforeLast('/').asFolderPath()
     }
+
+    override fun toString(): String = value
 }
 
 public fun String.asFilePath(): FilePath {
@@ -48,16 +58,16 @@ public fun String.asFilePath(): FilePath {
 }
 
 /**
- * A directory, always starting with a slash and never ending with one.
- * Example value: "/Directory" or just "/" for root.
+ * A folder, always starting with a slash and never ending with one.
+ * Example value: "/Folder" or just "/" for root.
  *
  * @property value The raw path, starting with a forward slash.
  */
 @JvmInline
-public value class DirectoryPath(internal val value: String) : Path {
+public value class FolderPath(internal val value: String) : Path {
 
     /**
-     * Returns the name of the directory, which is the last part of the path.
+     * Returns the name of the folder, which is the last part of the path.
      * For example: "/" returns "", "/A" returns "A" and "/A/B" returns "B".
      */
     public val name: String
@@ -66,7 +76,7 @@ public value class DirectoryPath(internal val value: String) : Path {
         }
 
     /**
-     * How many levels this directory contains.
+     * How many levels this folder contains.
      * For example: "/a/b" contains two levels, "/a" just one.
      */
     public val levelCount: Int
@@ -82,12 +92,12 @@ public value class DirectoryPath(internal val value: String) : Path {
      * Path of parent folder.
      * For example: "/" returns "/", "/A" returns "/" and "/A/B" returns "/A".
      */
-    public val parent: DirectoryPath
+    public val parent: FolderPath
         get() {
             return if (isRoot) {
                 this
             } else {
-                DirectoryPath(value.substringBeforeLast('/').ifEmpty { "/" })
+                FolderPath(value.substringBeforeLast('/').ifEmpty { "/" })
             }
         }
 
@@ -98,11 +108,27 @@ public value class DirectoryPath(internal val value: String) : Path {
         get() = value == "/"
 
     init {
-        require(value.startsWith('/')) { "Directory path '$value' should start with a /" }
-        require(value.length == 1 || !value.endsWith('/')) { "Directory path '$value' should not end with a /" }
+        require(value.startsWith('/')) { "Folder path '$value' should start with a /" }
+        require(value.length == 1 || !value.endsWith('/')) { "Folder path '$value' should not end with a /" }
+    }
+
+    /**
+     * Returns the folder this file is in.
+     * Example value: for "/Folder/Nested/file.txt" this returns "/Folder/Nested".
+     */
+    public override fun toFolderPath(): FolderPath = this
+
+    override fun toString(): String = value
+
+    public fun toString(withLeadingSlash: Boolean): String {
+        return if (withLeadingSlash) {
+            value
+        } else {
+            value.removePrefix("/")
+        }
     }
 }
 
-public fun String.asDirectoryPath(): DirectoryPath {
-    return DirectoryPath(removeSuffix("/").ensurePrefix("/"))
+public fun String.asFolderPath(): FolderPath {
+    return FolderPath(removeSuffix("/").ensurePrefix("/"))
 }

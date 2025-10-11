@@ -17,7 +17,7 @@ web, but desktop and Android support are planned.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 
-## ☁️ Cloud Providers
+## ☁️ Cloud Services
 
 |                        | Mobile<br>(Android) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|------------------|------------------|
@@ -28,13 +28,15 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 ✅ = Supported.<br>
 ⏳ = Planned.
 
+See [Compatibility.md](docs/Compatibility.md) for important remarks about each service.
+
 ## 💾 Supported operations
 
 * List folder content
 * Create folder
 * Download/upload file
 
-See [Compatibility.MD](docs/Compatibility.md) for details.
+See [Compatibility.md](docs/Compatibility.md) for details.
 
 ## ⚠️ Under construction
 
@@ -89,6 +91,33 @@ try {
     // Handle...
 }
 ```
+
+## 📐 Design decisions
+
+### Privacy
+
+The library only supports limited/private app folders, no full access.
+
+### Paths
+
+The library prefers to work with IDs over paths.
+
+### Accounts
+
+Only one account per service is supported as of now.
+
+### Types
+
+`id` and `path` variables are typed as much as possible, to prevent
+accidental mix-ups.
+
+### Unified error handling
+
+Dropbox will throw `409` when it can't find a path. Other services throw
+`404` CloudBridge turns them both into `CloudServiceException.NotFoundException.`
+
+_Feel free to open an issue if you have a different use case for any
+of these._
 
 ## 🔗 Underlying dependencies
 

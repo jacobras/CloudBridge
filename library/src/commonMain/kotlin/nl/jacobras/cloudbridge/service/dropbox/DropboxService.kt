@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.dropbox
+package nl.jacobras.cloudbridge.service.dropbox
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -17,14 +18,18 @@ import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.DirectoryPath
+import nl.jacobras.cloudbridge.model.FilePath
+import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.asFilePath
+import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
 
 public class DropboxService(
     private val clientId: String
-) : CloudService, CloudService.DownloadById {
+) : CloudService {
 
     private val token: String?
         get() = Settings.dropboxToken
@@ -79,31 +84,34 @@ public class DropboxService(
         Settings.dropboxToken = null
     }
 
-    override suspend fun listFiles(): List<CloudItem> = tryCall {
-        api.listFiles().entries.map {
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
+        val arg = Json.encodeToString(
+            ListFolderArg(path = path.toString(withLeadingSlash = !path.isRoot))
+        )
+        api.listFiles(arg).entries.map {
             when (it.tag) {
                 "file" -> {
                     CloudFile(
-                        id = it.id,
+                        id = Id(it.id),
+                        path = it.pathLower.asFilePath(),
                         name = it.name,
                         sizeInBytes = it.size ?: error("Missing size for file"),
                         modified = Instant.parse(it.clientModified ?: error("Missing modified time for file"))
                     )
                 }
-
                 "folder" -> {
                     CloudFolder(
-                        id = it.id,
+                        id = Id(it.id),
+                        path = it.pathLower.asFolderPath(),
                         name = it.name
                     )
                 }
-
                 else -> error("Unsupported tag: ${it.tag}")
             }
         }
     }
 
-    override suspend fun createFolder(path: DirectoryPath) {
+    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
         api.createFolder(
             Json.encodeToString(
                 CreateFolderRequest(path = "/" + path.name)
@@ -111,30 +119,61 @@ public class DropboxService(
         )
     }
 
-    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
+    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
         api.uploadFile(
-            arguments = Json.encodeToString(DropboxUploadArg(path = "/$filename")),
+            arguments = Json.encodeToString(
+                DropboxUploadArg(
+                    path = path.toString(),
+                    mode = Mode.Add
+                )
+            ),
             content = content.toByteArray()
         )
     }
 
-    override suspend fun downloadFileById(id: String): String = tryCall {
-        api.downloadFile(
-            arguments = Json.encodeToString(DropboxDownloadArg(path = id))
+    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+        api.uploadFile(
+            arguments = Json.encodeToString(
+                DropboxUploadArg(
+                    path = id.value,
+                    mode = Mode.Overwrite
+                )
+            ),
+            content = content.toByteArray()
         )
     }
 
-    private suspend fun <T> tryCall(block: suspend () -> T): T {
+    override suspend fun downloadFile(id: Id): String = tryCall(id.value) {
+        api.downloadFile(
+            arguments = Json.encodeToString(DropboxDownloadArg(path = id.value))
+        )
+    }
+
+    override suspend fun delete(id: Id): Unit = tryCall(id.value) {
+        api.deleteByPath(DeleteRequest(path = id.value))
+    }
+
+    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
         requireAuthHeader()
 
         try {
             return block()
         } catch (e: ResponseException) {
-            throw if (e.response.status == HttpStatusCode.Unauthorized) {
-                CloudServiceException.NotAuthenticatedException()
-            } else {
-                CloudServiceException.Unknown(e)
+            throw when (e.response.status) {
+                HttpStatusCode.Conflict if e.message?.contains("not_found") == true -> {
+                    CloudServiceException.NotFoundException(itemId)
+                }
+                HttpStatusCode.Unauthorized -> {
+                    CloudServiceException.NotAuthenticatedException()
+                }
+                else -> {
+                    CloudServiceException.Unknown(e)
+                }
             }
+        } catch (e: IOException) {
+            throw CloudServiceException.ConnectionException(e)
+        } catch (e: Throwable) {
+            throw CloudServiceException.Unknown(e)
         }
     }
 }

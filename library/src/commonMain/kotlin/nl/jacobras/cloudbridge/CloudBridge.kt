@@ -2,9 +2,9 @@ package nl.jacobras.cloudbridge
 
 import nl.jacobras.cloudbridge.logging.EmptyLogger
 import nl.jacobras.cloudbridge.logging.Logger
-import nl.jacobras.cloudbridge.provider.dropbox.DropboxService
-import nl.jacobras.cloudbridge.provider.googledrive.GoogleDriveService
-import nl.jacobras.cloudbridge.provider.onedrive.OneDriveService
+import nl.jacobras.cloudbridge.service.dropbox.DropboxService
+import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
+import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 
 /**
  * CloudBridge: Multiple clouds, one Kotlin Multiplatform bridge.

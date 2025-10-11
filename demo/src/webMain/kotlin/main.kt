@@ -1,16 +1,42 @@
 @file:OptIn(ExperimentalWasmJsInterop::class)
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FilePresent
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeViewport
+import co.touchlab.kermit.Logger
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
@@ -18,18 +44,20 @@ import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
-import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.asDirectoryPath
+import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.asFilePath
+import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.humanreadable.HumanReadable
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
 
-private class KermitLogger : Logger {
+private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
     override fun log(message: String) {
-        co.touchlab.kermit.Logger.d(message)
+        Logger.d(message)
     }
 }
 
@@ -50,36 +78,72 @@ fun main() {
 
     ComposeViewport {
         val scope = rememberCoroutineScope()
+        var pathFilter by remember { mutableStateOf("") }
 
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row {
                 Column(Modifier.weight(1f)) {
-                    var filename by remember { mutableStateOf("") }
+                    var path by remember { mutableStateOf("") }
                     var content by remember { mutableStateOf("") }
                     TextField(
-                        value = filename,
-                        onValueChange = { filename = it },
-                        label = { Text("Filename") }
+                        value = path,
+                        onValueChange = { path = it },
+                        label = { Text("Path") }
                     )
                     TextField(
                         value = content,
                         onValueChange = { content = it },
                         label = { Text("Content") }
                     )
-
                     Button(
                         onClick = {
                             for (service in allServices.filter { it.isAuthenticated() }) {
-                                scope.launch {
-                                    service.createFile(
-                                        filename = filename,
-                                        content = content
-                                    )
+                                try {
+                                    scope.launch {
+                                        service.createFile(
+                                            path = path.asFilePath(),
+                                            content = content
+                                        )
+                                    }
+                                } catch (e: CloudServiceException) {
+                                    Logger.e(e) { "Failed to create file" }
                                 }
                             }
                         }
-                    ) { Text("Upload file") }
+                    ) { Text("Create file") }
                 }
+
+                Column(Modifier.weight(1f)) {
+                    var id by remember { mutableStateOf("") }
+                    var content by remember { mutableStateOf("") }
+                    TextField(
+                        value = id,
+                        onValueChange = { id = it },
+                        label = { Text("ID") }
+                    )
+                    TextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Content") }
+                    )
+                    Button(
+                        onClick = {
+                            for (service in allServices.filter { it.isAuthenticated() }) {
+                                try {
+                                    scope.launch {
+                                        service.updateFile(
+                                            id = Id(id),
+                                            content = content
+                                        )
+                                    }
+                                } catch (e: CloudServiceException) {
+                                    Logger.e(e) { "Failed to update file" }
+                                }
+                            }
+                        }
+                    ) { Text("Update file") }
+                }
+
 
                 Column(Modifier.weight(1f)) {
                     var name by remember { mutableStateOf("") }
@@ -93,11 +157,20 @@ fun main() {
                         onClick = {
                             for (service in allServices.filter { it.isAuthenticated() }) {
                                 scope.launch {
-                                    service.createFolder(path = name.asDirectoryPath())
+                                    service.createFolder(path = name.asFolderPath())
                                 }
                             }
                         }
                     ) { Text("Create folder") }
+                }
+
+                Column(Modifier.weight(1f)) {
+                    TextField(
+                        value = pathFilter,
+                        onValueChange = { pathFilter = it },
+                        label = { Text("Path") },
+                        placeholder = { Text("/") }
+                    )
                 }
             }
 
@@ -107,16 +180,22 @@ fun main() {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
+                    pathFilter = pathFilter.asFolderPath(),
+                    onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
                 )
                 CloudServiceColumn(
                     name = "Google Drive",
                     service = googleDriveService,
+                    pathFilter = pathFilter.asFolderPath(),
+                    onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
                 )
                 CloudServiceColumn(
                     name = "OneDrive",
                     service = oneDriveService,
+                    pathFilter = pathFilter.asFolderPath(),
+                    onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -129,6 +208,8 @@ fun main() {
 private fun CloudServiceColumn(
     name: String,
     service: CloudService,
+    pathFilter: FolderPath,
+    onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -145,9 +226,9 @@ private fun CloudServiceColumn(
 
             var error by remember { mutableStateOf("") }
 
-            val files by produceState(emptyList()) {
+            val files by produceState(emptyList(), pathFilter) {
                 value = try {
-                    service.listFiles().also {
+                    service.listFiles(pathFilter).also {
                         error = ""
                     }
                 } catch (e: Exception) {
@@ -174,48 +255,81 @@ private fun CloudServiceColumn(
                 if (content.isNotEmpty()) {
                     AlertDialog(
                         onDismissRequest = { content = "" },
-                        confirmButton = { Button(onClick = { content = "" }) { Text("Close") } },
-                        title = { Text(item.name) },
-                        text = { Text(content) }
+                        confirmButton = {
+                            Button(onClick = {
+                                scope.launch {
+                                    try {
+                                        service.delete(item.id)
+                                        content = ""
+                                    } catch (e: CloudServiceException) {
+                                        Logger.e(e) { "Failed to delete ${item.name}" }
+                                    }
+                                }
+                            }) { Text("Delete") }
+                        },
+                        dismissButton = { Button(onClick = { content = "" }) { Text("Close") } },
+                        title = {
+                            SelectionContainer {
+                                Text("${item.name} (${item.id})")
+                            }
+                        },
+                        text = {
+                            SelectionContainer {
+                                Text(content)
+                            }
+                        }
                     )
                 }
 
                 SelectionContainer {
-                    Column(
-                        Modifier
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                scope.launch {
-                                    try {
-                                        if (service is CloudService.DownloadById) {
-                                            content = service.downloadFileById(item.id)
-                                        } else if (service is CloudService.DownloadByPath) {
-                                            content = service.downloadFileByPath(item.name)
+                                if (item is CloudFolder) {
+                                    onNavigateToFolder(item.path)
+                                } else {
+                                    scope.launch {
+                                        content = try {
+                                            service.downloadFile(item.id)
+                                        } catch (e: CloudServiceException) {
+                                            e.message.toString()
                                         }
-                                    } catch (e: CloudServiceException) {
-                                        content = e.message.toString()
                                     }
                                 }
                             }
                     ) {
-                        Text(
-                            text = item.id,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Icon(
+                            imageVector = when (item) {
+                                is CloudFolder -> Icons.Outlined.Folder
+                                is CloudFile -> Icons.Outlined.FilePresent
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline
                         )
-                        val text = when (item) {
-                            is CloudFile -> "${item.name} (${item.sizeInBytes} bytes, ${HumanReadable.timeAgo(item.modified)})"
-                            is CloudFolder -> "${item.name} (Folder)"
-                        }
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (item != files.last()) {
-                            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                        Spacer(Modifier.width(8.dp))
+
+                        Column {
+                            Text(
+                                text = item.path.toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            val text = when (item) {
+                                is CloudFile -> "${item.name} (${item.sizeInBytes} bytes, ${HumanReadable.timeAgo(item.modified)})"
+                                is CloudFolder -> item.name
+                            }
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
+                }
+                if (item != files.last()) {
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 }
             }
         } else {

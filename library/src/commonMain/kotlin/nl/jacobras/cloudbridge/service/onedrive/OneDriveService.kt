@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge.provider.onedrive
+package nl.jacobras.cloudbridge.service.onedrive
 
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
@@ -9,6 +9,7 @@ import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -16,14 +17,18 @@ import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
-import nl.jacobras.cloudbridge.model.DirectoryPath
+import nl.jacobras.cloudbridge.model.FilePath
+import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.asFilePath
+import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
 
 public class OneDriveService(
     private val clientId: String
-) : CloudService, CloudService.DownloadByPath {
+) : CloudService {
 
     private val token: String?
         get() = Settings.oneDriveToken
@@ -81,16 +86,33 @@ public class OneDriveService(
         Settings.oneDriveToken = null
     }
 
-    override suspend fun listFiles(): List<CloudItem> = tryCall {
-        api.listFiles().files.map {
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
+        val response = if (path.isRoot) {
+            api.listFiles()
+        } else {
+            api.listFiles(path.toString())
+        }
+        response.files.map {
             if (it.folder != null) {
+                val folderPath = if (path.isRoot) {
+                    it.name.asFolderPath()
+                } else {
+                    "${it.parent.path}/${it.name}".asFolderPath() // FIXME: parent includes internal Drive structure
+                }
                 CloudFolder(
-                    id = it.id,
+                    id = Id(it.id),
+                    path = folderPath,
                     name = it.name,
                 )
             } else {
+                val filePath = if (path.isRoot) {
+                    it.name.asFilePath()
+                } else {
+                    "${it.parent.path}/${it.name}".asFilePath()
+                }
                 CloudFile(
-                    id = it.id,
+                    id = Id(it.id),
+                    path = filePath,
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
                     modified = Instant.parse(it.lastModified)
@@ -99,7 +121,7 @@ public class OneDriveService(
         }
     }
 
-    override suspend fun createFolder(path: DirectoryPath) {
+    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
         api.createFolder(
             json.encodeToString(
                 CreateFolderArg(name = path.name)
@@ -107,28 +129,49 @@ public class OneDriveService(
         )
     }
 
-    override suspend fun createFile(filename: String, content: String): Unit = tryCall {
-        api.uploadFile(
-            path = filename,
+    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
+        api.createFile(
+            path = path.toString(),
             content = content
         )
     }
 
-    override suspend fun downloadFileByPath(path: String): String = tryCall {
-        api.downloadFile(path = path)
+    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+        api.updateFile(
+            id = id.value,
+            content = content
+        )
     }
 
-    private suspend fun <T> tryCall(block: suspend () -> T): T {
+    override suspend fun downloadFile(id: Id): String = tryCall(id.value) {
+        api.downloadFileById(id.value)
+    }
+
+    override suspend fun delete(id: Id): Unit = tryCall(id.value) {
+        api.deleteById(id.value)
+    }
+
+    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
         requireAuthHeader()
 
         try {
             return block()
         } catch (e: ResponseException) {
-            throw if (e.response.status == HttpStatusCode.Unauthorized) {
-                CloudServiceException.NotAuthenticatedException()
-            } else {
-                CloudServiceException.Unknown(e)
+            throw when (e.response.status) {
+                HttpStatusCode.NotFound -> {
+                    CloudServiceException.NotFoundException(itemId)
+                }
+                HttpStatusCode.Unauthorized -> {
+                    CloudServiceException.NotAuthenticatedException()
+                }
+                else -> {
+                    CloudServiceException.Unknown(e)
+                }
             }
+        } catch (e: IOException) {
+            throw CloudServiceException.ConnectionException(e)
+        } catch (e: Throwable) {
+            throw CloudServiceException.Unknown(e)
         }
     }
 }
