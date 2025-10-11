@@ -16,6 +16,10 @@ public open class CloudServiceException : Exception {
         "The cloud service is not (yet) authenticated"
     )
 
+    public class NotFoundException(itemId: String) : CloudServiceException(
+        "The requested item '$itemId' could not be found"
+    )
+
     public class ConnectionException(cause: IOException) : CloudServiceException(
         cause = cause
     )

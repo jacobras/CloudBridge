@@ -18,7 +18,14 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
-import nl.jacobras.cloudbridge.model.*
+import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.FilePath
+import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.asFilePath
+import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import kotlin.time.Instant
 
@@ -75,7 +82,7 @@ public class GoogleDriveService(
         Settings.googleDriveToken = null
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
         val query = if (path.isRoot) {
             "'appDataFolder' in parents"
         } else {
@@ -152,24 +159,30 @@ public class GoogleDriveService(
         )
     }
 
-    override suspend fun downloadFile(id: Id): String = tryCall {
+    override suspend fun downloadFile(id: Id): String = tryCall(id.value) {
         api.downloadFile(id = id.value).decodeToString()
     }
 
-    override suspend fun delete(id: Id): Unit = tryCall {
+    override suspend fun delete(id: Id): Unit = tryCall(id.value) {
         api.deleteById(id.value)
     }
 
-    private suspend fun <T> tryCall(block: suspend () -> T): T {
+    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
         requireAuthHeader()
 
         try {
             return block()
         } catch (e: ResponseException) {
-            throw if (e.response.status == HttpStatusCode.Unauthorized) {
-                CloudServiceException.NotAuthenticatedException()
-            } else {
-                CloudServiceException.Unknown(e)
+            throw when (e.response.status) {
+                HttpStatusCode.NotFound -> {
+                    CloudServiceException.NotFoundException(itemId)
+                }
+                HttpStatusCode.Unauthorized -> {
+                    CloudServiceException.NotAuthenticatedException()
+                }
+                else -> {
+                    CloudServiceException.Unknown(e)
+                }
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)

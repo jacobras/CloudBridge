@@ -94,14 +94,30 @@ try {
 
 ## 📐 Design decisions
 
-* The library only supports limited/private app folders, no full access.
-* The library prefers to work with IDs over paths.
-* Only one account per service is supported as of now.
-* `id` and `path` variables are typed as much as possible, to prevent
-  accidental mix-ups.
+### Privacy
 
-Feel free to open an issue if you have a different use case for any
-of these.
+The library only supports limited/private app folders, no full access.
+
+### Paths
+
+The library prefers to work with IDs over paths.
+
+### Accounts
+
+Only one account per service is supported as of now.
+
+### Types
+
+`id` and `path` variables are typed as much as possible, to prevent
+accidental mix-ups.
+
+### Unified error handling
+
+Dropbox will throw `409` when it can't find a path. Other services throw
+`404` CloudBridge turns them both into `CloudServiceException.NotFoundException.`
+
+_Feel free to open an issue if you have a different use case for any
+of these._
 
 ## 🔗 Underlying dependencies
 
