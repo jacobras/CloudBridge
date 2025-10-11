@@ -90,7 +90,7 @@ val service = CloudBridge.dropbox(clientId = "yourClientId")
 
 try {
     service.listFiles()
-} catch (e: Exception) {
+} catch (e: CloudServiceException) {
     // Handle...
 }
 ```
