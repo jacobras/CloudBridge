@@ -57,7 +57,7 @@ internal data class TokenResponse(
     val accessToken: String,
 
     @SerialName("expires_in")
-    val expiresInSeconds: Int
+    val expiresInSeconds: Int? // Will be null in case of legacy long-lived access token
 )
 
 @Serializable
