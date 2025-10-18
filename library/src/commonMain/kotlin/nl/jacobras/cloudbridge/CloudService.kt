@@ -37,7 +37,7 @@ public interface CloudService {
     public suspend fun getUserInfo(): UserInfo
 
     /**
-     * Lists all files and folders.
+     * Lists all files and folders, one level deep. Does not fetch nested content.
      *
      * @throws CloudServiceException
      */
