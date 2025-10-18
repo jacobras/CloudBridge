@@ -34,10 +34,12 @@ See [Compatibility.md](docs/Compatibility.md) for important remarks about each s
 
 * **Folders**
     * List content
-    * Create & delete folder
+    * Create/delete folder
 * **Files**
     * Create/update/delete file
     * Download file content
+* **User**
+  * Get name and email address
 
 See [Compatibility.md](docs/Compatibility.md) for details.
 
@@ -51,7 +53,7 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.3.2")
+    implementation("nl.jacobras:cloudbridge:0.4.0")
 }
 ```
 
