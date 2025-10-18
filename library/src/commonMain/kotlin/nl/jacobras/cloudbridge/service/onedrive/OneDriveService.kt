@@ -20,6 +20,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
@@ -84,6 +85,14 @@ public class OneDriveService(
 
     override fun logout() {
         Settings.oneDriveToken = null
+    }
+
+    override suspend fun getUserInfo(): UserInfo = tryCall {
+        val response = api.getUserInfo()
+        UserInfo(
+            name = listOf(response.givenName, response.familyName).joinToString(separator = " "),
+            emailAddress = response.email
+        )
     }
 
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {

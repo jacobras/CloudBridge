@@ -23,6 +23,9 @@ internal interface DropboxApi {
         @Query("scope") scope: String = "files.metadata.write files.content.write files.content.read"
     ): TokenResponse
 
+    @POST("2/users/get_current_account")
+    suspend fun getUserInfo(): DropboxUserInfo
+
     @POST("2/files/list_folder")
     @Headers("Content-Type: application/json")
     suspend fun listFiles(
@@ -48,7 +51,6 @@ internal interface DropboxApi {
     @POST("2/files/delete_v2")
     @Headers("Content-Type: application/json")
     suspend fun deleteByPath(@Body body: DeleteRequest)
-
 }
 
 @Serializable
@@ -58,6 +60,21 @@ internal data class TokenResponse(
 
     @SerialName("expires_in")
     val expiresInSeconds: Int? = null // Will be null in case of legacy long-lived access token
+)
+
+@Serializable
+internal data class DropboxUserInfo(
+    @SerialName("name")
+    val name: DropboxUserInfoName? = null,
+
+    @SerialName("email")
+    val emailAddress: String? = null
+)
+
+@Serializable
+internal data class DropboxUserInfoName(
+    @SerialName("display_name")
+    val displayName: String
 )
 
 @Serializable

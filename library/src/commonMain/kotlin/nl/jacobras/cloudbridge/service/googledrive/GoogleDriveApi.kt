@@ -29,6 +29,9 @@ internal interface GoogleDriveApi {
         @Field("grant_type") grantType: String = "authorization_code"
     ): TokenResponse
 
+    @GET("drive/v3/about?fields=user")
+    suspend fun getUserInfo(): UserResponse
+
     @GET("drive/v3/files")
     suspend fun listFiles(
         @Query("q") query: String,
@@ -65,6 +68,21 @@ internal data class TokenResponse(
 
     @SerialName("expires_in")
     val expiresInSeconds: Int
+)
+
+@Serializable
+internal data class UserResponse(
+    @SerialName("user")
+    val user: UserInfo?
+)
+
+@Serializable
+internal data class UserInfo(
+    @SerialName("displayName")
+    val name: String? = null,
+
+    @SerialName("emailAddress")
+    val emailAddress: String? = null
 )
 
 @Serializable

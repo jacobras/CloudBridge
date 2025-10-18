@@ -17,7 +17,7 @@ internal class OneDriveAuthenticator(
         return buildString {
             append("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
             append("?client_id=$clientId")
-            append("&scope=files.readwrite")
+            append("&scope=files.readwrite openid profile email")
             append("&response_type=code")
             append("&code_challenge=$codeChallenge")
             append("&code_challenge_method=S256")
