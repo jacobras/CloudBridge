@@ -15,12 +15,23 @@ refreshed when it expires and the user needs to re-authenticate.
 
 https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow
 
-### 📦 File/folder types
+### 📦 File/folder
+
+#### App Data Folder visibility
+
+The App Data folder is not shown to users. A user can only see the amount of space it takes up by going to
+the Drive site and navigating to _Settings_ » _Manage apps_.
+
+#### Duplication
+
+Files and folders do not need unique names in Google Drive, so there can be duplicates.
+
+#### Types
 
 Folders in Google Drive are just files, but with the mimetype
 `application/vnd.google-apps.folder`.
 
-### 📜 File/folder paths
+#### Paths
 
 Google Drive doesn't have the concept of paths. Instead, every file has a list of "parent
 file IDs". In the past, there could be multiple, but now every file can have just one

@@ -5,6 +5,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.UserInfo
 
 public interface CloudService {
 
@@ -27,6 +28,13 @@ public interface CloudService {
      * Clears all tokens for this service.
      */
     public fun logout()
+
+    /**
+     * Fetches the user's info (like name and email address).
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun getUserInfo(): UserInfo
 
     /**
      * Lists all files and folders.

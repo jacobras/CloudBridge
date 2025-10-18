@@ -48,6 +48,7 @@ import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.humanreadable.HumanReadable
@@ -215,10 +216,20 @@ private fun CloudServiceColumn(
     val scope = rememberCoroutineScope()
 
     Column(modifier.verticalScroll(rememberScrollState())) {
-        Text(name)
+        Text(
+            text = name,
+            style = MaterialTheme.typography.headlineLarge
+        )
 
         if (service.isAuthenticated()) {
-            Text("Authenticated!")
+            val userInfo by produceState<UserInfo?>(null) {
+                value = service.getUserInfo()
+            }
+
+            if (userInfo != null) {
+                Text("Authenticated as: $userInfo")
+            }
+
             Button(onClick = {
                 service.logout()
                 window.location.reload()

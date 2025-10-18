@@ -21,6 +21,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
@@ -82,6 +83,14 @@ public class DropboxService(
 
     override fun logout() {
         Settings.dropboxToken = null
+    }
+
+    override suspend fun getUserInfo(): UserInfo = tryCall {
+        val response = api.getUserInfo()
+        UserInfo(
+            name = response.name?.displayName,
+            emailAddress = response.emailAddress
+        )
     }
 
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {

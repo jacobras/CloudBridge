@@ -30,6 +30,9 @@ internal interface OneDriveApi {
         @Field("grant_type") grantType: String = "authorization_code"
     ): TokenResponse
 
+    @GET("oidc/userinfo")
+    suspend fun getUserInfo(): OneDriveUserInfo
+
     @GET("v1.0/me/drive/special/approot/children")
     suspend fun listFiles(): FileResponse
 
@@ -84,6 +87,18 @@ internal data class TokenResponse(
 
     @SerialName("expires_in")
     val expiresInSeconds: Int
+)
+
+@Serializable
+internal data class OneDriveUserInfo(
+    @SerialName("givenname")
+    val givenName: String? = null,
+
+    @SerialName("familyname")
+    val familyName: String? = null,
+
+    @SerialName("email")
+    val email: String? = null
 )
 
 @Serializable
