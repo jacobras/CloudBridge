@@ -1,7 +1,7 @@
 [versions]
 # Kotlin and KSP are linked, always update these together.
 kotlin = "2.2.20" # https://github.com/JetBrains/kotlin/releases
-ksp = "2.2.20-2.0.2" # https://github.com/google/ksp/releases
+ksp = "2.3.0" # https://github.com/google/ksp/releases
 
 compose-multiplatform = "1.9.0"
 kotlin-serialization = "1.9.0"
