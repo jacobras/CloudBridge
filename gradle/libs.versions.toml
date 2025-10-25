@@ -3,7 +3,7 @@ compose-multiplatform = "1.9.0"
 kotlin = "2.2.20" # https://github.com/JetBrains/kotlin/releases
 kotlin-serialization = "1.9.0"
 ksp = "2.3.0" # https://github.com/google/ksp/releases
-ktor = "3.3.0"
+ktor = "3.3.1"
 ktorfit = "2.6.4"
 
 [libraries]
