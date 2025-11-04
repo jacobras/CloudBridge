@@ -8,7 +8,7 @@ ktorfit = "2.6.4"
 
 [libraries]
 assertK = { module = "com.willowtreeapps.assertk:assertk", version = "0.28.1" }
-humanReadable = { module = "nl.jacobras:Human-Readable", version = "1.12.0" }
+humanReadable = { module = "nl.jacobras:Human-Readable", version = "1.12.1" }
 kermit = { module = "co.touchlab:kermit", version = "2.0.8" }
 kotlin-crypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version = "0.8.0" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlin-serialization" }
