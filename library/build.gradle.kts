@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktorfit)
     alias(libs.plugins.kotlin.serialization)
-    id("com.vanniktech.maven.publish") version "0.35.0"
+    alias(libs.plugins.maven.publish)
     signing
 }
 
