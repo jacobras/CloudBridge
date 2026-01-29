@@ -19,7 +19,7 @@ jobs:
       checks: write
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           clean: ${{ github.ref == 'refs/heads/develop' }}
 
