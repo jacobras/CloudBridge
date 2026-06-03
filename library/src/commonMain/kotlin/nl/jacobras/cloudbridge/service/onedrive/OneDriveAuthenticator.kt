@@ -25,8 +25,8 @@ internal class OneDriveAuthenticator(
         }
     }
 
-    override suspend fun exchangeCodeForToken(code: String) {
-        return try {
+    override suspend fun exchangeCodeForToken(code: String): String {
+        try {
             val token = api.getToken(
                 clientId = clientId,
                 redirectUri = redirectUri,
@@ -34,6 +34,7 @@ internal class OneDriveAuthenticator(
                 codeVerifier = codeVerifier
             )
             Settings.oneDriveToken = token.accessToken
+            return token.accessToken
         } finally {
             Settings.codeVerifier = null
         }

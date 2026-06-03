@@ -40,5 +40,5 @@ public abstract class PkceAuthenticator(protected val codeVerifier: String) : Cl
     /**
      * @throws CloudServiceException
      */
-    public abstract suspend fun exchangeCodeForToken(code: String)
+    public abstract suspend fun exchangeCodeForToken(code: String): String
 }

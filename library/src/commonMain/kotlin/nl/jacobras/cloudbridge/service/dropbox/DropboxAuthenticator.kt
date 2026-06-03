@@ -24,8 +24,8 @@ internal class DropboxAuthenticator(
         }
     }
 
-    override suspend fun exchangeCodeForToken(code: String) {
-        return try {
+    override suspend fun exchangeCodeForToken(code: String): String {
+        try {
             val token = api.getToken(
                 clientId = clientId,
                 redirectUri = redirectUri,
@@ -33,6 +33,7 @@ internal class DropboxAuthenticator(
                 codeVerifier = codeVerifier
             )
             Settings.dropboxToken = token.accessToken
+            return token.accessToken
         } finally {
             Settings.codeVerifier = null
         }
