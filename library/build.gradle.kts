@@ -14,6 +14,7 @@ group = "nl.jacobras"
 
 kotlin {
     js { browser() }
+    jvm()
     wasmJs {
         browser {
             testTask {
@@ -38,6 +39,10 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.assertK)
+        }
+        jvmMain.dependencies {
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.netty)
         }
     }
 
