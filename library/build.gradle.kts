@@ -13,7 +13,7 @@ group = "nl.jacobras"
 
 kotlin {
     js { browser() }
-    jvm()
+    jvm("desktop")
     wasmJs {
         browser {
             testTask {
