@@ -38,8 +38,8 @@ import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.CloudItemId
+import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -57,15 +57,9 @@ private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
 fun main() {
     CloudBridge.logger = KermitLogger()
 
-    val dropboxService = CloudBridge.dropbox(
-        clientId = "nw5f95uw77yrz3j"
-    )
-    val googleDriveService = CloudBridge.googleDrive(
-        clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com"
-    )
-    val oneDriveService = CloudBridge.oneDrive(
-        clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
-    )
+    val dropboxService = CloudBridge.dropbox()
+    val googleDriveService = CloudBridge.googleDrive()
+    val oneDriveService = CloudBridge.oneDrive()
     val allServices = listOf(dropboxService, googleDriveService, oneDriveService)
 
     ComposeViewport {
@@ -172,6 +166,7 @@ fun main() {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
+                    clientId = "nw5f95uw77yrz3j",
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -179,6 +174,7 @@ fun main() {
                 CloudServiceColumn(
                     name = "Google Drive",
                     service = googleDriveService,
+                    clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -186,6 +182,7 @@ fun main() {
                 CloudServiceColumn(
                     name = "OneDrive",
                     service = oneDriveService,
+                    clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -200,6 +197,7 @@ fun main() {
 private fun CloudServiceColumn(
     name: String,
     service: CloudService,
+    clientId: String,
     pathFilter: FolderPath,
     onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
@@ -307,6 +305,7 @@ private fun CloudServiceColumn(
             }
         } else {
             val authenticator = service.getAuthenticator(
+                clientId = clientId,
                 redirectUri = "http://localhost:8080"
             )
             val authenticateUrl = authenticator.buildUri()

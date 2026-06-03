@@ -47,10 +47,10 @@ public class LocalAuthenticationServer(
      * @see stop to stop the server.
      * @throws IllegalStateException If the server is already running.
      */
-    public fun start(service: CloudService) {
+    public fun start(service: CloudService, clientId: String) {
         require(server == null) { "Server is already running; stop it first" }
         val redirectUri = "http://localhost:$port"
-        val authenticator = service.getAuthenticator(redirectUri)
+        val authenticator = service.getAuthenticator(clientId, redirectUri)
         val authUrl = authenticator.buildUri()
 
         server = embeddedServer(Netty, port = port) {

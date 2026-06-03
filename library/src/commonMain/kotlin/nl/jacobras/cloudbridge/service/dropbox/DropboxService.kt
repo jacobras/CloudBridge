@@ -14,13 +14,13 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.PkceAuthenticator
+import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -28,9 +28,7 @@ import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
 
-public class DropboxService(
-    private val clientId: String
-) : CloudService {
+public class DropboxService : CloudService {
 
     private val token: String?
         get() = Settings.dropboxToken
@@ -67,7 +65,7 @@ public class DropboxService(
         return Settings.dropboxToken != null
     }
 
-    public override fun getAuthenticator(redirectUri: String): PkceAuthenticator {
+    public override fun getAuthenticator(clientId: String, redirectUri: String): CloudAuthenticator {
         val codeVerifier = Settings.codeVerifier ?: let {
             val verifier = SecurityUtil.createRandomCodeVerifier()
             Settings.codeVerifier = verifier

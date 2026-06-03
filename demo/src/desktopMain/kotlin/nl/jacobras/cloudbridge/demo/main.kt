@@ -26,18 +26,10 @@ import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
 
 fun main() = application {
     val dropboxService = remember {
-        CloudBridge.dropbox(clientId = "nw5f95uw77yrz3j")
+        CloudBridge.dropbox()
     }
-    val googleDriveService = remember {
-        CloudBridge.googleDrive(
-            clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com"
-        )
-    }
-    val oneDriveService = remember {
-        CloudBridge.oneDrive(
-            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
-        )
-    }
+    val googleDriveService = remember { CloudBridge.googleDrive() }
+    val oneDriveService = remember { CloudBridge.oneDrive() }
     var selectedService by remember { mutableStateOf(dropboxService) }
 
     var obtainedToken by remember { mutableStateOf("") }
@@ -80,9 +72,9 @@ fun main() = application {
         val uriHandler = LocalUriHandler.current
         val scope = rememberCoroutineScope()
 
-        fun selectService(service: CloudService) = scope.launch {
+        fun selectService(service: CloudService, clientId: String) = scope.launch {
             localServer.stop()
-            localServer.start(service = service)
+            localServer.start(service = service, clientId = clientId)
             delay(300)
             uriHandler.openUri(localServer.url)
         }
@@ -90,9 +82,24 @@ fun main() = application {
         Column {
             Text("Sign in with: (opens browser)")
             Row {
-                Button(onClick = { selectService(dropboxService) }) { Text("Dropbox") }
-                Button(onClick = { selectService(googleDriveService) }) { Text("Google Drive") }
-                Button(onClick = { selectService(oneDriveService) }) { Text("OneDrive") }
+                Button(onClick = {
+                    selectService(
+                        service = dropboxService,
+                        clientId = "nw5f95uw77yrz3j"
+                    )
+                }) { Text("Dropbox") }
+                Button(onClick = {
+                    selectService(
+                        service = googleDriveService,
+                        clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com"
+                    )
+                }) { Text("Google Drive") }
+                Button(onClick = {
+                    selectService(
+                        service = oneDriveService,
+                        clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
+                    )
+                }) { Text("OneDrive") }
             }
 
             if (error.isNotEmpty()) {

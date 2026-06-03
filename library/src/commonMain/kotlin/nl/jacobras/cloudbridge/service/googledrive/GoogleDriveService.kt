@@ -22,18 +22,16 @@ import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
 import kotlin.time.Instant
 
-public class GoogleDriveService(
-    private val clientId: String
-) : CloudService {
+public class GoogleDriveService : CloudService {
 
     private val token: String?
         get() = Settings.googleDriveToken
@@ -73,7 +71,7 @@ public class GoogleDriveService(
         return token != null
     }
 
-    public override fun getAuthenticator(redirectUri: String): ImplicitAuthenticator {
+    public override fun getAuthenticator(clientId: String, redirectUri: String): ImplicitAuthenticator {
         return GoogleDriveAuthenticator(
             clientId = clientId,
             redirectUri = redirectUri

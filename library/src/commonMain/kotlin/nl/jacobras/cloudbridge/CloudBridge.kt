@@ -13,7 +13,7 @@ import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 public object CloudBridge {
     public var logger: Logger = EmptyLogger
 
-    public fun dropbox(clientId: String): DropboxService = DropboxService(clientId)
-    public fun googleDrive(clientId: String): GoogleDriveService = GoogleDriveService(clientId)
-    public fun oneDrive(clientId: String): OneDriveService = OneDriveService(clientId)
+    public fun dropbox(): DropboxService = DropboxService()
+    public fun googleDrive(): GoogleDriveService = GoogleDriveService()
+    public fun oneDrive(): OneDriveService = OneDriveService()
 }

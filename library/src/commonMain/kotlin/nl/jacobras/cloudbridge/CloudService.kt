@@ -21,6 +21,7 @@ public interface CloudService {
      * Needs to be registered in the service's developer console.
      */
     public fun getAuthenticator(
+        clientId: String,
         redirectUri: String
     ): CloudAuthenticator
 
