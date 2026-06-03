@@ -20,7 +20,7 @@ import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -101,7 +101,7 @@ public class DropboxService(
             when (it.tag) {
                 "file" -> {
                     CloudFile(
-                        id = Id(it.id),
+                        id = CloudItemId(it.id),
                         path = it.pathLower.asFilePath(),
                         name = it.name,
                         sizeInBytes = it.size ?: error("Missing size for file"),
@@ -110,7 +110,7 @@ public class DropboxService(
                 }
                 "folder" -> {
                     CloudFolder(
-                        id = Id(it.id),
+                        id = CloudItemId(it.id),
                         path = it.pathLower.asFolderPath(),
                         name = it.name
                     )
@@ -140,7 +140,7 @@ public class DropboxService(
         )
     }
 
-    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
         api.uploadFile(
             arguments = Json.encodeToString(
                 DropboxUploadArg(
@@ -152,13 +152,13 @@ public class DropboxService(
         )
     }
 
-    override suspend fun downloadFile(id: Id): String = tryCall(id.value) {
+    override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
         api.downloadFile(
             arguments = Json.encodeToString(DropboxDownloadArg(path = id.value))
         )
     }
 
-    override suspend fun delete(id: Id): Unit = tryCall(id.value) {
+    override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         api.deleteByPath(DeleteRequest(path = id.value))
     }
 

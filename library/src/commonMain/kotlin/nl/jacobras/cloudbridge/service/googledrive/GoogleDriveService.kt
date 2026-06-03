@@ -24,7 +24,7 @@ import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -106,7 +106,7 @@ public class GoogleDriveService(
                     "${it.parents.first()}/${it.id}".asFolderPath()
                 }
                 CloudFolder(
-                    id = Id(it.id),
+                    id = CloudItemId(it.id),
                     path = folderPath,
                     name = it.name
                 )
@@ -117,7 +117,7 @@ public class GoogleDriveService(
                     "${it.parents.first()}/${it.name}".asFilePath()
                 }
                 CloudFile(
-                    id = Id(it.id),
+                    id = CloudItemId(it.id),
                     name = it.name,
                     path = filePath,
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
@@ -169,18 +169,18 @@ public class GoogleDriveService(
         )
     }
 
-    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
         api.updateFile(
             id = id.value,
             content = content.toByteArray()
         )
     }
 
-    override suspend fun downloadFile(id: Id): String = tryCall(id.value) {
+    override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
         api.downloadFile(id = id.value).decodeToString()
     }
 
-    override suspend fun delete(id: Id): Unit = tryCall(id.value) {
+    override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         api.deleteById(id.value)
     }
 

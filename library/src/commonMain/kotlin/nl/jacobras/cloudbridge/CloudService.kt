@@ -4,7 +4,7 @@ import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 
 public interface CloudService {
@@ -62,14 +62,14 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun updateFile(id: Id, content: String)
+    public suspend fun updateFile(id: CloudItemId, content: String)
 
     /**
      * Retrieves the file with [id].
      *
      * @throws CloudServiceException
      */
-    public suspend fun downloadFile(id: Id): String
+    public suspend fun downloadFile(id: CloudItemId): String
 
 
     /**
@@ -77,5 +77,5 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun delete(id: Id)
+    public suspend fun delete(id: CloudItemId)
 }

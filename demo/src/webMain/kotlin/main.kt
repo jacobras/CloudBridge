@@ -47,7 +47,7 @@ import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -133,7 +133,7 @@ fun main() {
                                 try {
                                     scope.launch {
                                         service.updateFile(
-                                            id = Id(id),
+                                            id = CloudItemId(id),
                                             content = content
                                         )
                                     }

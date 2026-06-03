@@ -19,7 +19,7 @@ import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -109,7 +109,7 @@ public class OneDriveService(
                     "${it.parent.path}/${it.name}".asFolderPath() // FIXME: parent includes internal Drive structure
                 }
                 CloudFolder(
-                    id = Id(it.id),
+                    id = CloudItemId(it.id),
                     path = folderPath,
                     name = it.name,
                 )
@@ -120,7 +120,7 @@ public class OneDriveService(
                     "${it.parent.path}/${it.name}".asFilePath()
                 }
                 CloudFile(
-                    id = Id(it.id),
+                    id = CloudItemId(it.id),
                     path = filePath,
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
@@ -145,18 +145,18 @@ public class OneDriveService(
         )
     }
 
-    override suspend fun updateFile(id: Id, content: String): Unit = tryCall(id.value) {
+    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
         api.updateFile(
             id = id.value,
             content = content
         )
     }
 
-    override suspend fun downloadFile(id: Id): String = tryCall(id.value) {
+    override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
         api.downloadFileById(id.value)
     }
 
-    override suspend fun delete(id: Id): Unit = tryCall(id.value) {
+    override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         api.deleteById(id.value)
     }
 
