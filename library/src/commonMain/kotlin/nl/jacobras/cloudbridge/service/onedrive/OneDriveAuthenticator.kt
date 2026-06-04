@@ -1,6 +1,5 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
-import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.persistence.Settings
 
@@ -9,21 +8,13 @@ internal class OneDriveAuthenticator(
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
-) : PkceAuthenticator(codeVerifier = codeVerifier) {
-
-    override fun buildUri(): String {
-        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
-
-        return buildString {
-            append("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
-            append("?client_id=$clientId")
-            append("&scope=files.readwrite openid profile email")
-            append("&response_type=code")
-            append("&code_challenge=$codeChallenge")
-            append("&code_challenge_method=S256")
-            append("&redirect_uri=$encodedRedirectUri")
-        }
-    }
+) : PkceAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri,
+    codeVerifier = codeVerifier
+) {
+    override val baseUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+    override val scope = "files.readwrite openid profile email"
 
     override suspend fun exchangeCodeForToken(code: String): String {
         try {

@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.auth
 
+import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
@@ -20,12 +21,30 @@ public sealed interface CloudAuthenticator {
  *
  * https://www.oauth.com/oauth2-servers/single-page-apps/implicit-flow/
  */
-public interface ImplicitAuthenticator : CloudAuthenticator {
+public abstract class ImplicitAuthenticator(
+    private val clientId: String,
+    private val redirectUri: String
+) : CloudAuthenticator {
+
+    protected abstract val baseUrl: String
+    protected abstract val scope: String
+
+    public override fun buildUri(): String {
+        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
+
+        return buildString {
+            append(baseUrl)
+            append("?client_id=$clientId")
+            append("&scope=$scope")
+            append("&response_type=token")
+            append("&redirect_uri=$encodedRedirectUri")
+        }
+    }
 
     /**
      * Stores the [token] for the cloud service.
      */
-    public fun storeToken(token: String)
+    public abstract fun storeToken(token: String)
 }
 
 /**
@@ -33,9 +52,32 @@ public interface ImplicitAuthenticator : CloudAuthenticator {
  *
  * https://www.oauth.com/oauth2-servers/pkce/
  */
-public abstract class PkceAuthenticator(protected val codeVerifier: String) : CloudAuthenticator {
+public abstract class PkceAuthenticator(
+    private val clientId: String,
+    private val redirectUri: String,
+    protected val codeVerifier: String
+) : CloudAuthenticator {
 
-    protected val codeChallenge: String = SecurityUtil.buildCodeChallenge(codeVerifier)
+    private val codeChallenge = SecurityUtil.buildCodeChallenge(codeVerifier)
+
+    protected abstract val baseUrl: String
+    protected abstract val scope: String
+
+    public override fun buildUri(): String {
+        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
+
+        return buildString {
+            append(baseUrl)
+            append("?client_id=$clientId")
+            if (scope.isNotEmpty()) {
+                append("&scope=$scope")
+            }
+            append("&response_type=code")
+            append("&code_challenge=$codeChallenge")
+            append("&code_challenge_method=S256")
+            append("&redirect_uri=$encodedRedirectUri")
+        }
+    }
 
     /**
      * @throws CloudServiceException

@@ -1,6 +1,5 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.persistence.Settings
 
@@ -9,21 +8,14 @@ import nl.jacobras.cloudbridge.persistence.Settings
  * (https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow).
  */
 internal class GoogleDriveAuthenticator(
-    private val clientId: String,
-    private val redirectUri: String
-) : ImplicitAuthenticator {
-
-    override fun buildUri(): String {
-        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
-
-        return buildString {
-            append("https://accounts.google.com/o/oauth2/v2/auth")
-            append("?client_id=$clientId")
-            append("&scope=https://www.googleapis.com/auth/drive.appdata")
-            append("&response_type=token")
-            append("&redirect_uri=$encodedRedirectUri")
-        }
-    }
+    val clientId: String,
+    val redirectUri: String
+) : ImplicitAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri
+) {
+    override val baseUrl = "https://accounts.google.com/o/oauth2/v2/auth"
+    override val scope = "https://www.googleapis.com/auth/drive.appdata"
 
     override fun storeToken(token: String) {
         Settings.googleDriveToken = token
