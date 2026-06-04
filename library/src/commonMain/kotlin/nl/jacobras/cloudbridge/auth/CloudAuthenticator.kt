@@ -7,13 +7,39 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 /**
  * Can be used to authorize a user.
  */
-public sealed interface CloudAuthenticator {
+public abstract class CloudAuthenticator(
+    private val clientId: String,
+    private val redirectUri: String
+) {
+    protected abstract val baseUrl: String
+    protected abstract val scope: String
+    protected abstract val responseType: String
 
     /**
      * Builds an authorization URI. Navigate the user to this URI to
      * start the authorization flow.
      */
-    public fun buildUri(): String
+    protected fun buildUri(codeChallenge: String): String {
+        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
+
+        return buildString {
+            append(baseUrl)
+            append("?client_id=$clientId")
+            append("&response_type=$responseType")
+            append("&redirect_uri=$encodedRedirectUri")
+
+            if (scope.isNotEmpty()) {
+                append("&scope=$scope")
+            }
+
+            if (codeChallenge.isNotEmpty()) {
+                append("&code_challenge=$codeChallenge")
+                append("&code_challenge_method=S256")
+            }
+        }
+    }
+
+    public abstract fun buildUri(): String
 }
 
 /**
@@ -22,24 +48,15 @@ public sealed interface CloudAuthenticator {
  * https://www.oauth.com/oauth2-servers/single-page-apps/implicit-flow/
  */
 public abstract class ImplicitAuthenticator(
-    private val clientId: String,
-    private val redirectUri: String
-) : CloudAuthenticator {
+    clientId: String,
+    redirectUri: String
+) : CloudAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri
+) {
+    override val responseType: String = "token"
 
-    protected abstract val baseUrl: String
-    protected abstract val scope: String
-
-    public override fun buildUri(): String {
-        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
-
-        return buildString {
-            append(baseUrl)
-            append("?client_id=$clientId")
-            append("&scope=$scope")
-            append("&response_type=token")
-            append("&redirect_uri=$encodedRedirectUri")
-        }
-    }
+    public override fun buildUri(): String = buildUri(codeChallenge = "")
 
     /**
      * Stores the [token] for the cloud service.
@@ -53,31 +70,17 @@ public abstract class ImplicitAuthenticator(
  * https://www.oauth.com/oauth2-servers/pkce/
  */
 public abstract class PkceAuthenticator(
-    private val clientId: String,
-    private val redirectUri: String,
+    clientId: String,
+    redirectUri: String,
     protected val codeVerifier: String
-) : CloudAuthenticator {
-
+) : CloudAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri
+) {
+    override val responseType: String = "code"
     private val codeChallenge = SecurityUtil.buildCodeChallenge(codeVerifier)
 
-    protected abstract val baseUrl: String
-    protected abstract val scope: String
-
-    public override fun buildUri(): String {
-        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
-
-        return buildString {
-            append(baseUrl)
-            append("?client_id=$clientId")
-            if (scope.isNotEmpty()) {
-                append("&scope=$scope")
-            }
-            append("&response_type=code")
-            append("&code_challenge=$codeChallenge")
-            append("&code_challenge_method=S256")
-            append("&redirect_uri=$encodedRedirectUri")
-        }
-    }
+    public override fun buildUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
      * @throws CloudServiceException
