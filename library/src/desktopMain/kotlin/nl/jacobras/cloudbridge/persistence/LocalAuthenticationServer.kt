@@ -47,7 +47,7 @@ public class LocalAuthenticationServer(
      */
     internal fun start(service: CloudService, authenticator: PkceAuthenticator) {
         require(server == null) { "Server is already running; stop it first" }
-        val authUrl = authenticator.buildUri()
+        val authUrl = authenticator.buildPkceUri()
 
         server = embeddedServer(Netty, port = port) {
             routing {

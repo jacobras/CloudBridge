@@ -38,8 +38,6 @@ internal abstract class CloudAuthenticator(
             }
         }
     }
-
-    abstract fun buildUri(): String
 }
 
 /**
@@ -56,7 +54,7 @@ internal abstract class ImplicitAuthenticator(
 ) {
     override val responseType: String = "token"
 
-    override fun buildUri(): String = buildUri(codeChallenge = "")
+    fun buildImplicitFlowUri(): String = buildUri(codeChallenge = "")
 }
 
 /**
@@ -75,7 +73,7 @@ internal abstract class PkceAuthenticator(
     override val responseType: String = "code"
     private val codeChallenge = SecurityUtil.buildCodeChallenge(codeVerifier)
 
-    override fun buildUri(): String = buildUri(codeChallenge = codeChallenge)
+    fun buildPkceUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
      * @throws CloudServiceException

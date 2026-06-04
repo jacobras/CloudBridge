@@ -8,6 +8,6 @@ public fun GoogleDriveService.startAuthenticationByRedirect(
     clientId: String
 ) {
     val authenticator = GoogleDriveImplicitAuthenticator(clientId, redirectUri)
-    val uri = authenticator.buildUri()
+    val uri = authenticator.buildImplicitFlowUri()
     window.location.href = uri
 }

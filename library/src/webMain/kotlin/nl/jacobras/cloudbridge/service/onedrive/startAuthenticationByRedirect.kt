@@ -19,6 +19,6 @@ public fun OneDriveService.startAuthenticationByRedirect(
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
-    val uri = authenticator.buildUri()
+    val uri = authenticator.buildPkceUri()
     window.location.href = uri
 }
