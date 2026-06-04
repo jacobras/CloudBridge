@@ -39,9 +39,11 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.assertK)
         }
-        jvmMain.dependencies {
-            implementation(libs.ktor.server.core)
-            implementation(libs.ktor.server.netty)
+        named("desktopMain") {
+            dependencies {
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.netty)
+            }
         }
     }
 
