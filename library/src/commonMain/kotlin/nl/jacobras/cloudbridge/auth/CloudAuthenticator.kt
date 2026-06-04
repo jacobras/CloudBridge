@@ -4,9 +4,6 @@ import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-/**
- * Can be used to authorize a user.
- */
 internal abstract class CloudAuthenticator(
     private val clientId: String,
     private val redirectUri: String
