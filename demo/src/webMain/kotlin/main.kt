@@ -34,8 +34,6 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
-import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -43,9 +41,13 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
-import org.w3c.dom.url.URLSearchParams
+import nl.jacobras.cloudbridge.service.dropbox.completeAuthentication
+import nl.jacobras.cloudbridge.service.dropbox.startAuthenticationByRedirect
+import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
+import nl.jacobras.cloudbridge.service.googledrive.startAuthenticationByRedirect
+import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
+import nl.jacobras.cloudbridge.service.onedrive.startAuthenticationByRedirect
 import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.toJsString
 
 private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
     override fun log(message: String) {
@@ -166,7 +168,18 @@ fun main() {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
-                    clientId = "nw5f95uw77yrz3j",
+                    startAuth = {
+                        dropboxService.startAuthenticationByRedirect(
+                            clientId = "nw5f95uw77yrz3j",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
+                    finishAuth = {
+                        dropboxService.completeAuthentication(
+                            clientId = "nw5f95uw77yrz3j",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -174,7 +187,13 @@ fun main() {
                 CloudServiceColumn(
                     name = "Google Drive",
                     service = googleDriveService,
-                    clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
+                    startAuth = {
+                        googleDriveService.startAuthenticationByRedirect(
+                            clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
+                    finishAuth = { googleDriveService.completeAuthentication() },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -182,7 +201,18 @@ fun main() {
                 CloudServiceColumn(
                     name = "OneDrive",
                     service = oneDriveService,
-                    clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                    startAuth = {
+                        oneDriveService.startAuthenticationByRedirect(
+                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
+                    finishAuth = {
+                        oneDriveService.completeAuthentication(
+                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -197,7 +227,8 @@ fun main() {
 private fun CloudServiceColumn(
     name: String,
     service: CloudService,
-    clientId: String,
+    startAuth: () -> Unit,
+    finishAuth: suspend () -> String?,
     pathFilter: FolderPath,
     onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
@@ -304,47 +335,19 @@ private fun CloudServiceColumn(
                 }
             }
         } else {
-            val authenticator = service.getAuthenticator(
-                clientId = clientId,
-                redirectUri = "http://localhost:8080"
-            )
-            val authenticateUrl = authenticator.buildUri()
-
-            SelectionContainer {
-                Text("URL: $authenticateUrl")
+            Button(onClick = { startAuth() }) {
+                Text("Authenticate with $name")
             }
-
-            val params = URLSearchParams(window.location.search.toJsString())
-            when (authenticator) {
-                is PkceAuthenticator -> {
-                    val code = params.get("code")
-                    if (code != null) {
-                        Text("Code: $code")
-
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    authenticator.exchangeCodeForToken(code = code)
-                                    window.location.href = window.location.origin + window.location.pathname
-                                }
-                            }
-                        ) { Text("Request token using code") }
-                    }
-                }
-
-                is ImplicitAuthenticator -> {
-                    val token = window.location.getHashParam("access_token")
+            Button(onClick = {
+                scope.launch {
+                    val token = finishAuth()
                     if (token != null) {
-                        authenticator.storeToken(token)
+                        // Reload page
                         window.location.href = window.location.origin + window.location.pathname
                     }
                 }
-            }
-
-            Button(
-                onClick = { window.location.href = authenticateUrl }
-            ) {
-                Text("Authenticate with $name")
+            }) {
+                Text("Finish auth")
             }
         }
     }

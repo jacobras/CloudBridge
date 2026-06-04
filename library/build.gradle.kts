@@ -45,6 +45,9 @@ kotlin {
                 implementation(libs.ktor.server.netty)
             }
         }
+        webMain.dependencies {
+            implementation(libs.kotlinx.browser)
+        }
     }
 
     compilerOptions {

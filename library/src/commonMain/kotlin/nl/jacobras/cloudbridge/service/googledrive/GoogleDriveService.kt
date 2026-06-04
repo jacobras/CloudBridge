@@ -18,7 +18,6 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -57,7 +56,7 @@ public class GoogleDriveService : CloudService {
             }
         )
     }
-    private val api = ktorfit.createGoogleDriveApi()
+    internal val api = ktorfit.createGoogleDriveApi()
     private val json = Json {
         encodeDefaults = true
     }
@@ -69,13 +68,6 @@ public class GoogleDriveService : CloudService {
 
     override fun isAuthenticated(): Boolean {
         return token != null
-    }
-
-    public override fun getAuthenticator(clientId: String, redirectUri: String): ImplicitAuthenticator {
-        return GoogleDriveAuthenticator(
-            clientId = clientId,
-            redirectUri = redirectUri
-        )
     }
 
     override fun logout() {

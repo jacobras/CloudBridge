@@ -19,10 +19,13 @@ import androidx.compose.ui.window.application
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
-import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
+import nl.jacobras.cloudbridge.service.dropbox.authenticate
+import nl.jacobras.cloudbridge.service.googledrive.authenticate
+import nl.jacobras.cloudbridge.service.onedrive.authenticate
+import kotlin.time.Duration.Companion.milliseconds
 
 fun main() = application {
     val dropboxService = remember {
@@ -72,33 +75,35 @@ fun main() = application {
         val uriHandler = LocalUriHandler.current
         val scope = rememberCoroutineScope()
 
-        fun selectService(service: CloudService, clientId: String) = scope.launch {
-            localServer.stop()
-            localServer.start(service = service, clientId = clientId)
-            delay(300)
-            uriHandler.openUri(localServer.url)
+        fun openDelayed(url: String) = scope.launch {
+            delay(300.milliseconds)
+            uriHandler.openUri(url)
         }
 
         Column {
             Text("Sign in with: (opens browser)")
             Row {
                 Button(onClick = {
-                    selectService(
-                        service = dropboxService,
+                    val url = dropboxService.authenticate(
+                        authServer = localServer,
                         clientId = "nw5f95uw77yrz3j"
                     )
+                    openDelayed(url)
                 }) { Text("Dropbox") }
                 Button(onClick = {
-                    selectService(
-                        service = googleDriveService,
-                        clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com"
+                    val url = googleDriveService.authenticate(
+                        authServer = localServer,
+                        clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com",
+                        clientSecret = "TODO"
                     )
+                    openDelayed(url)
                 }) { Text("Google Drive") }
                 Button(onClick = {
-                    selectService(
-                        service = oneDriveService,
+                    val url = oneDriveService.authenticate(
+                        authServer = localServer,
                         clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
                     )
+                    openDelayed(url)
                 }) { Text("OneDrive") }
             }
 

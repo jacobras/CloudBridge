@@ -7,7 +7,7 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 /**
  * Can be used to authorize a user.
  */
-public abstract class CloudAuthenticator(
+internal abstract class CloudAuthenticator(
     private val clientId: String,
     private val redirectUri: String
 ) {
@@ -39,7 +39,7 @@ public abstract class CloudAuthenticator(
         }
     }
 
-    public abstract fun buildUri(): String
+    abstract fun buildUri(): String
 }
 
 /**
@@ -47,7 +47,7 @@ public abstract class CloudAuthenticator(
  *
  * https://www.oauth.com/oauth2-servers/single-page-apps/implicit-flow/
  */
-public abstract class ImplicitAuthenticator(
+internal abstract class ImplicitAuthenticator(
     clientId: String,
     redirectUri: String
 ) : CloudAuthenticator(
@@ -56,12 +56,7 @@ public abstract class ImplicitAuthenticator(
 ) {
     override val responseType: String = "token"
 
-    public override fun buildUri(): String = buildUri(codeChallenge = "")
-
-    /**
-     * Stores the [token] for the cloud service.
-     */
-    public abstract fun storeToken(token: String)
+    override fun buildUri(): String = buildUri(codeChallenge = "")
 }
 
 /**
@@ -69,7 +64,7 @@ public abstract class ImplicitAuthenticator(
  *
  * https://www.oauth.com/oauth2-servers/pkce/
  */
-public abstract class PkceAuthenticator(
+internal abstract class PkceAuthenticator(
     clientId: String,
     redirectUri: String,
     protected val codeVerifier: String
@@ -80,10 +75,10 @@ public abstract class PkceAuthenticator(
     override val responseType: String = "code"
     private val codeChallenge = SecurityUtil.buildCodeChallenge(codeVerifier)
 
-    public override fun buildUri(): String = buildUri(codeChallenge = codeChallenge)
+    override fun buildUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
      * @throws CloudServiceException
      */
-    public abstract suspend fun exchangeCodeForToken(code: String): String
+    abstract suspend fun exchangeCodeForToken(code: String): String
 }

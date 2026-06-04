@@ -9,8 +9,6 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.auth.CloudAuthenticator
-import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.name
 import java.net.URI
@@ -47,10 +45,8 @@ public class LocalAuthenticationServer(
      * @see stop to stop the server.
      * @throws IllegalStateException If the server is already running.
      */
-    public fun start(service: CloudService, clientId: String) {
+    internal fun start(service: CloudService, authenticator: PkceAuthenticator) {
         require(server == null) { "Server is already running; stop it first" }
-        val redirectUri = "http://localhost:$port"
-        val authenticator = service.getAuthenticator(clientId, redirectUri)
         val authUrl = authenticator.buildUri()
 
         server = embeddedServer(Netty, port = port) {
@@ -88,18 +84,10 @@ public class LocalAuthenticationServer(
         server?.stop()
     }
 
-    private suspend fun getToken(authenticator: CloudAuthenticator, url: String): String? {
+    private suspend fun getToken(authenticator: PkceAuthenticator, url: String): String? {
         val params = parseQueryParams(url)
-
-        return when (authenticator) {
-            is ImplicitAuthenticator -> {
-                params["access_token"]
-            }
-            is PkceAuthenticator -> {
-                val code = params["code"] ?: return null
-                authenticator.exchangeCodeForToken(code)
-            }
-        }
+        val code = params["code"] ?: return null
+        return authenticator.exchangeCodeForToken(code)
     }
 }
 

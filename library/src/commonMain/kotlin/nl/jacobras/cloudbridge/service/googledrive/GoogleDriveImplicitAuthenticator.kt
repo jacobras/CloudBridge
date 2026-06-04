@@ -1,13 +1,15 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
 import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
-import nl.jacobras.cloudbridge.persistence.Settings
 
 /**
  * Google Drive only supports Implicit Flow
  * (https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow).
+ *
+ * If you try to use PKCE, you'll get an error because it requires client_secret (which is against
+ * the OAuth 2.0 spec for public clients).
  */
-internal class GoogleDriveAuthenticator(
+internal class GoogleDriveImplicitAuthenticator(
     val clientId: String,
     val redirectUri: String
 ) : ImplicitAuthenticator(
@@ -16,9 +18,4 @@ internal class GoogleDriveAuthenticator(
 ) {
     override val baseUrl = "https://accounts.google.com/o/oauth2/v2/auth"
     override val scope = "https://www.googleapis.com/auth/drive.appdata"
-
-    override fun storeToken(token: String) {
-        Settings.googleDriveToken = token
-        Settings.codeVerifier = null
-    }
 }

@@ -13,7 +13,6 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -24,7 +23,6 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
-import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
 
 public class OneDriveService : CloudService {
@@ -53,7 +51,7 @@ public class OneDriveService : CloudService {
             }
         )
     }
-    private val api = ktorfit.createOneDriveApi()
+    internal val api = ktorfit.createOneDriveApi()
     private val json = Json {
         encodeDefaults = true
     }
@@ -65,20 +63,6 @@ public class OneDriveService : CloudService {
 
     override fun isAuthenticated(): Boolean {
         return token != null
-    }
-
-    public override fun getAuthenticator(clientId: String, redirectUri: String): CloudAuthenticator {
-        val codeVerifier = Settings.codeVerifier ?: let {
-            val verifier = SecurityUtil.createRandomCodeVerifier()
-            Settings.codeVerifier = verifier
-            verifier
-        }
-        return OneDriveAuthenticator(
-            api = api,
-            clientId = clientId,
-            redirectUri = redirectUri,
-            codeVerifier = codeVerifier
-        )
     }
 
     override fun logout() {

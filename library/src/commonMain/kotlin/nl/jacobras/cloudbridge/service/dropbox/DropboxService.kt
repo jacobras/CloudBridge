@@ -14,7 +14,6 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -25,7 +24,6 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.persistence.Settings
-import nl.jacobras.cloudbridge.security.SecurityUtil
 import kotlin.time.Instant
 
 public class DropboxService : CloudService {
@@ -54,7 +52,7 @@ public class DropboxService : CloudService {
             }
         )
     }
-    private val api = ktorfit.createDropboxApi()
+    internal val api = ktorfit.createDropboxApi()
 
     private fun requireAuthHeader(): String {
         val token = token ?: throw CloudServiceException.NotAuthenticatedException()
@@ -63,20 +61,6 @@ public class DropboxService : CloudService {
 
     override fun isAuthenticated(): Boolean {
         return Settings.dropboxToken != null
-    }
-
-    public override fun getAuthenticator(clientId: String, redirectUri: String): CloudAuthenticator {
-        val codeVerifier = Settings.codeVerifier ?: let {
-            val verifier = SecurityUtil.createRandomCodeVerifier()
-            Settings.codeVerifier = verifier
-            verifier
-        }
-        return DropboxAuthenticator(
-            api = api,
-            clientId = clientId,
-            redirectUri = redirectUri,
-            codeVerifier = codeVerifier
-        )
     }
 
     override fun logout() {
