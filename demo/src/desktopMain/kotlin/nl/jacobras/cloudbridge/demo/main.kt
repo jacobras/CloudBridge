@@ -2,6 +2,7 @@ package nl.jacobras.cloudbridge.demo
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +69,7 @@ fun main() = application {
                         Text("OK")
                     }
                 },
-                text = { Text("Success! Token: $obtainedToken") }
+                text = { SelectionContainer { Text("Success! Token: $obtainedToken") } }
             )
         }
 
