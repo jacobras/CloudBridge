@@ -14,11 +14,6 @@ public interface CloudService {
     public fun isAuthenticated(): Boolean
 
     /**
-     * Clears all tokens for this service.
-     */
-    public fun logout()
-
-    /**
      * Fetches the user's info (like name and email address).
      *
      * @throws CloudServiceException

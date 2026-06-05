@@ -1,19 +1,13 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
-import de.jensklingenberg.ktorfit.ktorfit
-import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.request.header
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.OAuthCloudService
+import nl.jacobras.cloudbridge.auth.AccessToken
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -23,49 +17,19 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
-import nl.jacobras.cloudbridge.persistence.Settings
 import kotlin.time.Instant
 
-public class DropboxService : CloudService {
+/**
+ * Instance of the Dropbox API.
+ *
+ * @param token The access token to use for authentication. Leave empty to authenticate a new account.
+ */
+public class DropboxService(
+    token: AccessToken? = null
+) : OAuthCloudService(token) {
 
-    private val token: String?
-        get() = Settings.dropboxToken
-
-    private val ktorfit = ktorfit {
-        baseUrl("https://api.dropboxapi.com/")
-        httpClient(
-            HttpClient {
-                expectSuccess = true
-                install(ContentNegotiation) {
-                    json(
-                        Json {
-                            isLenient = true
-                            ignoreUnknownKeys = true
-                        }
-                    )
-                }
-                defaultRequest {
-                    if (token != null) {
-                        header(HttpHeaders.Authorization, "Bearer $token")
-                    }
-                }
-            }
-        )
-    }
+    override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
-
-    private fun requireAuthHeader(): String {
-        val token = token ?: throw CloudServiceException.NotAuthenticatedException()
-        return "Bearer $token"
-    }
-
-    override fun isAuthenticated(): Boolean {
-        return Settings.dropboxToken != null
-    }
-
-    override fun logout() {
-        Settings.dropboxToken = null
-    }
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()
