@@ -7,7 +7,7 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
-import nl.jacobras.cloudbridge.auth.AccessToken
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -25,7 +25,7 @@ import kotlin.time.Instant
  * @param token The access token to use for authentication. Leave empty to authenticate a new account.
  */
 public class DropboxService(
-    token: AccessToken? = null
+    token: CloudAccessToken? = null
 ) : OAuthCloudService(token) {
 
     override val baseUrl: String = "https://api.dropboxapi.com/"

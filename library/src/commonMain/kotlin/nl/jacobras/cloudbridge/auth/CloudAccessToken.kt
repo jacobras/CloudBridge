@@ -9,7 +9,7 @@ import kotlin.time.Duration
  * @property refreshToken The refresh token, to get a fresh [accessToken].
  * @property expiresIn The duration until [accessToken] expires.
  */
-public data class AccessToken(
+public data class CloudAccessToken(
     val accessToken: String,
     val refreshToken: String? = null,
     val expiresIn: Duration? = null

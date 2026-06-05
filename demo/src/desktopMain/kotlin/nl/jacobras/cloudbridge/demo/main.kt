@@ -20,6 +20,7 @@ import androidx.compose.ui.window.application
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
@@ -32,12 +33,21 @@ fun main() = application {
     val dropboxService = remember {
         CloudBridge.dropbox()
     }
+    // TODO: inject token into services
     val googleDriveService = remember { CloudBridge.googleDrive() }
     val oneDriveService = remember { CloudBridge.oneDrive() }
     var selectedService by remember { mutableStateOf(dropboxService) }
 
-    var obtainedToken by remember { mutableStateOf("") }
-    val localServer = remember { LocalAuthenticationServer(onSuccess = { obtainedToken = it }) }
+    var obtainedToken by remember { mutableStateOf<CloudAccessToken?>(null) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    val localServer = remember {
+        LocalAuthenticationServer(
+            onSuccess = {
+                obtainedToken = it
+                showSuccessDialog = true
+            }
+        )
+    }
 
     var error by remember { mutableStateOf("") }
     val files by produceState(emptyList(), obtainedToken) {
@@ -61,11 +71,11 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "CloudBridge Demo",
     ) {
-        if (obtainedToken.isNotEmpty()) {
+        if (showSuccessDialog) {
             AlertDialog(
-                onDismissRequest = { obtainedToken = "" },
+                onDismissRequest = { showSuccessDialog = false },
                 confirmButton = {
-                    Button(onClick = { obtainedToken = "" }) {
+                    Button(onClick = { showSuccessDialog = false }) {
                         Text("OK")
                     }
                 },

@@ -7,6 +7,7 @@ import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.Query
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import nl.jacobras.cloudbridge.auth.TokenResponse
 
 /**
  * Docs: https://www.dropbox.com/developers/documentation/http/documentation
@@ -52,15 +53,6 @@ internal interface DropboxApi {
     @Headers("Content-Type: application/json")
     suspend fun deleteByPath(@Body body: DeleteRequest)
 }
-
-@Serializable
-internal data class TokenResponse(
-    @SerialName("access_token")
-    val accessToken: String,
-
-    @SerialName("expires_in")
-    val expiresInSeconds: Int? = null // Will be null in case of legacy long-lived access token
-)
 
 @Serializable
 internal data class DropboxUserInfo(

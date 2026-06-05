@@ -1,6 +1,8 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
+import nl.jacobras.cloudbridge.auth.toCloudAccessToken
 import nl.jacobras.cloudbridge.persistence.Settings
 
 internal class GoogleDrivePkceAuthenticator(
@@ -17,7 +19,7 @@ internal class GoogleDrivePkceAuthenticator(
     override val baseUrl = "https://accounts.google.com/o/oauth2/v2/auth"
     override val scope = "https://www.googleapis.com/auth/drive.appdata"
 
-    override suspend fun exchangeCodeForToken(code: String): String {
+    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {
             val token = api.getToken(
                 clientId = clientId,
@@ -26,8 +28,7 @@ internal class GoogleDrivePkceAuthenticator(
                 code = code,
                 codeVerifier = codeVerifier
             )
-            Settings.googleDriveToken = token.accessToken
-            return token.accessToken
+            return token.toCloudAccessToken()
         } finally {
             Settings.codeVerifier = null
         }

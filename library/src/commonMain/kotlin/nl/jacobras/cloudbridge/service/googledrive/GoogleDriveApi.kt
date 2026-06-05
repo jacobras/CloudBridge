@@ -13,6 +13,7 @@ import de.jensklingenberg.ktorfit.http.Query
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import nl.jacobras.cloudbridge.auth.TokenResponse
 
 /**
  * Docs: https://developers.google.com/workspace/drive/api/reference/rest/v3/files
@@ -61,15 +62,6 @@ internal interface GoogleDriveApi {
     @DELETE("drive/v3/files/{fileId}")
     suspend fun deleteById(@Path("fileId") fileId: String)
 }
-
-@Serializable
-internal data class TokenResponse(
-    @SerialName("access_token")
-    val accessToken: String,
-
-    @SerialName("expires_in")
-    val expiresInSeconds: Int
-)
 
 @Serializable
 internal data class UserResponse(

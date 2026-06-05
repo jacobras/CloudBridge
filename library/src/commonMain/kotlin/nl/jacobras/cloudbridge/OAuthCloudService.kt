@@ -9,10 +9,10 @@ import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.auth.AccessToken
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
 public abstract class OAuthCloudService(
-    private val token: AccessToken? = null
+    private val token: CloudAccessToken? = null
 ) : CloudService {
 
     protected abstract val baseUrl: String

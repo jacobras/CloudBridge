@@ -9,6 +9,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.name
 import java.net.URI
@@ -25,7 +26,7 @@ import java.nio.charset.StandardCharsets
  */
 public class LocalAuthenticationServer(
     private val port: Int = 8080,
-    private val onSuccess: (String) -> Unit
+    private val onSuccess: (CloudAccessToken) -> Unit
 ) {
     private var server: EmbeddedServer<*, *>? = null
 
@@ -82,9 +83,10 @@ public class LocalAuthenticationServer(
      */
     public fun stop() {
         server?.stop()
+        server = null
     }
 
-    private suspend fun getToken(authenticator: PkceAuthenticator, url: String): String? {
+    private suspend fun getToken(authenticator: PkceAuthenticator, url: String): CloudAccessToken? {
         val params = parseQueryParams(url)
         val code = params["code"] ?: return null
         return authenticator.exchangeCodeForToken(code)

@@ -75,5 +75,5 @@ internal abstract class PkceAuthenticator(
     /**
      * @throws CloudServiceException
      */
-    abstract suspend fun exchangeCodeForToken(code: String): String
+    abstract suspend fun exchangeCodeForToken(code: String): CloudAccessToken
 }

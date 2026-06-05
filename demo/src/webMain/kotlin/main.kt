@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -59,6 +60,7 @@ private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
 fun main() {
     CloudBridge.logger = KermitLogger()
 
+    // TODO: inject token into services
     val dropboxService = CloudBridge.dropbox()
     val googleDriveService = CloudBridge.googleDrive()
     val oneDriveService = CloudBridge.oneDrive()
@@ -228,7 +230,7 @@ private fun CloudServiceColumn(
     name: String,
     service: CloudService,
     startAuth: () -> Unit,
-    finishAuth: suspend () -> String?,
+    finishAuth: suspend () -> CloudAccessToken?,
     pathFilter: FolderPath,
     onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
@@ -251,7 +253,6 @@ private fun CloudServiceColumn(
             }
 
             Button(onClick = {
-                service.logout()
                 window.location.reload()
             }) { Text("Log out") }
 

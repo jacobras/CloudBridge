@@ -1,6 +1,8 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
+import nl.jacobras.cloudbridge.auth.toCloudAccessToken
 import nl.jacobras.cloudbridge.persistence.Settings
 
 internal class OneDriveAuthenticator(
@@ -16,7 +18,7 @@ internal class OneDriveAuthenticator(
     override val baseUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
     override val scope = "files.readwrite openid profile email"
 
-    override suspend fun exchangeCodeForToken(code: String): String {
+    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {
             val token = api.getToken(
                 clientId = clientId,
@@ -24,8 +26,7 @@ internal class OneDriveAuthenticator(
                 code = code,
                 codeVerifier = codeVerifier
             )
-            Settings.oneDriveToken = token.accessToken
-            return token.accessToken
+            return token.toCloudAccessToken()
         } finally {
             Settings.codeVerifier = null
         }

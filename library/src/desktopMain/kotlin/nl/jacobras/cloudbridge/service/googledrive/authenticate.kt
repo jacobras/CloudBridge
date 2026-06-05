@@ -21,6 +21,7 @@ public fun GoogleDriveService.authenticate(
         redirectUri = authServer.url,
         codeVerifier = codeVerifier
     )
+    authServer.stop()
     authServer.start(service = this, authenticator = authenticator)
     return authServer.url
 }
