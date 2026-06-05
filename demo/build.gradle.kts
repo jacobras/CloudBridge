@@ -1,11 +1,18 @@
 @file:Suppress("OPT_IN_USAGE")
 
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.buildconfig)
+}
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 kotlin {
@@ -34,6 +41,10 @@ kotlin {
             implementation(projects.library)
         }
         val desktopMain by getting {
+            buildConfig {
+                packageName("nl.jacobras.cloudbridge.demo")
+                buildConfigField<String>("DRIVE_DESKTOP_SECRET", localProps.getProperty("driveDesktopSecret") ?: "")
+            }
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlinx.coroutinesSwing)

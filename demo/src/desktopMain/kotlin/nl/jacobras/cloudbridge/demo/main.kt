@@ -94,7 +94,7 @@ fun main() = application {
                     val url = googleDriveService.authenticate(
                         authServer = localServer,
                         clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com",
-                        clientSecret = "TODO"
+                        clientSecret = DesktopMainBuildConfig.DRIVE_DESKTOP_SECRET
                     )
                     openDelayed(url)
                 }) { Text("Google Drive") }
