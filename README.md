@@ -1,10 +1,11 @@
 # CloudBridge
 
+![Android](https://img.shields.io/badge/Android-green.svg?logo=android)
 ![JS](https://img.shields.io/badge/JavaScript-yellow.svg?logo=javascript)
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
 ![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
-Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting web and desktop (JVM), but Android and iOS
+Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting Android, web and desktop (JVM), but iOS
 support is planned.
 
 <img height="172" src="/docs/images/logo.png"/>
@@ -17,7 +18,7 @@ This library is not yet stable. The API will change and docs may be outdated.
 
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms.
-* 📱 **Cross-platform**: Currently supports web, but mobile (Android) and desktop (JVM) are planned.
+* 📱 **Cross-platform**: Supports Android, web and desktop (JVM); iOS is planned.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 
@@ -25,9 +26,9 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 
 |                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|-----------------|------------------|------------------|
-| **Dropbox**            | ⏳                   | ⏳               | ✅                | ✅                |
-| **Google Drive**       | ⏳                   | ⏳               | ✅                | ✅                |
-| **Microsoft OneDrive** | ⏳                   | ⏳               | ✅                | ✅                |
+| **Dropbox**            | ✅                   | ⏳               | ✅                | ✅                |
+| **Google Drive**       | ✅                   | ⏳               | ✅                | ✅                |
+| **Microsoft OneDrive** | ✅                   | ⏳               | ✅                | ✅                |
 
 ✅ = Supported.<br>
 ⏳ = Planned.
@@ -89,6 +90,27 @@ service.completeAuthentication() // Always call this
 service.startAuthenticationByRedirect(
     clientId = "yourClientId",
     redirectUri = "yourRedirectUri"
+)
+```
+
+**Android**
+
+Open the auth URL in a Custom Tab and capture the redirect via a deep link (`intent-filter`).
+Then exchange the authorization code for a token:
+```kotlin
+// When user wants to authenticate, open this URL in a Custom Tab:
+val url = service.buildAuthenticationUri(
+    clientId = "yourClientId",
+    redirectUri = "yourRedirectUri" // e.g. a custom scheme like "your.app://oauth"
+)
+CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
+
+// In your Activity's onNewIntent, parse the "code" from the redirect Uri:
+val code = intent.data?.getQueryParameter("code") ?: return
+val token = service.completeAuthentication(
+    clientId = "yourClientId",
+    redirectUri = "yourRedirectUri",
+    code = code
 )
 ```
 

@@ -1,10 +1,12 @@
 @file:Suppress("OPT_IN_USAGE")
 
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.buildconfig)
@@ -16,6 +18,9 @@ val localProps = Properties().apply {
 }
 
 kotlin {
+    androidTarget {
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    }
     jvm("desktop")
     js {
         browser()
@@ -54,10 +59,39 @@ kotlin {
         webMain.dependencies {
             implementation(libs.kotlinx.browser)
         }
+        androidMain {
+            buildConfig {
+                packageName("nl.jacobras.cloudbridge.demo")
+                buildConfigField<String>("DRIVE_DESKTOP_SECRET", localProps.getProperty("driveDesktopSecret") ?: "")
+            }
+            dependencies {
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.multiplatform.settings.no.arg)
+                implementation(libs.androidx.browser)
+            }
+        }
     }
 
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
+    }
+}
+
+android {
+    namespace = "nl.jacobras.cloudbridge.demo"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    defaultConfig {
+        applicationId = "nl.jacobras.cloudbridge.demo"
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        versionCode = 1
+        versionName = project.version.toString()
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
