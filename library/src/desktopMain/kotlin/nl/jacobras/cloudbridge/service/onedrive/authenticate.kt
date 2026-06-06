@@ -1,12 +1,14 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public fun OneDriveService.authenticate(
     authServer: LocalAuthenticationServer,
-    clientId: String
+    clientId: String,
+    onSuccess: (CloudAccessToken) -> Unit
 ): String {
     val codeVerifier = Settings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
@@ -20,6 +22,6 @@ public fun OneDriveService.authenticate(
         codeVerifier = codeVerifier
     )
     authServer.stop()
-    authServer.start(service = this, authenticator = authenticator)
+    authServer.start(service = this, authenticator = authenticator, onSuccess = onSuccess)
     return authServer.url
 }

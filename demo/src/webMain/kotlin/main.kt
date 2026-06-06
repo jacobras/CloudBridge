@@ -35,6 +35,7 @@ import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -60,10 +61,9 @@ private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
 fun main() {
     CloudBridge.logger = KermitLogger()
 
-    // TODO: inject token into services
-    val dropboxService = CloudBridge.dropbox()
-    val googleDriveService = CloudBridge.googleDrive()
-    val oneDriveService = CloudBridge.oneDrive()
+    val dropboxService = CloudBridge.dropbox(DemoSettings.dropboxToken)
+    val googleDriveService = CloudBridge.googleDrive(DemoSettings.googleDriveToken)
+    val oneDriveService = CloudBridge.oneDrive(DemoSettings.oneDriveToken)
     val allServices = listOf(dropboxService, googleDriveService, oneDriveService)
 
     ComposeViewport {
@@ -177,10 +177,12 @@ fun main() {
                         )
                     },
                     finishAuth = {
-                        dropboxService.completeAuthentication(
+                        val token = dropboxService.completeAuthentication(
                             clientId = "nw5f95uw77yrz3j",
                             redirectUri = "http://localhost:8080"
                         )
+                        DemoSettings.dropboxToken = token
+                        token
                     },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
@@ -195,7 +197,11 @@ fun main() {
                             redirectUri = "http://localhost:8080"
                         )
                     },
-                    finishAuth = { googleDriveService.completeAuthentication() },
+                    finishAuth = {
+                        val token = googleDriveService.completeAuthentication()
+                        DemoSettings.googleDriveToken = token
+                        token
+                    },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -210,10 +216,12 @@ fun main() {
                         )
                     },
                     finishAuth = {
-                        oneDriveService.completeAuthentication(
+                        val token = oneDriveService.completeAuthentication(
                             clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
                             redirectUri = "http://localhost:8080"
                         )
+                        DemoSettings.oneDriveToken = token
+                        token
                     },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },

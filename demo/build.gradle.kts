@@ -37,10 +37,11 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.humanReadable)
             implementation(libs.kermit)
+            implementation(libs.multiplatform.settings)
 
             implementation(projects.library)
         }
-        val desktopMain by getting {
+        named("desktopMain") {
             buildConfig {
                 packageName("nl.jacobras.cloudbridge.demo")
                 buildConfigField<String>("DRIVE_DESKTOP_SECRET", localProps.getProperty("driveDesktopSecret") ?: "")

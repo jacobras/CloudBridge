@@ -22,11 +22,9 @@ import java.nio.charset.StandardCharsets
  * The cloud service should be configured to allow redirects to `http://localhost:$port`.
  *
  * @param port The port to listen on. Defaults to 8080.
- * @param onSuccess A callback invoked when authentication succeeds.
  */
 public class LocalAuthenticationServer(
-    private val port: Int = 8080,
-    private val onSuccess: (CloudAccessToken) -> Unit
+    private val port: Int = 8080
 ) {
     private var server: EmbeddedServer<*, *>? = null
 
@@ -43,10 +41,16 @@ public class LocalAuthenticationServer(
      * Can be called only once before calling [stop].
      *
      * @param service The cloud service to connect to.
+     * @param authenticator The authenticator to use for authentication.
+     * @param onSuccess A callback invoked when authentication succeeds.
      * @see stop to stop the server.
      * @throws IllegalStateException If the server is already running.
      */
-    internal fun start(service: CloudService, authenticator: PkceAuthenticator) {
+    internal fun start(
+        service: CloudService,
+        authenticator: PkceAuthenticator,
+        onSuccess: (CloudAccessToken) -> Unit
+    ) {
         require(server == null) { "Server is already running; stop it first" }
         val authUrl = authenticator.buildPkceUri()
 

@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
@@ -7,7 +8,8 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 public fun GoogleDriveService.authenticate(
     authServer: LocalAuthenticationServer,
     clientId: String,
-    clientSecret: String
+    clientSecret: String,
+    onSuccess: (CloudAccessToken) -> Unit
 ): String {
     val codeVerifier = Settings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
@@ -22,6 +24,6 @@ public fun GoogleDriveService.authenticate(
         codeVerifier = codeVerifier
     )
     authServer.stop()
-    authServer.start(service = this, authenticator = authenticator)
+    authServer.start(service = this, authenticator = authenticator, onSuccess = onSuccess)
     return authServer.url
 }

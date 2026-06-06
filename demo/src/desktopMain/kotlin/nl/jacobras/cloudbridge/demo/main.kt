@@ -21,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
@@ -30,24 +31,14 @@ import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import kotlin.time.Duration.Companion.milliseconds
 
 fun main() = application {
-    val dropboxService = remember {
-        CloudBridge.dropbox()
-    }
-    // TODO: inject token into services
-    val googleDriveService = remember { CloudBridge.googleDrive() }
-    val oneDriveService = remember { CloudBridge.oneDrive() }
+    val dropboxService = remember { CloudBridge.dropbox(DemoSettings.dropboxToken) }
+    val googleDriveService = remember { CloudBridge.googleDrive(DemoSettings.googleDriveToken) }
+    val oneDriveService = remember { CloudBridge.oneDrive(DemoSettings.oneDriveToken) }
     var selectedService by remember { mutableStateOf(dropboxService) }
 
     var obtainedToken by remember { mutableStateOf<CloudAccessToken?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
-    val localServer = remember {
-        LocalAuthenticationServer(
-            onSuccess = {
-                obtainedToken = it
-                showSuccessDialog = true
-            }
-        )
-    }
+    val localServer = remember { LocalAuthenticationServer() }
 
     var error by remember { mutableStateOf("") }
     val files by produceState(emptyList(), obtainedToken) {
@@ -97,7 +88,12 @@ fun main() = application {
                 Button(onClick = {
                     val url = dropboxService.authenticate(
                         authServer = localServer,
-                        clientId = "nw5f95uw77yrz3j"
+                        clientId = "nw5f95uw77yrz3j",
+                        onSuccess = {
+                            obtainedToken = it
+                            DemoSettings.dropboxToken = it
+                            showSuccessDialog = true
+                        }
                     )
                     openDelayed(url)
                 }) { Text("Dropbox") }
@@ -105,14 +101,24 @@ fun main() = application {
                     val url = googleDriveService.authenticate(
                         authServer = localServer,
                         clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com",
-                        clientSecret = DesktopMainBuildConfig.DRIVE_DESKTOP_SECRET
+                        clientSecret = DesktopMainBuildConfig.DRIVE_DESKTOP_SECRET,
+                        onSuccess = {
+                            obtainedToken = it
+                            DemoSettings.googleDriveToken = it
+                            showSuccessDialog = true
+                        }
                     )
                     openDelayed(url)
                 }) { Text("Google Drive") }
                 Button(onClick = {
                     val url = oneDriveService.authenticate(
                         authServer = localServer,
-                        clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
+                        clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                        onSuccess = {
+                            obtainedToken = it
+                            DemoSettings.oneDriveToken = it
+                            showSuccessDialog = true
+                        }
                     )
                     openDelayed(url)
                 }) { Text("OneDrive") }
