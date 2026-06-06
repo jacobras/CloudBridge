@@ -19,8 +19,8 @@ internal object DemoSettings {
         set(value) {
             if (value != null) {
                 demoSettings.putString(KEY_DROPBOX_TOKEN, value.accessToken)
-                demoSettings.putString(KEY_DROPBOX_REFRESH_TOKEN, value.refreshToken ?: "")
-                demoSettings.putLong(KEY_DROPBOX_EXPIRES_IN, value.expiresIn?.inWholeSeconds ?: 0L)
+                demoSettings.putStringOrRemove(KEY_DROPBOX_REFRESH_TOKEN, value.refreshToken)
+                demoSettings.putLongOrRemove(KEY_DROPBOX_EXPIRES_IN, value.expiresIn?.inWholeSeconds ?: 0L)
             } else {
                 demoSettings.remove(KEY_DROPBOX_TOKEN)
                 demoSettings.remove(KEY_DROPBOX_REFRESH_TOKEN)
@@ -40,8 +40,8 @@ internal object DemoSettings {
         set(value) {
             if (value != null) {
                 demoSettings.putString(KEY_GOOGLE_DRIVE_TOKEN, value.accessToken)
-                demoSettings.putString(KEY_GOOGLE_DRIVE_REFRESH_TOKEN, value.refreshToken ?: "")
-                demoSettings.putLong(KEY_GOOGLE_DRIVE_EXPIRES_IN, value.expiresIn?.inWholeSeconds ?: 0L)
+                demoSettings.putStringOrRemove(KEY_GOOGLE_DRIVE_REFRESH_TOKEN, value.refreshToken)
+                demoSettings.putLongOrRemove(KEY_GOOGLE_DRIVE_EXPIRES_IN, value.expiresIn?.inWholeSeconds)
             } else {
                 demoSettings.remove(KEY_GOOGLE_DRIVE_TOKEN)
                 demoSettings.remove(KEY_GOOGLE_DRIVE_REFRESH_TOKEN)
@@ -61,8 +61,8 @@ internal object DemoSettings {
         set(value) {
             if (value != null) {
                 demoSettings.putString(KEY_ONEDRIVE_TOKEN, value.accessToken)
-                demoSettings.putString(KEY_ONEDRIVE_REFRESH_TOKEN, value.refreshToken ?: "")
-                demoSettings.putLong(KEY_ONEDRIVE_EXPIRES_IN, value.expiresIn?.inWholeSeconds ?: 0L)
+                demoSettings.putStringOrRemove(KEY_ONEDRIVE_REFRESH_TOKEN, value.refreshToken)
+                demoSettings.putLongOrRemove(KEY_ONEDRIVE_EXPIRES_IN, value.expiresIn?.inWholeSeconds)
             } else {
                 demoSettings.remove(KEY_ONEDRIVE_TOKEN)
                 demoSettings.remove(KEY_ONEDRIVE_REFRESH_TOKEN)
@@ -72,6 +72,22 @@ internal object DemoSettings {
 
     fun clear() {
         demoSettings.clear()
+    }
+}
+
+private fun Settings.putStringOrRemove(key: String, value: String?) {
+    if (value != null) {
+        putString(key, value)
+    } else {
+        remove(key)
+    }
+}
+
+private fun Settings.putLongOrRemove(key: String, value: Long?) {
+    if (value != null) {
+        putLong(key, value)
+    } else {
+        remove(key)
     }
 }
 
