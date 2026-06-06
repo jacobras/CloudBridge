@@ -1,3 +1,5 @@
+package nl.jacobras.cloudbridge
+
 import org.w3c.dom.Location
 
 internal fun Location.getHashParam(key: String): String? {

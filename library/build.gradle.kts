@@ -13,6 +13,7 @@ group = "nl.jacobras"
 
 kotlin {
     js { browser() }
+    jvm("desktop")
     wasmJs {
         browser {
             testTask {
@@ -25,6 +26,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(libs.kotlin.coroutines.core)
             implementation(libs.kotlin.crypto.sha2)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.serialization)
@@ -36,6 +38,15 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.assertK)
+        }
+        named("desktopMain") {
+            dependencies {
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.netty)
+            }
+        }
+        webMain.dependencies {
+            implementation(libs.kotlinx.browser)
         }
     }
 

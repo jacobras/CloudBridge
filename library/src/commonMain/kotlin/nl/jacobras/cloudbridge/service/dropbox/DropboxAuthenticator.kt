@@ -1,7 +1,8 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
-import net.thauvin.erik.urlencoder.UrlEncoderUtil
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
+import nl.jacobras.cloudbridge.auth.toCloudAccessToken
 import nl.jacobras.cloudbridge.persistence.Settings
 
 internal class DropboxAuthenticator(
@@ -9,30 +10,23 @@ internal class DropboxAuthenticator(
     private val clientId: String,
     private val redirectUri: String,
     codeVerifier: String
-) : PkceAuthenticator(codeVerifier) {
+) : PkceAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri,
+    codeVerifier = codeVerifier
+) {
+    override val baseUrl = "https://www.dropbox.com/oauth2/authorize"
+    override val scope = ""
 
-    override fun buildUri(): String {
-        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
-
-        return buildString {
-            append("https://www.dropbox.com/oauth2/authorize")
-            append("?client_id=$clientId")
-            append("&response_type=code")
-            append("&code_challenge=$codeChallenge")
-            append("&code_challenge_method=S256")
-            append("&redirect_uri=$encodedRedirectUri")
-        }
-    }
-
-    override suspend fun exchangeCodeForToken(code: String) {
-        return try {
+    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
+        try {
             val token = api.getToken(
                 clientId = clientId,
                 redirectUri = redirectUri,
                 code = code,
                 codeVerifier = codeVerifier
             )
-            Settings.dropboxToken = token.accessToken
+            return token.toCloudAccessToken()
         } finally {
             Settings.codeVerifier = null
         }

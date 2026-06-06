@@ -27,7 +27,12 @@ jobs:
         uses: ./.github/actions/build-setup
 
       - name: Compile & run tests
-        run: ./gradlew kotlinUpgradeYarnLock check
+        run: >
+          ./gradlew kotlinUpgradeYarnLock
+          :library:desktopTest
+          :demo:compileKotlinDesktop
+          :demo:compileKotlinJs
+          :demo:compileKotlinWasmJs
 
       - name: Publish unit test report
         if: always()

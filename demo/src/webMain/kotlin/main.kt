@@ -1,26 +1,19 @@
 @file:OptIn(ExperimentalWasmJsInterop::class)
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FilePresent
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -31,7 +24,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,19 +34,22 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.ImplicitAuthenticator
-import nl.jacobras.cloudbridge.auth.PkceAuthenticator
-import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
+import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
-import nl.jacobras.humanreadable.HumanReadable
-import org.w3c.dom.url.URLSearchParams
+import nl.jacobras.cloudbridge.service.dropbox.completeAuthentication
+import nl.jacobras.cloudbridge.service.dropbox.startAuthenticationByRedirect
+import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
+import nl.jacobras.cloudbridge.service.googledrive.startAuthenticationByRedirect
+import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
+import nl.jacobras.cloudbridge.service.onedrive.startAuthenticationByRedirect
 import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.toJsString
 
 private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
     override fun log(message: String) {
@@ -66,15 +61,9 @@ private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
 fun main() {
     CloudBridge.logger = KermitLogger()
 
-    val dropboxService = CloudBridge.dropbox(
-        clientId = "nw5f95uw77yrz3j"
-    )
-    val googleDriveService = CloudBridge.googleDrive(
-        clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com"
-    )
-    val oneDriveService = CloudBridge.oneDrive(
-        clientId = "40916102-96a6-46ca-929e-90cc62c3be9a"
-    )
+    val dropboxService = CloudBridge.dropbox(DemoSettings.dropboxToken)
+    val googleDriveService = CloudBridge.googleDrive(DemoSettings.googleDriveToken)
+    val oneDriveService = CloudBridge.oneDrive(DemoSettings.oneDriveToken)
     val allServices = listOf(dropboxService, googleDriveService, oneDriveService)
 
     ComposeViewport {
@@ -133,7 +122,7 @@ fun main() {
                                 try {
                                     scope.launch {
                                         service.updateFile(
-                                            id = Id(id),
+                                            id = CloudItemId(id),
                                             content = content
                                         )
                                     }
@@ -181,6 +170,20 @@ fun main() {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
+                    startAuth = {
+                        dropboxService.startAuthenticationByRedirect(
+                            clientId = "nw5f95uw77yrz3j",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
+                    finishAuth = {
+                        val token = dropboxService.completeAuthentication(
+                            clientId = "nw5f95uw77yrz3j",
+                            redirectUri = "http://localhost:8080"
+                        )
+                        DemoSettings.dropboxToken = token
+                        token
+                    },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -188,6 +191,17 @@ fun main() {
                 CloudServiceColumn(
                     name = "Google Drive",
                     service = googleDriveService,
+                    startAuth = {
+                        googleDriveService.startAuthenticationByRedirect(
+                            clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
+                    finishAuth = {
+                        val token = googleDriveService.completeAuthentication()
+                        DemoSettings.googleDriveToken = token
+                        token
+                    },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -195,6 +209,20 @@ fun main() {
                 CloudServiceColumn(
                     name = "OneDrive",
                     service = oneDriveService,
+                    startAuth = {
+                        oneDriveService.startAuthenticationByRedirect(
+                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            redirectUri = "http://localhost:8080"
+                        )
+                    },
+                    finishAuth = {
+                        val token = oneDriveService.completeAuthentication(
+                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            redirectUri = "http://localhost:8080"
+                        )
+                        DemoSettings.oneDriveToken = token
+                        token
+                    },
                     pathFilter = pathFilter.asFolderPath(),
                     onNavigateToFolder = { pathFilter = it.toString() },
                     modifier = Modifier.weight(1f)
@@ -209,6 +237,8 @@ fun main() {
 private fun CloudServiceColumn(
     name: String,
     service: CloudService,
+    startAuth: () -> Unit,
+    finishAuth: suspend () -> CloudAccessToken?,
     pathFilter: FolderPath,
     onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
@@ -231,7 +261,7 @@ private fun CloudServiceColumn(
             }
 
             Button(onClick = {
-                service.logout()
+                DemoSettings.clear()
                 window.location.reload()
             }) { Text("Log out") }
 
@@ -293,97 +323,41 @@ private fun CloudServiceColumn(
                 }
 
                 SelectionContainer {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (item is CloudFolder) {
-                                    onNavigateToFolder(item.path)
-                                } else {
-                                    scope.launch {
-                                        content = try {
-                                            service.downloadFile(item.id)
-                                        } catch (e: CloudServiceException) {
-                                            e.message.toString()
-                                        }
+                    FileRow(
+                        item = item,
+                        onClick = {
+                            if (item is CloudFolder) {
+                                onNavigateToFolder(item.path)
+                            } else {
+                                scope.launch {
+                                    content = try {
+                                        service.downloadFile(item.id)
+                                    } catch (e: CloudServiceException) {
+                                        e.message.toString()
                                     }
                                 }
                             }
-                    ) {
-                        Icon(
-                            imageVector = when (item) {
-                                is CloudFolder -> Icons.Outlined.Folder
-                                is CloudFile -> Icons.Outlined.FilePresent
-                            },
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                        Spacer(Modifier.width(8.dp))
-
-                        Column {
-                            Text(
-                                text = item.path.toString(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            val text = when (item) {
-                                is CloudFile -> "${item.name} (${item.sizeInBytes} bytes, ${HumanReadable.timeAgo(item.modified)})"
-                                is CloudFolder -> item.name
-                            }
-                            Text(
-                                text = text,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
                         }
-                    }
+                    )
                 }
                 if (item != files.last()) {
                     HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 }
             }
         } else {
-            val authenticator = service.getAuthenticator(
-                redirectUri = "http://localhost:8080"
-            )
-            val authenticateUrl = authenticator.buildUri()
-
-            SelectionContainer {
-                Text("URL: $authenticateUrl")
+            Button(onClick = { startAuth() }) {
+                Text("Authenticate with $name")
             }
-
-            val params = URLSearchParams(window.location.search.toJsString())
-            when (authenticator) {
-                is PkceAuthenticator -> {
-                    val code = params.get("code")
-                    if (code != null) {
-                        Text("Code: $code")
-
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    authenticator.exchangeCodeForToken(code = code)
-                                    window.location.href = window.location.origin + window.location.pathname
-                                }
-                            }
-                        ) { Text("Request token using code") }
-                    }
-                }
-
-                is ImplicitAuthenticator -> {
-                    val token = window.location.getHashParam("access_token")
+            Button(onClick = {
+                scope.launch {
+                    val token = finishAuth()
                     if (token != null) {
-                        authenticator.storeToken(token)
+                        // Reload page
                         window.location.href = window.location.origin + window.location.pathname
                     }
                 }
-            }
-
-            Button(
-                onClick = { window.location.href = authenticateUrl }
-            ) {
-                Text("Authenticate with $name")
+            }) {
+                Text("Finish auth")
             }
         }
     }

@@ -1,10 +1,9 @@
 package nl.jacobras.cloudbridge
 
-import nl.jacobras.cloudbridge.auth.CloudAuthenticator
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
-import nl.jacobras.cloudbridge.model.Id
 import nl.jacobras.cloudbridge.model.UserInfo
 
 public interface CloudService {
@@ -13,21 +12,6 @@ public interface CloudService {
      * Returns `true` if the account is authenticated.
      */
     public fun isAuthenticated(): Boolean
-
-    /**
-     * Returns a [CloudAuthenticator] that can be used to authorize a user.
-     *
-     * @param redirectUri URI to redirect user to upon successful authorization.
-     * Needs to be registered in the service's developer console.
-     */
-    public fun getAuthenticator(
-        redirectUri: String
-    ): CloudAuthenticator
-
-    /**
-     * Clears all tokens for this service.
-     */
-    public fun logout()
 
     /**
      * Fetches the user's info (like name and email address).
@@ -62,14 +46,14 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun updateFile(id: Id, content: String)
+    public suspend fun updateFile(id: CloudItemId, content: String)
 
     /**
      * Retrieves the file with [id].
      *
      * @throws CloudServiceException
      */
-    public suspend fun downloadFile(id: Id): String
+    public suspend fun downloadFile(id: CloudItemId): String
 
 
     /**
@@ -77,5 +61,5 @@ public interface CloudService {
      *
      * @throws CloudServiceException
      */
-    public suspend fun delete(id: Id)
+    public suspend fun delete(id: CloudItemId)
 }

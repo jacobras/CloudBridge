@@ -1,18 +1,41 @@
 package nl.jacobras.cloudbridge.auth
 
+import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-/**
- * Can be used to authorize a user.
- */
-public sealed interface CloudAuthenticator {
+internal abstract class CloudAuthenticator(
+    private val clientId: String,
+    private val redirectUri: String
+) {
+    protected abstract val baseUrl: String
+    protected abstract val scope: String
+    protected abstract val responseType: String
 
     /**
      * Builds an authorization URI. Navigate the user to this URI to
      * start the authorization flow.
      */
-    public fun buildUri(): String
+    protected fun buildUri(codeChallenge: String): String {
+        val encodedRedirectUri = UrlEncoderUtil.encode(redirectUri)
+
+        return buildString {
+            append(baseUrl)
+            append("?client_id=$clientId")
+            append("&response_type=$responseType")
+            append("&redirect_uri=$encodedRedirectUri")
+
+            if (scope.isNotEmpty()) {
+                val encodedScope = UrlEncoderUtil.encode(scope)
+                append("&scope=$encodedScope")
+            }
+
+            if (codeChallenge.isNotEmpty()) {
+                append("&code_challenge=$codeChallenge")
+                append("&code_challenge_method=S256")
+            }
+        }
+    }
 }
 
 /**
@@ -20,12 +43,16 @@ public sealed interface CloudAuthenticator {
  *
  * https://www.oauth.com/oauth2-servers/single-page-apps/implicit-flow/
  */
-public interface ImplicitAuthenticator : CloudAuthenticator {
+internal abstract class ImplicitAuthenticator(
+    clientId: String,
+    redirectUri: String
+) : CloudAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri
+) {
+    override val responseType: String = "token"
 
-    /**
-     * Stores the [token] for the cloud service.
-     */
-    public fun storeToken(token: String)
+    fun buildImplicitFlowUri(): String = buildUri(codeChallenge = "")
 }
 
 /**
@@ -33,12 +60,27 @@ public interface ImplicitAuthenticator : CloudAuthenticator {
  *
  * https://www.oauth.com/oauth2-servers/pkce/
  */
-public abstract class PkceAuthenticator(protected val codeVerifier: String) : CloudAuthenticator {
+internal abstract class PkceAuthenticator(
+    clientId: String,
+    redirectUri: String,
+    protected val codeVerifier: String
+) : CloudAuthenticator(
+    clientId = clientId,
+    redirectUri = redirectUri
+) {
+    override val responseType: String = "code"
+    private val codeChallenge = SecurityUtil.buildCodeChallenge(codeVerifier)
 
-    protected val codeChallenge: String = SecurityUtil.buildCodeChallenge(codeVerifier)
+    init {
+        require(clientId.isNotEmpty()) { "Client ID cannot be empty" }
+        require(redirectUri.isNotEmpty()) { "Redirect URI cannot be empty" }
+        require(codeVerifier.isNotEmpty()) { "codeVerifier cannot be empty" }
+    }
+
+    fun buildPkceUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
      * @throws CloudServiceException
      */
-    public abstract suspend fun exchangeCodeForToken(code: String)
+    abstract suspend fun exchangeCodeForToken(code: String): CloudAccessToken
 }
