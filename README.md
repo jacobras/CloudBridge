@@ -2,28 +2,32 @@
 
 ![JS](https://img.shields.io/badge/JavaScript-yellow.svg?logo=javascript)
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
+![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
-Multiple clouds, one Kotlin Multiplatform bridge. Currently only supporting
-web, but desktop and Android support are planned.
+Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting web and desktop (JVM), but Android and iOS
+support is planned.
 
 <img height="172" src="/docs/images/logo.png"/>
+
+## ⚠️ Under construction
+
+This library is not yet stable. The API will change and docs may be outdated.
 
 ## ✨ Features
 
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms.
-* 📱 **Cross-platform**: Currently supports web, but mobile (Android) and
-  desktop (JVM) are planned.
+* 📱 **Cross-platform**: Currently supports web, but mobile (Android) and desktop (JVM) are planned.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 
 ## ☁️ Cloud Services
 
-|                        | Mobile<br>(Android) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
-|------------------------|---------------------|------------------|------------------|
-| **Dropbox**            | ⏳                   | ⏳                | ✅                |
-| **Google Drive**       | ⏳                   | ⏳                | ✅                |
-| **Microsoft OneDrive** | ⏳                   | ⏳                | ✅                |
+|                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
+|------------------------|---------------------|-----------------|------------------|------------------|
+| **Dropbox**            | ⏳                   | ⏳               | ✅                | ✅                |
+| **Google Drive**       | ⏳                   | ⏳               | ✅                | ✅                |
+| **Microsoft OneDrive** | ⏳                   | ⏳               | ✅                | ✅                |
 
 ✅ = Supported.<br>
 ⏳ = Planned.
@@ -39,13 +43,9 @@ See [Compatibility.md](docs/Compatibility.md) for important remarks about each s
     * Create/update/delete file
     * Download file content
 * **User**
-  * Get name and email address
+    * Get name and email address
 
 See [Compatibility.md](docs/Compatibility.md) for details.
-
-## ⚠️ Under construction
-
-This library is not yet stable. The API will change.
 
 ## 💿 Installation
 
@@ -53,7 +53,7 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.4.0")
+    implementation("nl.jacobras:cloudbridge:0.5.0")
 }
 ```
 
@@ -64,26 +64,35 @@ The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or 
 Here's an example with Dropbox. First instantiate the service:
 
 ```kotlin
-val service = CloudBridge.dropbox(clientId = "yourClientId")
+val service = CloudBridge.dropbox() // Pass in token=... if you already have one
 ```
 
-Then, have the user authenticate on the authenticate URL:
+Then, have the user authenticate.
 
+**Desktop**
 ```kotlin
-val authenticator = service.getAuthenticator(redirectUri = "yourRedirectUri")
-val authenticateUrl = authenticator.buildUrl()
+val authServer = LocalAuthenticationServer()
 
-// Now redirect the user to `authenticateUrl`
+// Build auth URL and open it in the browser
+val url = service.authenticate(
+    authServer = authServer,
+    clientId = "yourClientId",
+    onSuccess = { token -> TODO() })
+openBrowser(url)
 ```
 
-The user will grant access and get redirected to your redirect URI. Here, read
-the `?code=xxx` parameter from the URL and pass it to the `authenticator`:
-
+**Web**
 ```kotlin
-authenticator.exchangeCodeForToken(code = code)
+service.completeAuthentication() // Always call this
+
+// When user wants to authenticate:
+service.startAuthenticationByRedirect(
+    clientId = "yourClientId",
+    redirectUri = "yourRedirectUri"
+)
 ```
 
-Now the service is ready to be used!
+Securely store the token and pass it to the constructor of the service to use it.
 
 ### Listing files
 
@@ -113,16 +122,14 @@ Only one account per service is supported as of now.
 
 ### Types
 
-`id` and `path` variables are typed as much as possible, to prevent
-accidental mix-ups.
+`id` and `path` variables are typed as much as possible, to prevent accidental mix-ups.
 
 ### Unified error handling
 
 Dropbox will throw `409` when it can't find a path. Other services throw
 `404` CloudBridge turns them both into `CloudServiceException.NotFoundException.`
 
-_Feel free to open an issue if you have a different use case for any
-of these._
+_Feel free to open an issue if you have a different use case for any of these._
 
 ## 🔗 Underlying dependencies
 
