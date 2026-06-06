@@ -26,7 +26,8 @@ internal abstract class CloudAuthenticator(
             append("&redirect_uri=$encodedRedirectUri")
 
             if (scope.isNotEmpty()) {
-                append("&scope=$scope")
+                val encodedScope = UrlEncoderUtil.encode(scope)
+                append("&scope=$encodedScope")
             }
 
             if (codeChallenge.isNotEmpty()) {
