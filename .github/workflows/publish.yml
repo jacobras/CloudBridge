@@ -5,6 +5,8 @@ on:
 jobs:
   publish:
     runs-on: macos-latest
+    permissions:
+      contents: write # Required to create the GH Release
 
     steps:
       - uses: actions/checkout@v6
@@ -24,7 +26,6 @@ jobs:
       - name: GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.event.inputs.versionTag }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
           prerelease: true
