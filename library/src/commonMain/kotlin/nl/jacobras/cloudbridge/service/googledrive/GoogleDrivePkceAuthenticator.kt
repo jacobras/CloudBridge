@@ -19,6 +19,10 @@ internal class GoogleDrivePkceAuthenticator(
     override val baseUrl = "https://accounts.google.com/o/oauth2/v2/auth"
     override val scope = "https://www.googleapis.com/auth/drive.appdata"
 
+    init {
+        require(clientSecret.isNotEmpty()) { "Client secret cannot be empty" }
+    }
+
     override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {
             val token = api.getToken(

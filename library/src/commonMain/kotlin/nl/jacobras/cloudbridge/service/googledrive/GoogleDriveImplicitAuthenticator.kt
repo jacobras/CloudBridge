@@ -18,4 +18,9 @@ internal class GoogleDriveImplicitAuthenticator(
 ) {
     override val baseUrl = "https://accounts.google.com/o/oauth2/v2/auth"
     override val scope = "https://www.googleapis.com/auth/drive.appdata"
+
+    init {
+        require(clientId.isNotEmpty()) { "Client ID cannot be empty" }
+        require(redirectUri.isNotEmpty()) { "Redirect URI cannot be empty" }
+    }
 }

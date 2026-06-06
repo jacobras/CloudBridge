@@ -71,6 +71,12 @@ internal abstract class PkceAuthenticator(
     override val responseType: String = "code"
     private val codeChallenge = SecurityUtil.buildCodeChallenge(codeVerifier)
 
+    init {
+        require(clientId.isNotEmpty()) { "Client ID cannot be empty" }
+        require(redirectUri.isNotEmpty()) { "Redirect URI cannot be empty" }
+        require(codeVerifier.isNotEmpty()) { "codeVerifier cannot be empty" }
+    }
+
     fun buildPkceUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**

@@ -20,6 +20,7 @@ import androidx.compose.ui.window.application
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
@@ -31,17 +32,17 @@ import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import kotlin.time.Duration.Companion.milliseconds
 
 fun main() = application {
-    val dropboxService = remember { CloudBridge.dropbox(DemoSettings.dropboxToken) }
-    val googleDriveService = remember { CloudBridge.googleDrive(DemoSettings.googleDriveToken) }
-    val oneDriveService = remember { CloudBridge.oneDrive(DemoSettings.oneDriveToken) }
-    var selectedService by remember { mutableStateOf(dropboxService) }
-
     var obtainedToken by remember { mutableStateOf<CloudAccessToken?>(null) }
+    val dropboxService = remember(obtainedToken) { CloudBridge.dropbox(DemoSettings.dropboxToken) }
+    val googleDriveService = remember(obtainedToken) { CloudBridge.googleDrive(DemoSettings.googleDriveToken) }
+    val oneDriveService = remember(obtainedToken) { CloudBridge.oneDrive(DemoSettings.oneDriveToken) }
+    var selectedService by remember { mutableStateOf<CloudService>(dropboxService) }
+
     var showSuccessDialog by remember { mutableStateOf(false) }
     val localServer = remember { LocalAuthenticationServer() }
 
     var error by remember { mutableStateOf("") }
-    val files by produceState(emptyList(), obtainedToken) {
+    val files by produceState(emptyList(), selectedService, obtainedToken) {
         value = try {
             selectedService.listFiles(FolderPath("/")).also {
                 error = ""
@@ -91,6 +92,7 @@ fun main() = application {
                         clientId = "nw5f95uw77yrz3j",
                         onSuccess = {
                             obtainedToken = it
+                            selectedService = dropboxService
                             DemoSettings.dropboxToken = it
                             showSuccessDialog = true
                         }
@@ -104,6 +106,7 @@ fun main() = application {
                         clientSecret = DesktopMainBuildConfig.DRIVE_DESKTOP_SECRET,
                         onSuccess = {
                             obtainedToken = it
+                            selectedService = googleDriveService
                             DemoSettings.googleDriveToken = it
                             showSuccessDialog = true
                         }
@@ -116,6 +119,7 @@ fun main() = application {
                         clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
                         onSuccess = {
                             obtainedToken = it
+                            selectedService = oneDriveService
                             DemoSettings.oneDriveToken = it
                             showSuccessDialog = true
                         }
