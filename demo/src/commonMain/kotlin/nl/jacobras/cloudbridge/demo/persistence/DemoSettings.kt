@@ -69,6 +69,10 @@ internal object DemoSettings {
                 demoSettings.remove(KEY_ONEDRIVE_EXPIRES_IN)
             }
         }
+
+    fun clear() {
+        demoSettings.clear()
+    }
 }
 
 private const val KEY_DROPBOX_TOKEN = "dropboxToken"

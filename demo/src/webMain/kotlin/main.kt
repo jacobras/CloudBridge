@@ -261,6 +261,7 @@ private fun CloudServiceColumn(
             }
 
             Button(onClick = {
+                DemoSettings.clear()
                 window.location.reload()
             }) { Text("Log out") }
 
