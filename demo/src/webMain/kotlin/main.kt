@@ -43,12 +43,12 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.service.dropbox.authenticate
 import nl.jacobras.cloudbridge.service.dropbox.completeAuthentication
-import nl.jacobras.cloudbridge.service.dropbox.authenticateByRedirect
+import nl.jacobras.cloudbridge.service.googledrive.authenticate
 import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
-import nl.jacobras.cloudbridge.service.googledrive.authenticateByRedirect
+import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
-import nl.jacobras.cloudbridge.service.onedrive.authenticateByRedirect
 import kotlin.js.ExperimentalWasmJsInterop
 
 private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
@@ -171,7 +171,7 @@ fun main() {
                     name = "Dropbox",
                     service = dropboxService,
                     startAuth = {
-                        dropboxService.authenticateByRedirect(
+                        dropboxService.authenticate(
                             clientId = "nw5f95uw77yrz3j",
                             redirectUri = "http://localhost:8080"
                         )
@@ -192,7 +192,7 @@ fun main() {
                     name = "Google Drive",
                     service = googleDriveService,
                     startAuth = {
-                        googleDriveService.authenticateByRedirect(
+                        googleDriveService.authenticate(
                             clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
                             redirectUri = "http://localhost:8080"
                         )
@@ -210,7 +210,7 @@ fun main() {
                     name = "OneDrive",
                     service = oneDriveService,
                     startAuth = {
-                        oneDriveService.authenticateByRedirect(
+                        oneDriveService.authenticate(
                             clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
                             redirectUri = "http://localhost:8080"
                         )

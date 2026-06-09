@@ -1,18 +1,14 @@
-package nl.jacobras.cloudbridge.service.googledrive
+package nl.jacobras.cloudbridge.service.onedrive
 
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 /**
- * Builds the authorization URL for Dropbox. Open it in a Custom Tab (or browser) to start the
+ * Builds the authorization URL for OneDrive. Open it in a Custom Tab (or browser) to start the
  * PKCE flow.
- *
- * Google requires a [clientSecret] even for the PKCE flow. This is acceptable for installed apps
- * per Google's own documentation.
  */
-public fun GoogleDriveService.authenticateByBrowser(
+public fun OneDriveService.authenticate(
     clientId: String,
-    clientSecret: String,
     redirectUri: String
 ): String {
     val codeVerifier = Settings.codeVerifier ?: let {
@@ -20,10 +16,9 @@ public fun GoogleDriveService.authenticateByBrowser(
         Settings.codeVerifier = verifier
         verifier
     }
-    val authenticator = GoogleDrivePkceAuthenticator(
+    val authenticator = OneDriveAuthenticator(
         api = api,
         clientId = clientId,
-        clientSecret = clientSecret,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

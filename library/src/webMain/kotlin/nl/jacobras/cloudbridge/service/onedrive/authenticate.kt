@@ -4,7 +4,7 @@ import kotlinx.browser.window
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-public fun OneDriveService.authenticateByRedirect(
+public fun OneDriveService.authenticate(
     redirectUri: String,
     clientId: String
 ) {

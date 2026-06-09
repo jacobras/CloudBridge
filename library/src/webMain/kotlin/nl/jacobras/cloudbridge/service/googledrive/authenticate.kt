@@ -3,7 +3,7 @@ package nl.jacobras.cloudbridge.service.googledrive
 import kotlinx.browser.window
 
 @Suppress("UnusedReceiverParameter")
-public fun GoogleDriveService.authenticateByRedirect(
+public fun GoogleDriveService.authenticate(
     redirectUri: String,
     clientId: String
 ) {

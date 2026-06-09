@@ -43,13 +43,13 @@ import nl.jacobras.cloudbridge.demo.ui.FileRow
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
-import nl.jacobras.cloudbridge.service.dropbox.authenticateByBrowser
+import nl.jacobras.cloudbridge.service.dropbox.authenticate
 import nl.jacobras.cloudbridge.service.dropbox.completeAuthentication
 import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
-import nl.jacobras.cloudbridge.service.googledrive.authenticateByBrowser
+import nl.jacobras.cloudbridge.service.googledrive.authenticate
 import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
 import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
-import nl.jacobras.cloudbridge.service.onedrive.authenticateByBrowser
+import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
 class MainActivity : ComponentActivity() {
@@ -160,7 +160,7 @@ private fun DemoApp(
                 onAuthenticate = {
                     launchAuth(
                         Provider.Dropbox,
-                        dropboxService.authenticateByBrowser(
+                        dropboxService.authenticate(
                             DROPBOX_CLIENT_ID,
                             REDIRECT_URI
                         )
@@ -174,7 +174,7 @@ private fun DemoApp(
                 onAuthenticate = {
                     launchAuth(
                         Provider.GoogleDrive,
-                        googleDriveService.authenticateByBrowser(
+                        googleDriveService.authenticate(
                             clientId = GOOGLE_DRIVE_CLIENT_ID,
                             clientSecret = AndroidMainBuildConfig.DRIVE_DESKTOP_SECRET,
                             redirectUri = REDIRECT_URI
@@ -189,7 +189,7 @@ private fun DemoApp(
                 onAuthenticate = {
                     launchAuth(
                         Provider.OneDrive,
-                        oneDriveService.authenticateByBrowser(
+                        oneDriveService.authenticate(
                             ONEDRIVE_CLIENT_ID,
                             REDIRECT_URI
                         )

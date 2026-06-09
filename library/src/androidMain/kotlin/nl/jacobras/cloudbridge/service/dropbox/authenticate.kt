@@ -1,13 +1,16 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
-import kotlinx.browser.window
 import nl.jacobras.cloudbridge.persistence.Settings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
-public fun DropboxService.authenticateByRedirect(
-    redirectUri: String,
-    clientId: String
-) {
+/**
+ * Builds the authorization URL for Dropbox. Open it in a Custom Tab (or browser) to start the
+ * PKCE flow.
+ */
+public fun DropboxService.authenticate(
+    clientId: String,
+    redirectUri: String
+): String {
     val codeVerifier = Settings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
         Settings.codeVerifier = verifier
@@ -19,6 +22,5 @@ public fun DropboxService.authenticateByRedirect(
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
-    val uri = authenticator.buildPkceUri()
-    window.location.href = uri
+    return authenticator.buildPkceUri()
 }
