@@ -38,6 +38,22 @@ internal class MainViewModel : ViewModel() {
 
     fun refresh(service: CloudService) = viewModelScope.launch {
         updateTokens()
+
+        try {
+            val info = service.getUserInfo()
+            userInfo.update {
+                val map = it.toMutableMap()
+                map[service] = info
+                map
+            }
+        } catch (_: Exception) {
+            userInfo.update {
+                val map = it.toMutableMap()
+                map[service] = null
+                map
+            }
+        }
+
         val updated = try {
             val files = service.listFiles(path.value)
             serviceErrors.update {

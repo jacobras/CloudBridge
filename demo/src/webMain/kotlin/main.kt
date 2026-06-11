@@ -18,9 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -37,7 +37,9 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
+import nl.jacobras.cloudbridge.demo.ui.MainViewModel
 import nl.jacobras.cloudbridge.model.CloudFolder
+import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
@@ -61,12 +63,18 @@ private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
 fun main() {
     CloudBridge.logger = KermitLogger()
 
-    val dropboxService = CloudBridge.dropbox(DemoSettings.dropboxToken)
-    val googleDriveService = CloudBridge.googleDrive(DemoSettings.googleDriveToken)
-    val oneDriveService = CloudBridge.oneDrive(DemoSettings.oneDriveToken)
-    val allServices = listOf(dropboxService, googleDriveService, oneDriveService)
 
     ComposeViewport {
+        val viewModel = remember { MainViewModel() }
+        val dropboxService = viewModel.dropbox
+        val googleDriveService = viewModel.googleDrive
+        val oneDriveService = viewModel.oneDrive
+        val allServices = listOf(dropboxService, googleDriveService, oneDriveService)
+
+        val files by viewModel.files.collectAsState()
+        val serviceErrors by viewModel.serviceErrors.collectAsState()
+        val userInfo by viewModel.userInfo.collectAsState()
+
         val scope = rememberCoroutineScope()
         var pathFilter by remember { mutableStateOf("") }
 
@@ -170,6 +178,9 @@ fun main() {
                 CloudServiceColumn(
                     name = "Dropbox",
                     service = dropboxService,
+                    files = files[dropboxService] ?: emptyList(),
+                    userInfo = userInfo[dropboxService],
+                    error = serviceErrors[dropboxService] ?: "",
                     startAuth = {
                         dropboxService.authenticate(
                             clientId = "nw5f95uw77yrz3j",
@@ -191,6 +202,9 @@ fun main() {
                 CloudServiceColumn(
                     name = "Google Drive",
                     service = googleDriveService,
+                    files = files[googleDriveService] ?: emptyList(),
+                    userInfo = userInfo[googleDriveService],
+                    error = serviceErrors[googleDriveService] ?: "",
                     startAuth = {
                         googleDriveService.authenticate(
                             clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
@@ -209,6 +223,9 @@ fun main() {
                 CloudServiceColumn(
                     name = "OneDrive",
                     service = oneDriveService,
+                    files = files[oneDriveService] ?: emptyList(),
+                    userInfo = userInfo[oneDriveService],
+                    error = serviceErrors[oneDriveService] ?: "",
                     startAuth = {
                         oneDriveService.authenticate(
                             clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
@@ -239,6 +256,9 @@ private fun CloudServiceColumn(
     service: CloudService,
     startAuth: () -> Unit,
     finishAuth: suspend () -> CloudAccessToken?,
+    files: List<CloudItem>,
+    userInfo: UserInfo?,
+    error: String,
     pathFilter: FolderPath,
     onNavigateToFolder: (FolderPath) -> Unit,
     modifier: Modifier = Modifier
@@ -252,10 +272,6 @@ private fun CloudServiceColumn(
         )
 
         if (service.isAuthenticated()) {
-            val userInfo by produceState<UserInfo?>(null) {
-                value = service.getUserInfo()
-            }
-
             if (userInfo != null) {
                 Text("Authenticated as: $userInfo")
             }
@@ -264,19 +280,6 @@ private fun CloudServiceColumn(
                 DemoSettings.clear()
                 window.location.reload()
             }) { Text("Log out") }
-
-            var error by remember { mutableStateOf("") }
-
-            val files by produceState(emptyList(), pathFilter) {
-                value = try {
-                    service.listFiles(pathFilter).also {
-                        error = ""
-                    }
-                } catch (e: Exception) {
-                    error = e.message.toString()
-                    emptyList()
-                }
-            }
 
             if (error.isNotEmpty()) {
                 Text(
