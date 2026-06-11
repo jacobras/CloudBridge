@@ -54,8 +54,6 @@ import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
 class MainActivity : ComponentActivity() {
 
-    private var pendingUri by mutableStateOf<Uri?>(null)
-
     private val dropboxService = CloudBridge.dropbox(DemoSettings.dropboxToken)
     private val googleDriveService = CloudBridge.googleDrive(DemoSettings.googleDriveToken)
     private val oneDriveService = CloudBridge.oneDrive(DemoSettings.oneDriveToken)
