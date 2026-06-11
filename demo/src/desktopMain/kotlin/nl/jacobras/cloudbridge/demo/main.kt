@@ -8,9 +8,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -19,12 +19,11 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
-import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.demo.ui.MainViewModel
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
 import nl.jacobras.cloudbridge.service.dropbox.authenticate
 import nl.jacobras.cloudbridge.service.googledrive.authenticate
@@ -32,26 +31,19 @@ import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import kotlin.time.Duration.Companion.milliseconds
 
 fun main() = application {
+    val viewModel = remember { MainViewModel() }
+
     var obtainedToken by remember { mutableStateOf<CloudAccessToken?>(null) }
-    val dropboxService = remember(obtainedToken) { CloudBridge.dropbox(DemoSettings.dropboxToken) }
-    val googleDriveService = remember(obtainedToken) { CloudBridge.googleDrive(DemoSettings.googleDriveToken) }
-    val oneDriveService = remember(obtainedToken) { CloudBridge.oneDrive(DemoSettings.oneDriveToken) }
-    var selectedService by remember { mutableStateOf<CloudService>(dropboxService) }
+    var selectedService by remember { mutableStateOf<CloudService>(viewModel.dropbox) }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     val localServer = remember { LocalAuthenticationServer() }
 
-    var error by remember { mutableStateOf("") }
-    val files by produceState(emptyList(), selectedService, obtainedToken) {
-        value = try {
-            selectedService.listFiles(FolderPath("/")).also {
-                error = ""
-            }
-        } catch (e: Exception) {
-            error = e.message.toString()
-            emptyList()
-        }
-    }
+    val allFiles by viewModel.files.collectAsState()
+    val files = allFiles[selectedService] ?: emptyList()
+
+    val allServiceErrors by viewModel.serviceErrors.collectAsState()
+    val error = allServiceErrors[selectedService] ?: ""
 
     DisposableEffect(Unit) {
         onDispose {
@@ -86,6 +78,7 @@ fun main() = application {
         Column {
             Text("Sign in with: (opens browser)")
             Row {
+                val dropboxService = viewModel.dropbox
                 Button(onClick = {
                     val url = dropboxService.authenticate(
                         authServer = localServer,
@@ -100,6 +93,7 @@ fun main() = application {
                     openDelayed(url)
                 }) { Text("Dropbox") }
                 Button(onClick = {
+                    val googleDriveService = viewModel.googleDrive
                     val url = googleDriveService.authenticate(
                         authServer = localServer,
                         clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com",
@@ -114,6 +108,7 @@ fun main() = application {
                     openDelayed(url)
                 }) { Text("Google Drive") }
                 Button(onClick = {
+                    val oneDriveService = viewModel.oneDrive
                     val url = oneDriveService.authenticate(
                         authServer = localServer,
                         clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",

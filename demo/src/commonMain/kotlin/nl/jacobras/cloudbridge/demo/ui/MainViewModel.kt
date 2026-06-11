@@ -25,6 +25,9 @@ internal class MainViewModel : ViewModel() {
 
     init {
         updateTokens()
+        refresh(dropbox)
+        refresh(googleDrive)
+        refresh(oneDrive)
     }
 
     fun updateTokens() {
