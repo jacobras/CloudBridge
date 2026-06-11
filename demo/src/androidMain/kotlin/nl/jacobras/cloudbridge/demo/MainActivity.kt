@@ -24,39 +24,30 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
-import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.demo.ui.MainViewModel
+import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.UserInfo
-import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.dropbox.authenticate
 import nl.jacobras.cloudbridge.service.dropbox.completeAuthentication
-import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
 import nl.jacobras.cloudbridge.service.googledrive.authenticate
 import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
-import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
 class MainActivity : ComponentActivity() {
 
-    private val dropboxService = CloudBridge.dropbox(DemoSettings.dropboxToken)
-    private val googleDriveService = CloudBridge.googleDrive(DemoSettings.googleDriveToken)
-    private val oneDriveService = CloudBridge.oneDrive(DemoSettings.oneDriveToken)
+    private val viewModel = MainViewModel()
 
     private var authenticatingProvider: Provider? = null
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -75,9 +66,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 DemoApp(
-                    dropboxService = dropboxService,
-                    googleDriveService = googleDriveService,
-                    oneDriveService = oneDriveService,
+                    viewModel = viewModel,
                     launchAuth = { provider, url ->
                         authenticatingProvider = provider
                         CustomTabsIntent.Builder().build().launchUrl(this, url.toUri())
@@ -99,15 +88,17 @@ class MainActivity : ComponentActivity() {
         val provider = authenticatingProvider ?: return@launch
         when (provider) {
             Provider.Dropbox -> {
-                val token = dropboxService.completeAuthentication(
+                val token = viewModel.dropbox.completeAuthentication(
                     clientId = DROPBOX_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
                 DemoSettings.dropboxToken = token
+                viewModel.refresh(viewModel.dropbox)
             }
 
             Provider.GoogleDrive -> {
+                val googleDriveService = viewModel.googleDrive
                 val token = googleDriveService.completeAuthentication(
                     clientId = GOOGLE_DRIVE_CLIENT_ID,
                     clientSecret = AndroidMainBuildConfig.DRIVE_DESKTOP_SECRET,
@@ -115,15 +106,18 @@ class MainActivity : ComponentActivity() {
                     intentUri = uri
                 ) ?: return@launch
                 DemoSettings.googleDriveToken = token
+                viewModel.refresh(googleDriveService)
             }
 
             Provider.OneDrive -> {
+                val oneDriveService = viewModel.oneDrive
                 val token = oneDriveService.completeAuthentication(
                     clientId = ONEDRIVE_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
                 DemoSettings.oneDriveToken = token
+                viewModel.refresh(oneDriveService)
             }
         }
     }
@@ -132,13 +126,12 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DemoApp(
-    dropboxService: DropboxService,
-    googleDriveService: GoogleDriveService,
-    oneDriveService: OneDriveService,
+    viewModel: MainViewModel,
     launchAuth: (Provider, String) -> Unit
 ) {
-    // Bump to recreate services after obtaining a new token.
-    var tokenVersion by remember { mutableIntStateOf(0) }
+    val files by viewModel.files.collectAsState()
+    val userInfo by viewModel.userInfo.collectAsState()
+    val serviceErrors by viewModel.serviceErrors.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -152,23 +145,34 @@ private fun DemoApp(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            val dropboxService = viewModel.dropbox
             ServiceSection(
                 name = "Dropbox",
                 service = dropboxService,
+                userInfo = userInfo[dropboxService],
+                files = files[dropboxService] ?: emptyList(),
+                error = serviceErrors[dropboxService] ?: "",
                 onAuthenticate = {
                     launchAuth(
                         Provider.Dropbox,
-                        dropboxService.authenticate(
+                        viewModel.dropbox.authenticate(
                             DROPBOX_CLIENT_ID,
                             REDIRECT_URI
                         )
                     )
                 },
-                onLogOut = { DemoSettings.dropboxToken = null; tokenVersion++ }
+                onLogOut = {
+                    DemoSettings.dropboxToken = null
+                    viewModel.refresh(dropboxService)
+                }
             )
+            val googleDriveService = viewModel.googleDrive
             ServiceSection(
                 name = "Google Drive",
                 service = googleDriveService,
+                userInfo = userInfo[googleDriveService],
+                files = files[googleDriveService] ?: emptyList(),
+                error = serviceErrors[googleDriveService] ?: "",
                 onAuthenticate = {
                     launchAuth(
                         Provider.GoogleDrive,
@@ -179,11 +183,18 @@ private fun DemoApp(
                         )
                     )
                 },
-                onLogOut = { DemoSettings.googleDriveToken = null; tokenVersion++ }
+                onLogOut = {
+                    DemoSettings.googleDriveToken = null
+                    viewModel.refresh(googleDriveService)
+                }
             )
+            val oneDriveService = viewModel.oneDrive
             ServiceSection(
                 name = "OneDrive",
                 service = oneDriveService,
+                userInfo = userInfo[oneDriveService],
+                files = files[oneDriveService] ?: emptyList(),
+                error = serviceErrors[oneDriveService] ?: "",
                 onAuthenticate = {
                     launchAuth(
                         Provider.OneDrive,
@@ -193,7 +204,10 @@ private fun DemoApp(
                         )
                     )
                 },
-                onLogOut = { DemoSettings.oneDriveToken = null; tokenVersion++ }
+                onLogOut = {
+                    DemoSettings.oneDriveToken = null
+                    viewModel.refresh(oneDriveService)
+                }
             )
         }
     }
@@ -203,6 +217,9 @@ private fun DemoApp(
 private fun ServiceSection(
     name: String,
     service: CloudService,
+    userInfo: UserInfo?,
+    files: List<CloudItem>,
+    error: String,
     onAuthenticate: () -> Unit,
     onLogOut: () -> Unit
 ) {
@@ -214,27 +231,10 @@ private fun ServiceSection(
             return@Column
         }
 
-        val userInfo by produceState<UserInfo?>(null, service) {
-            value = try {
-                service.getUserInfo()
-            } catch (e: Exception) {
-                null
-            }
-        }
         if (userInfo != null) {
             SelectionContainer { Text("Authenticated as: $userInfo") }
         }
         Button(onClick = onLogOut) { Text("Log out") }
-
-        var error by remember { mutableStateOf("") }
-        val files by produceState(emptyList(), service) {
-            value = try {
-                service.listFiles(FolderPath("/")).also { error = "" }
-            } catch (e: Exception) {
-                error = e.message.toString()
-                emptyList()
-            }
-        }
 
         if (error.isNotEmpty()) {
             Text(

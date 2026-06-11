@@ -7,7 +7,6 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
-import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -21,12 +20,8 @@ import kotlin.time.Instant
 
 /**
  * Instance of the Dropbox API.
- *
- * @param token The access token to use for authentication. Leave empty to authenticate a new account.
  */
-public class DropboxService(
-    token: CloudAccessToken? = null
-) : OAuthCloudService(token) {
+public class DropboxService : OAuthCloudService() {
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
@@ -51,7 +46,9 @@ public class DropboxService(
                         path = it.pathLower.asFilePath(),
                         name = it.name,
                         sizeInBytes = it.size ?: error("Missing size for file"),
-                        modified = Instant.parse(it.clientModified ?: error("Missing modified time for file"))
+                        modified = Instant.parse(
+                            it.clientModified ?: error("Missing modified time for file")
+                        )
                     )
                 }
                 "folder" -> {
