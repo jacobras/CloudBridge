@@ -33,6 +33,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(libs.androidx.viewmodel)
             implementation(libs.compose.foundation)
             implementation(libs.compose.icons.extended)
             implementation(libs.compose.material3)

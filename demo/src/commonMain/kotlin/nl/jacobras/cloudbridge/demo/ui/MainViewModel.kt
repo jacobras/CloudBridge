@@ -1,6 +1,7 @@
 package nl.jacobras.cloudbridge.demo.ui
 
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -11,7 +12,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 
-internal class MainViewModel {
+internal class MainViewModel : ViewModel() {
     val dropbox = CloudBridge.dropbox()
     val googleDrive = CloudBridge.googleDrive()
     val oneDrive = CloudBridge.oneDrive()
@@ -32,8 +33,7 @@ internal class MainViewModel {
         oneDrive.setToken(DemoSettings.oneDriveToken)
     }
 
-    // TODO: viewmodelscope
-    fun refresh(service: CloudService) = GlobalScope.launch {
+    fun refresh(service: CloudService) = viewModelScope.launch {
         updateTokens()
         val updated = try {
             val files = service.listFiles(path.value)
