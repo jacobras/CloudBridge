@@ -17,7 +17,8 @@ This library is not yet stable. The API will change and docs may be outdated.
 ## ✨ Features
 
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
-* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms.
+* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms (
+  see [Underlying dependencies](#-underlying-dependencies) below).
 * 📱 **Cross-platform**: Supports Android, web and desktop (JVM); iOS is planned.
 * 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
 
@@ -169,9 +170,16 @@ _Feel free to open an issue if you have a different use case for any of these._
 
 ## 🔗 Underlying dependencies
 
-Next to [Kotlin Multiplatform](https://www.jetbrains.com/kotlin-multiplatform/), this library uses:
+All service APIs were written from scratch to avoid dependencies on SDKs.
+
+This library uses:
 
 * [Ktor](https://ktor.io/) and [Ktorfit](https://foso.github.io/Ktorfit/) for network requests.
+* [Coroutines](https://github.com/Kotlin/kotlinx.coroutines) for concurrency.
 * [KotlinCrypto hash](https://github.com/KotlinCrypto/hash) for SHA256 hashing.
-* [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) to persist tokens.
 * [urlencoder](https://github.com/ethauvin/urlencoder) for URL encoding.
+
+Only on Android:
+
+* [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) to temporarily
+  persist the OAuth code verifier.

@@ -3,7 +3,7 @@ package nl.jacobras.cloudbridge.service.googledrive
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.auth.toCloudAccessToken
-import nl.jacobras.cloudbridge.persistence.Settings
+import nl.jacobras.cloudbridge.persistence.librarySettings
 
 internal class GoogleDrivePkceAuthenticator(
     private val api: GoogleDriveApi,
@@ -34,7 +34,7 @@ internal class GoogleDrivePkceAuthenticator(
             )
             return token.toCloudAccessToken()
         } finally {
-            Settings.codeVerifier = null
+            librarySettings.codeVerifier = null
         }
     }
 }

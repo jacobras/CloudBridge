@@ -1,6 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-import nl.jacobras.cloudbridge.persistence.Settings
+import nl.jacobras.cloudbridge.persistence.librarySettings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 /**
@@ -15,9 +15,9 @@ public fun GoogleDriveService.authenticate(
     clientSecret: String,
     redirectUri: String
 ): String {
-    val codeVerifier = Settings.codeVerifier ?: let {
+    val codeVerifier = librarySettings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
-        Settings.codeVerifier = verifier
+        librarySettings.codeVerifier = verifier
         verifier
     }
     val authenticator = GoogleDrivePkceAuthenticator(

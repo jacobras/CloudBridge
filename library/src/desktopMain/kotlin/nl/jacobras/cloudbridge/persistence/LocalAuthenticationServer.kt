@@ -67,7 +67,6 @@ public class LocalAuthenticationServer(
 
                     val response = buildString {
                         append("<html>")
-                        append("<p>Hello World!</p>")
                         append("<p><a href='$authUrl'>Login with ${service.name}</a></p>")
                         append("</html>")
                     }

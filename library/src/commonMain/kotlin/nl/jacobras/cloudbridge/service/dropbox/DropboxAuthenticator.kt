@@ -3,7 +3,7 @@ package nl.jacobras.cloudbridge.service.dropbox
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.auth.toCloudAccessToken
-import nl.jacobras.cloudbridge.persistence.Settings
+import nl.jacobras.cloudbridge.persistence.librarySettings
 
 internal class DropboxAuthenticator(
     private val api: DropboxApi,
@@ -28,7 +28,7 @@ internal class DropboxAuthenticator(
             )
             return token.toCloudAccessToken()
         } finally {
-            Settings.codeVerifier = null
+            librarySettings.codeVerifier = null
         }
     }
 }

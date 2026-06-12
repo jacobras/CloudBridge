@@ -2,7 +2,7 @@ package nl.jacobras.cloudbridge.service.onedrive
 
 import android.net.Uri
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.persistence.Settings
+import nl.jacobras.cloudbridge.persistence.librarySettings
 
 /**
  * Exchanges the authorization [code], parsed from [intentUri], for an access token.
@@ -14,7 +14,7 @@ public suspend fun OneDriveService.completeAuthentication(
     redirectUri: String,
     intentUri: Uri
 ): CloudAccessToken? {
-    val codeVerifier = Settings.codeVerifier ?: return null
+    val codeVerifier = librarySettings.codeVerifier ?: return null
     val code = intentUri.getQueryParameter("code") ?: return null
     val authenticator = OneDriveAuthenticator(
         api = api,

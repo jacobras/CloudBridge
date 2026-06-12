@@ -38,7 +38,6 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktorfit)
-            implementation(libs.multiplatform.settings)
             implementation(libs.urlencoder)
         }
         commonTest.dependencies {
@@ -56,7 +55,6 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.multiplatform.settings.no.arg)
-            implementation(libs.androidx.browser)
         }
     }
 

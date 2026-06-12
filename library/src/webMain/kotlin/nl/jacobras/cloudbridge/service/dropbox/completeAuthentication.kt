@@ -2,7 +2,7 @@ package nl.jacobras.cloudbridge.service.dropbox
 
 import kotlinx.browser.window
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.persistence.Settings
+import nl.jacobras.cloudbridge.persistence.librarySettings
 import org.w3c.dom.url.URLSearchParams
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
@@ -14,7 +14,7 @@ public suspend fun DropboxService.completeAuthentication(
 ): CloudAccessToken? {
     val params = URLSearchParams(window.location.search.toJsString())
     val code = params.get("code") ?: return null
-    val codeVerifier = Settings.codeVerifier ?: return null
+    val codeVerifier = librarySettings.codeVerifier ?: return null
     val authenticator = DropboxAuthenticator(
         api = api,
         clientId = clientId,
