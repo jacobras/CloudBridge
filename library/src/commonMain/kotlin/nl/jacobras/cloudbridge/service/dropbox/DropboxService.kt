@@ -7,6 +7,7 @@ import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -21,7 +22,7 @@ import kotlin.time.Instant
 /**
  * Instance of the Dropbox API.
  */
-public class DropboxService : OAuthCloudService() {
+public class DropboxService(token: CloudAccessToken?) : OAuthCloudService(token) {
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()

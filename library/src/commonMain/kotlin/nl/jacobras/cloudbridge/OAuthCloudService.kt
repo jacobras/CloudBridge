@@ -11,8 +11,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
-public abstract class OAuthCloudService : CloudService {
-    private var token: CloudAccessToken? = null
+public abstract class OAuthCloudService(startToken: CloudAccessToken?) : CloudService {
+    private var token: CloudAccessToken? = startToken
 
     protected abstract val baseUrl: String
 
