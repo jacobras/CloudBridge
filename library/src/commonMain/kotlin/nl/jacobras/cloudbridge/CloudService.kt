@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge
 
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
@@ -7,6 +8,14 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 
 public interface CloudService {
+
+    /**
+     * Sets [token] to this service.
+     *
+     * @param token The access token to use for authentication, or `null` to authenticate a new
+     * account with this service.
+     */
+    public fun setToken(token: CloudAccessToken?)
 
     /**
      * Returns `true` if the account is authenticated.

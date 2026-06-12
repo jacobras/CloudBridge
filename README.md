@@ -1,13 +1,14 @@
 # CloudBridge
 
+![Android](https://img.shields.io/badge/Android-green.svg?logo=android)
 ![JS](https://img.shields.io/badge/JavaScript-yellow.svg?logo=javascript)
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
 ![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
-Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting web and desktop (JVM), but Android and iOS
-support is planned.
+Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting Android, web and desktop (
+JVM), but iOS support is planned.
 
-<img height="172" src="/docs/images/logo.png"/>
+<img height="172" src="/docs/images/logo.png" alt = "CloudBridge Logo "/>
 
 ## ⚠️ Under construction
 
@@ -16,8 +17,10 @@ This library is not yet stable. The API will change and docs may be outdated.
 ## ✨ Features
 
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
-* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms.
-* 📱 **Cross-platform**: Currently supports web, but mobile (Android) and desktop (JVM) are planned.
+* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms (
+  see [Underlying dependencies](#-underlying-dependencies) below).
+* 📱 **Cross-platform**: Supports Android, web and desktop (JVM); iOS is planned.
+* 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 
@@ -25,9 +28,9 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 
 |                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|-----------------|------------------|------------------|
-| **Dropbox**            | ⏳                   | ⏳               | ✅                | ✅                |
-| **Google Drive**       | ⏳                   | ⏳               | ✅                | ✅                |
-| **Microsoft OneDrive** | ⏳                   | ⏳               | ✅                | ✅                |
+| **Dropbox**            | ✅                   | ⏳               | ✅                | ✅                |
+| **Google Drive**       | ✅                   | ⏳               | ✅                | ✅                |
+| **Microsoft OneDrive** | ✅                   | ⏳               | ✅                | ✅                |
 
 ✅ = Supported.<br>
 ⏳ = Planned.
@@ -59,17 +62,19 @@ dependencies {
 
 ## 🚀 Quick Start
 
-The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or `CloudBridge.oneDrive()`.
+The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or
+`CloudBridge.oneDrive()`.
 
 Here's an example with Dropbox. First instantiate the service:
 
 ```kotlin
-val service = CloudBridge.dropbox() // Pass in token=... if you already have one
+val service = CloudBridge.dropbox()
 ```
 
 Then, have the user authenticate.
 
 **Desktop**
+
 ```kotlin
 val authServer = LocalAuthenticationServer()
 
@@ -77,18 +82,50 @@ val authServer = LocalAuthenticationServer()
 val url = service.authenticate(
     authServer = authServer,
     clientId = "yourClientId",
-    onSuccess = { token -> TODO() })
+    onSuccess = { token ->
+        service.setToken(token)
+        TODO("Store the token locally")
+    }
+)
 openBrowser(url)
 ```
 
 **Web**
+
 ```kotlin
-service.completeAuthentication() // Always call this
+// Always call this:
+val token = service.completeAuthentication()
+if (token != null) {
+    service.setToken(token)
+}
 
 // When user wants to authenticate:
-service.startAuthenticationByRedirect(
+val uri = service.authenticate(
     clientId = "yourClientId",
     redirectUri = "yourRedirectUri"
+)
+window.location.href = uri
+```
+
+**Android**
+
+Open the auth URL in a Custom Tab and capture the redirect via a deep link (`intent-filter`).
+Then exchange the authorization code for a token:
+
+```kotlin
+// When user wants to authenticate:
+val url = service.authenticate(
+    clientId = "yourClientId",
+    redirectUri = "yourRedirectUri" // e.g. a custom scheme like "your.app://oauth"
+)
+CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
+
+// In your Activity's onNewIntent, parse the "code" from the redirect Uri:
+val code = intent.data?.getQueryParameter("code") ?: return
+val token = service.completeAuthentication(
+    clientId = "yourClientId",
+    redirectUri = "yourRedirectUri",
+    code = code
 )
 ```
 
@@ -97,7 +134,7 @@ Securely store the token and pass it to the constructor of the service to use it
 ### Listing files
 
 ```kotlin
-val service = CloudBridge.dropbox(clientId = "yourClientId")
+val service = CloudBridge.dropbox(token)
 
 try {
     service.listFiles()
@@ -133,9 +170,16 @@ _Feel free to open an issue if you have a different use case for any of these._
 
 ## 🔗 Underlying dependencies
 
-Next to [Kotlin Multiplatform](https://www.jetbrains.com/kotlin-multiplatform/), this library uses:
+All service APIs were written from scratch to avoid dependencies on SDKs.
+
+This library uses:
 
 * [Ktor](https://ktor.io/) and [Ktorfit](https://foso.github.io/Ktorfit/) for network requests.
+* [Coroutines](https://github.com/Kotlin/kotlinx.coroutines) for concurrency.
 * [KotlinCrypto hash](https://github.com/KotlinCrypto/hash) for SHA256 hashing.
-* [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) to persist tokens.
 * [urlencoder](https://github.com/ethauvin/urlencoder) for URL encoding.
+
+Only on Android:
+
+* [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) to temporarily
+  persist the OAuth code verifier.

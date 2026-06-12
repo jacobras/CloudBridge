@@ -1,14 +1,15 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
-import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
 import nl.jacobras.cloudbridge.persistence.librarySettings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
+/**
+ * Builds the authorization URL for OneDrive. Open it in a Custom Tab (or browser) to start the
+ * PKCE flow.
+ */
 public fun OneDriveService.authenticate(
-    authServer: LocalAuthenticationServer,
     clientId: String,
-    onSuccess: (CloudAccessToken) -> Unit
+    redirectUri: String
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
@@ -18,10 +19,8 @@ public fun OneDriveService.authenticate(
     val authenticator = OneDriveAuthenticator(
         api = api,
         clientId = clientId,
-        redirectUri = authServer.url,
+        redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
-    authServer.stop()
-    authServer.start(service = this, authenticator = authenticator, onSuccess = onSuccess)
-    return authServer.url
+    return authenticator.buildPkceUri()
 }

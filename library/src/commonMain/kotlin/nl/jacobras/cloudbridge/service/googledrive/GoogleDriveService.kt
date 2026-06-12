@@ -24,9 +24,7 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Instant
 
-public class GoogleDriveService(
-    token: CloudAccessToken? = null
-) : OAuthCloudService(token) {
+public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(token) {
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
@@ -135,7 +133,7 @@ public class GoogleDriveService(
     }
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthHeader()
+        requireAuthenticated()
 
         try {
             return block()

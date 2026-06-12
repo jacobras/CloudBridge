@@ -18,9 +18,7 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Instant
 
-public class OneDriveService(
-    token: CloudAccessToken? = null
-) : OAuthCloudService(token) {
+public class OneDriveService(token: CloudAccessToken?) : OAuthCloudService(token) {
 
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
@@ -102,7 +100,7 @@ public class OneDriveService(
     }
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthHeader()
+        requireAuthenticated()
 
         try {
             return block()

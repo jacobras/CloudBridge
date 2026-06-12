@@ -1,20 +1,21 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
-import kotlinx.browser.window
+import android.net.Uri
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.persistence.librarySettings
-import org.w3c.dom.url.URLSearchParams
-import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.toJsString
 
-@OptIn(ExperimentalWasmJsInterop::class)
+/**
+ * Exchanges the authorization [code], parsed from [intentUri], for an access token.
+ *
+ * @throws nl.jacobras.cloudbridge.CloudServiceException
+ */
 public suspend fun OneDriveService.completeAuthentication(
     clientId: String,
-    redirectUri: String
+    redirectUri: String,
+    intentUri: Uri
 ): CloudAccessToken? {
-    val params = URLSearchParams(window.location.search.toJsString())
-    val code = params.get("code") ?: return null
     val codeVerifier = librarySettings.codeVerifier ?: return null
+    val code = intentUri.getQueryParameter("code") ?: return null
     val authenticator = OneDriveAuthenticator(
         api = api,
         clientId = clientId,

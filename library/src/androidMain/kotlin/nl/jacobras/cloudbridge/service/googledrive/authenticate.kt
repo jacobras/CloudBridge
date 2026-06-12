@@ -1,15 +1,19 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
 import nl.jacobras.cloudbridge.persistence.librarySettings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
+/**
+ * Builds the authorization URL for Google Drive. Open it in a Custom Tab (or browser) to start the
+ * PKCE flow.
+ *
+ * Google requires a [clientSecret] even for the PKCE flow. This is acceptable for installed apps
+ * per Google's own documentation.
+ */
 public fun GoogleDriveService.authenticate(
-    authServer: LocalAuthenticationServer,
     clientId: String,
     clientSecret: String,
-    onSuccess: (CloudAccessToken) -> Unit
+    redirectUri: String
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
@@ -20,10 +24,8 @@ public fun GoogleDriveService.authenticate(
         api = api,
         clientId = clientId,
         clientSecret = clientSecret,
-        redirectUri = authServer.url,
+        redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
-    authServer.stop()
-    authServer.start(service = this, authenticator = authenticator, onSuccess = onSuccess)
-    return authServer.url
+    return authenticator.buildPkceUri()
 }

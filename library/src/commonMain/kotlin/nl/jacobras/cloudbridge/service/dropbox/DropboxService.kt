@@ -21,12 +21,8 @@ import kotlin.time.Instant
 
 /**
  * Instance of the Dropbox API.
- *
- * @param token The access token to use for authentication. Leave empty to authenticate a new account.
  */
-public class DropboxService(
-    token: CloudAccessToken? = null
-) : OAuthCloudService(token) {
+public class DropboxService(token: CloudAccessToken?) : OAuthCloudService(token) {
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
@@ -51,7 +47,9 @@ public class DropboxService(
                         path = it.pathLower.asFilePath(),
                         name = it.name,
                         sizeInBytes = it.size ?: error("Missing size for file"),
-                        modified = Instant.parse(it.clientModified ?: error("Missing modified time for file"))
+                        modified = Instant.parse(
+                            it.clientModified ?: error("Missing modified time for file")
+                        )
                     )
                 }
                 "folder" -> {
@@ -109,7 +107,7 @@ public class DropboxService(
     }
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthHeader()
+        requireAuthenticated()
 
         try {
             return block()

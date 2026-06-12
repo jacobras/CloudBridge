@@ -1,13 +1,10 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-import kotlinx.browser.window
-
 @Suppress("UnusedReceiverParameter")
-public fun GoogleDriveService.startAuthenticationByRedirect(
+public fun GoogleDriveService.authenticate(
     redirectUri: String,
     clientId: String
-) {
+): String {
     val authenticator = GoogleDriveImplicitAuthenticator(clientId, redirectUri)
-    val uri = authenticator.buildImplicitFlowUri()
-    window.location.href = uri
+    return authenticator.buildImplicitFlowUri()
 }

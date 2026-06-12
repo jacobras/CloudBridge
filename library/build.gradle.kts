@@ -2,6 +2,7 @@
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktorfit)
     alias(libs.plugins.kotlin.serialization)
@@ -12,6 +13,11 @@ plugins {
 group = "nl.jacobras"
 
 kotlin {
+    android {
+        namespace = "nl.jacobras.cloudbridge"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+    }
     js { browser() }
     jvm("desktop")
     wasmJs {
@@ -32,7 +38,6 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktorfit)
-            implementation(libs.multiplatform.settings)
             implementation(libs.urlencoder)
         }
         commonTest.dependencies {
@@ -47,6 +52,9 @@ kotlin {
         }
         webMain.dependencies {
             implementation(libs.kotlinx.browser)
+        }
+        androidMain.dependencies {
+            implementation(libs.multiplatform.settings.no.arg)
         }
     }
 
