@@ -16,7 +16,7 @@ ktorfit = "2.7.3"
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
-androidx-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version = "2.10.0" }
+androidx-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version = "2.10.0" }
 assertK = { module = "com.willowtreeapps.assertk:assertk", version = "0.28.1" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version = "1.9.0" }

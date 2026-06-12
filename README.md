@@ -5,10 +5,10 @@
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
 ![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
-Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting Android, web and desktop (JVM), but iOS
-support is planned.
+Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting Android, web and desktop (
+JVM), but iOS support is planned.
 
-<img height="172" src="/docs/images/logo.png"/>
+<img height="172" src="/docs/images/logo.png" alt = "CloudBridge Logo "/>
 
 ## ⚠️ Under construction
 
@@ -61,7 +61,8 @@ dependencies {
 
 ## 🚀 Quick Start
 
-The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or `CloudBridge.oneDrive()`.
+The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or
+`CloudBridge.oneDrive()`.
 
 Here's an example with Dropbox. First instantiate the service:
 
@@ -72,6 +73,7 @@ val service = CloudBridge.dropbox()
 Then, have the user authenticate.
 
 **Desktop**
+
 ```kotlin
 val authServer = LocalAuthenticationServer()
 
@@ -88,6 +90,7 @@ openBrowser(url)
 ```
 
 **Web**
+
 ```kotlin
 // Always call this:
 val token = service.completeAuthentication()
@@ -107,6 +110,7 @@ window.location.href = uri
 
 Open the auth URL in a Custom Tab and capture the redirect via a deep link (`intent-filter`).
 Then exchange the authorization code for a token:
+
 ```kotlin
 // When user wants to authenticate:
 val url = service.authenticate(
