@@ -88,6 +88,7 @@ fun main() = application {
                             selectedService = dropboxService
                             DemoSettings.dropboxToken = it
                             showSuccessDialog = true
+                            viewModel.refresh(dropboxService)
                         }
                     )
                     openDelayed(url)
@@ -103,6 +104,7 @@ fun main() = application {
                             selectedService = googleDriveService
                             DemoSettings.googleDriveToken = it
                             showSuccessDialog = true
+                            viewModel.refresh(googleDriveService)
                         }
                     )
                     openDelayed(url)
@@ -117,6 +119,7 @@ fun main() = application {
                             selectedService = oneDriveService
                             DemoSettings.oneDriveToken = it
                             showSuccessDialog = true
+                            viewModel.refresh(oneDriveService)
                         }
                     )
                     openDelayed(url)
