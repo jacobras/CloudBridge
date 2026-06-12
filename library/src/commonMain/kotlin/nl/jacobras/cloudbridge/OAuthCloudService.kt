@@ -31,8 +31,9 @@ public abstract class OAuthCloudService : CloudService {
                         )
                     }
                     defaultRequest {
-                        if (token != null) {
-                            header(HttpHeaders.Authorization, requireAuthHeader())
+                        val authHeader = getAuthHeader()
+                        if (authHeader != null) {
+                            header(HttpHeaders.Authorization, authHeader)
                         }
                     }
                 }
@@ -48,8 +49,14 @@ public abstract class OAuthCloudService : CloudService {
         return token != null
     }
 
-    protected fun requireAuthHeader(): String {
-        val token = token ?: throw CloudServiceException.NotAuthenticatedException()
+    protected fun requireAuthenticated() {
+        if (token == null) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+    }
+
+    private fun getAuthHeader(): String? {
+        val token = token ?: return null
         return "Bearer ${token.accessToken}"
     }
 }

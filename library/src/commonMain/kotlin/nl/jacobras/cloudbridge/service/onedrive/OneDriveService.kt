@@ -99,7 +99,7 @@ public class OneDriveService : OAuthCloudService() {
     }
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthHeader()
+        requireAuthenticated()
 
         try {
             return block()
