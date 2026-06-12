@@ -182,10 +182,11 @@ fun main() {
                     userInfo = userInfo[dropboxService],
                     error = serviceErrors[dropboxService] ?: "",
                     startAuth = {
-                        dropboxService.authenticate(
+                        val uri = dropboxService.authenticate(
                             clientId = "nw5f95uw77yrz3j",
                             redirectUri = "http://localhost:8080"
                         )
+                        window.location.href = uri
                     },
                     finishAuth = {
                         val token = dropboxService.completeAuthentication(
@@ -206,10 +207,11 @@ fun main() {
                     userInfo = userInfo[googleDriveService],
                     error = serviceErrors[googleDriveService] ?: "",
                     startAuth = {
-                        googleDriveService.authenticate(
+                        val uri = googleDriveService.authenticate(
                             clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
                             redirectUri = "http://localhost:8080"
                         )
+                        window.location.href = uri
                     },
                     finishAuth = {
                         val token = googleDriveService.completeAuthentication()
@@ -227,10 +229,11 @@ fun main() {
                     userInfo = userInfo[oneDriveService],
                     error = serviceErrors[oneDriveService] ?: "",
                     startAuth = {
-                        oneDriveService.authenticate(
+                        val uri = oneDriveService.authenticate(
                             clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
                             redirectUri = "http://localhost:8080"
                         )
+                        window.location.href = uri
                     },
                     finishAuth = {
                         val token = oneDriveService.completeAuthentication(

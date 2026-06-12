@@ -19,6 +19,7 @@ This library is not yet stable. The API will change and docs may be outdated.
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms.
 * 📱 **Cross-platform**: Supports Android, web and desktop (JVM); iOS is planned.
+* 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 
@@ -65,7 +66,7 @@ The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or 
 Here's an example with Dropbox. First instantiate the service:
 
 ```kotlin
-val service = CloudBridge.dropbox() // Pass in token=... if you already have one
+val service = CloudBridge.dropbox()
 ```
 
 Then, have the user authenticate.
@@ -78,19 +79,28 @@ val authServer = LocalAuthenticationServer()
 val url = service.authenticate(
     authServer = authServer,
     clientId = "yourClientId",
-    onSuccess = { token -> TODO() })
+    onSuccess = { token ->
+        service.setToken(token)
+        TODO("Store the token locally")
+    }
+)
 openBrowser(url)
 ```
 
 **Web**
 ```kotlin
-service.completeAuthentication() // Always call this
+// Always call this:
+val token = service.completeAuthentication()
+if (token != null) {
+    service.setToken(token)
+}
 
 // When user wants to authenticate:
-service.startAuthenticationByRedirect(
+val uri = service.authenticate(
     clientId = "yourClientId",
     redirectUri = "yourRedirectUri"
 )
+window.location.href = uri
 ```
 
 **Android**
@@ -98,8 +108,8 @@ service.startAuthenticationByRedirect(
 Open the auth URL in a Custom Tab and capture the redirect via a deep link (`intent-filter`).
 Then exchange the authorization code for a token:
 ```kotlin
-// When user wants to authenticate, open this URL in a Custom Tab:
-val url = service.buildAuthenticationUri(
+// When user wants to authenticate:
+val url = service.authenticate(
     clientId = "yourClientId",
     redirectUri = "yourRedirectUri" // e.g. a custom scheme like "your.app://oauth"
 )
@@ -119,7 +129,7 @@ Securely store the token and pass it to the constructor of the service to use it
 ### Listing files
 
 ```kotlin
-val service = CloudBridge.dropbox(clientId = "yourClientId")
+val service = CloudBridge.dropbox(token)
 
 try {
     service.listFiles()
