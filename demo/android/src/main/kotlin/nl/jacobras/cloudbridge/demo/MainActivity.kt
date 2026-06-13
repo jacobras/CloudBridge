@@ -107,7 +107,6 @@ class MainActivity : ComponentActivity() {
                 val googleDriveService = viewModel.googleDrive
                 val token = googleDriveService.completeAuthentication(
                     clientId = GOOGLE_DRIVE_CLIENT_ID,
-                    clientSecret = BuildConfig.DRIVE_DESKTOP_SECRET,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
@@ -184,7 +183,6 @@ private fun DemoApp(
                         Provider.GoogleDrive,
                         googleDriveService.authenticate(
                             clientId = GOOGLE_DRIVE_CLIENT_ID,
-                            clientSecret = BuildConfig.DRIVE_DESKTOP_SECRET,
                             redirectUri = REDIRECT_URI
                         )
                     )
@@ -265,5 +263,5 @@ private const val REDIRECT_URI = "nl.jacobras.cloudbridge.demo://cloudbridge-aut
 
 private const val DROPBOX_CLIENT_ID = "nw5f95uw77yrz3j"
 private const val GOOGLE_DRIVE_CLIENT_ID =
-    "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com"
+    "218224394553-v4ie7qm96pl2l529s2va5die94a6shhm.apps.googleusercontent.com"
 private const val ONEDRIVE_CLIENT_ID = "40916102-96a6-46ca-929e-90cc62c3be9a"

@@ -24,7 +24,7 @@ internal interface GoogleDriveApi {
     @FormUrlEncoded
     suspend fun getToken(
         @Field("client_id") clientId: String,
-        @Field("client_secret") clientSecret: String,
+        @Field("client_secret") clientSecret: String?,
         @Field("redirect_uri") redirectUri: String,
         @Field("code") code: String,
         @Field("code_verifier") codeVerifier: String,

@@ -11,6 +11,7 @@ public fun GoogleDriveService.authenticate(
     clientSecret: String,
     onSuccess: (CloudAccessToken) -> Unit
 ): String {
+    require(clientSecret.isNotEmpty()) { "Client secret cannot be empty" }
     val codeVerifier = librarySettings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
         librarySettings.codeVerifier = verifier

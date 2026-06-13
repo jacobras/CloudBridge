@@ -8,7 +8,7 @@ import nl.jacobras.cloudbridge.persistence.librarySettings
 internal class GoogleDrivePkceAuthenticator(
     private val api: GoogleDriveApi,
     private val clientId: String,
-    private val clientSecret: String,
+    private val clientSecret: String?,
     private val redirectUri: String,
     codeVerifier: String
 ) : PkceAuthenticator(
@@ -18,10 +18,6 @@ internal class GoogleDrivePkceAuthenticator(
 ) {
     override val baseUrl = "https://accounts.google.com/o/oauth2/v2/auth"
     override val scope = "https://www.googleapis.com/auth/drive.appdata"
-
-    init {
-        require(clientSecret.isNotEmpty()) { "Client secret cannot be empty" }
-    }
 
     override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {

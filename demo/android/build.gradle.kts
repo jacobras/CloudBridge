@@ -1,13 +1,11 @@
 @file:Suppress("OPT_IN_USAGE")
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.buildconfig)
 }
 
 val localProps = Properties().apply {
@@ -19,11 +17,6 @@ dependencies {
     implementation(projects.demo.shared)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.browser)
-}
-
-buildConfig {
-    packageName("nl.jacobras.cloudbridge.demo")
-    buildConfigField<String>("DRIVE_DESKTOP_SECRET", localProps.getProperty("driveDesktopSecret") ?: "")
 }
 
 android {

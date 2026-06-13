@@ -6,13 +6,9 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 /**
  * Builds the authorization URL for Google Drive. Open it in a Custom Tab (or browser) to start the
  * PKCE flow.
- *
- * Google requires a [clientSecret] even for the PKCE flow. This is acceptable for installed apps
- * per Google's own documentation.
  */
 public fun GoogleDriveService.authenticate(
     clientId: String,
-    clientSecret: String,
     redirectUri: String
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -23,7 +19,7 @@ public fun GoogleDriveService.authenticate(
     val authenticator = GoogleDrivePkceAuthenticator(
         api = api,
         clientId = clientId,
-        clientSecret = clientSecret,
+        clientSecret = null, // Android apps use SHA-1/package binding instead
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
