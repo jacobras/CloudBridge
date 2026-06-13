@@ -1,6 +1,6 @@
 # CloudBridge Demo
 
-The demo is split into platform modules that share `:demo:common`:
+The demo is split into platform modules that share `:demo:shared`:
 
 - `:demo:android` — Android app
 - `:demo:desktop` — Desktop (JVM) app
