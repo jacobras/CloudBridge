@@ -30,9 +30,9 @@ jobs:
         run: >
           ./gradlew kotlinUpgradeYarnLock
           :library:desktopTest
-          :demo:compileKotlinDesktop
-          :demo:compileKotlinJs
-          :demo:compileKotlinWasmJs
+          :demo:desktop:compileKotlinDesktop
+          :demo:web:compileKotlinJs
+          :demo:web:compileKotlinWasmJs
 
       - name: Publish unit test report
         if: always()
