@@ -18,5 +18,8 @@ dependencyResolutionManagement {
     }
 }
 
-include(":demo")
+include(":demo:android")
+include(":demo:shared")
+include(":demo:desktop")
+include(":demo:web")
 include(":library")

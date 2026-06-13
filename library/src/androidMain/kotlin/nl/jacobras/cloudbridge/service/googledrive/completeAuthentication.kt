@@ -12,7 +12,6 @@ import nl.jacobras.cloudbridge.persistence.librarySettings
  */
 public suspend fun GoogleDriveService.completeAuthentication(
     clientId: String,
-    clientSecret: String,
     redirectUri: String,
     intentUri: Uri
 ): CloudAccessToken? {
@@ -21,7 +20,7 @@ public suspend fun GoogleDriveService.completeAuthentication(
     val authenticator = GoogleDrivePkceAuthenticator(
         api = api,
         clientId = clientId,
-        clientSecret = clientSecret,
+        clientSecret = null,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
