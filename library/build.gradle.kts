@@ -55,9 +55,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.multiplatform.settings.no.arg)
-            // ComponentActivity is exposed in GoogleDriveAuthenticator's public API, so api(...).
-            api(libs.androidx.activity)
-            // Play Services is fully wrapped by GoogleDriveAuthenticator, so it stays an impl detail.
+            implementation(libs.androidx.activity)
             implementation(libs.play.services.auth)
         }
     }
