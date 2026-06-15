@@ -52,7 +52,7 @@ public class GoogleDriveAuthenticator(
     public fun authenticate() {
         Identity.getAuthorizationClient(activity)
             .authorize(buildAuthorizationRequest())
-            .addOnSuccessListener { result -> handle(completeAuthentication(result)) }
+            .addOnSuccessListener { result -> handle(result.toModel()) }
             .addOnFailureListener { onFailure(CloudServiceException.Unknown(it)) }
     }
 
@@ -73,8 +73,8 @@ public class GoogleDriveAuthenticator(
     }
 
     /**
-     * Parses the [intent] returned to the activity after the authorization consent screen and reports
-     * the resulting [GoogleAuthorization].
+     * Parses the [intent] returned to the activity after the authorization consent screen and
+     * returns the resulting [GoogleAuthorization].
      *
      * @throws CloudServiceException when the authorization result could not be read.
      */
@@ -86,23 +86,19 @@ public class GoogleDriveAuthenticator(
         } catch (e: ApiException) {
             throw CloudServiceException.Unknown(e)
         }
-        return completeAuthentication(result)
+        return result.toModel()
     }
 
     /**
-     * Turns [result] into a [GoogleAuthorization] instance.
-     *
      * @return [GoogleAuthorization.ConsentRequired] if user needs to consent,
      * [GoogleAuthorization.Authorized] if everything's good to go, or [GoogleAuthorization.Denied].
      */
-    private fun completeAuthentication(
-        result: AuthorizationResult
-    ): GoogleAuthorization {
-        val pendingIntent = result.pendingIntent
-        if (result.hasResolution() && pendingIntent != null) {
+    private fun AuthorizationResult.toModel(): GoogleAuthorization {
+        val pendingIntent = pendingIntent
+        if (hasResolution() && pendingIntent != null) {
             return GoogleAuthorization.ConsentRequired(pendingIntent)
         }
-        val accessToken = result.accessToken ?: return GoogleAuthorization.Denied
+        val accessToken = accessToken ?: return GoogleAuthorization.Denied
         return GoogleAuthorization.Authorized(CloudAccessToken(accessToken = accessToken))
     }
 }
