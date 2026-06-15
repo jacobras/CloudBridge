@@ -123,10 +123,11 @@ CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
 // In your Activity's onNewIntent (and onCreate), call:
 val token = service.completeAuthentication(
     clientId = "yourClientId",
-    redirectUri = "yourRedirectUri", // Needs to match the uri passed into authenticate()
-    intentUri = intent
+    redirectUri = "yourRedirectUri" // Needs to match the uri passed into authenticate()
 )
 ```
+
+Note: Google Drive on web doesn't need any parameters passed into `completeAuthentication()`.
 
 **Android (Google Drive)**
 
