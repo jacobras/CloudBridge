@@ -47,7 +47,7 @@ public class GoogleDriveAuthenticator(
 
     /**
      * Starts the authorization flow, showing a consent screen when the user has not granted access
-     * yet. The outcome is passed into to [onSuccess], [onDenied] and [onFailure].
+     * yet. The outcome is passed to [onSuccess], [onDenied] and [onFailure].
      */
     public fun authenticate() {
         Identity.getAuthorizationClient(activity)
