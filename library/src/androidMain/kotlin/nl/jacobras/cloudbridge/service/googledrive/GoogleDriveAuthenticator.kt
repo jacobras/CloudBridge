@@ -103,4 +103,4 @@ public class GoogleDriveAuthenticator(
     }
 }
 
-private const val DRIVE_APPDATA_SCOPE: String = "https://www.googleapis.com/auth/drive.appdata"
+private const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
