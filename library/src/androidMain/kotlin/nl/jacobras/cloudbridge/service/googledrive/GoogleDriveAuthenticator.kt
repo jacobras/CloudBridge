@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import android.app.Activity
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.IntentSenderRequest
@@ -31,6 +32,10 @@ public class GoogleDriveAuthenticator(
     private val consentLauncher = activity.registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) {
+            onDenied()
+            return@registerForActivityResult
+        }
         val authorization = try {
             completeAuthentication(result.data)
         } catch (e: CloudServiceException) {
