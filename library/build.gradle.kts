@@ -55,6 +55,8 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.multiplatform.settings.no.arg)
+            implementation(libs.androidx.activity)
+            implementation(libs.play.services.auth)
         }
     }
 

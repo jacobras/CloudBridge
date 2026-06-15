@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Color.TRANSPARENT
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -41,8 +42,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.authenticate
 import nl.jacobras.cloudbridge.service.dropbox.completeAuthentication
-import nl.jacobras.cloudbridge.service.googledrive.authenticate
-import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
+import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveAuthenticator
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
@@ -52,6 +52,19 @@ class MainActivity : ComponentActivity() {
 
     private var authenticatingProvider: Provider? = null
     private val scope = CoroutineScope(Dispatchers.Main)
+
+    private val googleDriveAuthenticator = GoogleDriveAuthenticator(
+        activity = this,
+        onSuccess = { token ->
+            DemoSettings.googleDriveToken = token
+            viewModel.refresh(viewModel.googleDrive)
+        },
+        onDenied = {},
+        onFailure = { error ->
+            val errorMessage = "Google Drive sign-in failed: ${error.message}"
+            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        }
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -71,7 +84,8 @@ class MainActivity : ComponentActivity() {
                     launchAuth = { provider, url ->
                         authenticatingProvider = provider
                         CustomTabsIntent.Builder().build().launchUrl(this, url.toUri())
-                    }
+                    },
+                    onAuthenticateGoogleDrive = googleDriveAuthenticator::authenticate
                 )
             }
         }
@@ -103,17 +117,6 @@ class MainActivity : ComponentActivity() {
                 viewModel.refresh(viewModel.dropbox)
             }
 
-            Provider.GoogleDrive -> {
-                val googleDriveService = viewModel.googleDrive
-                val token = googleDriveService.completeAuthentication(
-                    clientId = GOOGLE_DRIVE_CLIENT_ID,
-                    redirectUri = REDIRECT_URI,
-                    intentUri = uri
-                ) ?: return@launch
-                DemoSettings.googleDriveToken = token
-                viewModel.refresh(googleDriveService)
-            }
-
             Provider.OneDrive -> {
                 val oneDriveService = viewModel.oneDrive
                 val token = oneDriveService.completeAuthentication(
@@ -132,7 +135,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun DemoApp(
     viewModel: MainViewModel,
-    launchAuth: (Provider, String) -> Unit
+    launchAuth: (Provider, String) -> Unit,
+    onAuthenticateGoogleDrive: () -> Unit
 ) {
     val files by viewModel.files.collectAsState()
     val userInfo by viewModel.userInfo.collectAsState()
@@ -178,15 +182,7 @@ private fun DemoApp(
                 userInfo = userInfo[googleDriveService],
                 files = files[googleDriveService] ?: emptyList(),
                 error = serviceErrors[googleDriveService] ?: "",
-                onAuthenticate = {
-                    launchAuth(
-                        Provider.GoogleDrive,
-                        googleDriveService.authenticate(
-                            clientId = GOOGLE_DRIVE_CLIENT_ID,
-                            redirectUri = REDIRECT_URI
-                        )
-                    )
-                },
+                onAuthenticate = onAuthenticateGoogleDrive,
                 onLogOut = {
                     DemoSettings.googleDriveToken = null
                     viewModel.refresh(googleDriveService)
@@ -257,11 +253,9 @@ private fun ServiceSection(
     }
 }
 
-private enum class Provider { Dropbox, GoogleDrive, OneDrive }
+private enum class Provider { Dropbox, OneDrive }
 
 private const val REDIRECT_URI = "nl.jacobras.cloudbridge.demo://cloudbridge-auth"
 
 private const val DROPBOX_CLIENT_ID = "nw5f95uw77yrz3j"
-private const val GOOGLE_DRIVE_CLIENT_ID =
-    "218224394553-v4ie7qm96pl2l529s2va5die94a6shhm.apps.googleusercontent.com"
 private const val ONEDRIVE_CLIENT_ID = "40916102-96a6-46ca-929e-90cc62c3be9a"

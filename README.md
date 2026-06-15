@@ -107,7 +107,7 @@ val uri = service.authenticate(
 window.location.href = uri
 ```
 
-**Android**
+**Android (Dropbox & OneDrive)**
 
 Open the auth URL in a Custom Tab and capture the redirect via a deep link (`intent-filter`).
 Then exchange the authorization code for a token:
@@ -116,17 +116,32 @@ Then exchange the authorization code for a token:
 // When user wants to authenticate:
 val url = service.authenticate(
     clientId = "yourClientId",
-    redirectUri = "yourRedirectUri" // e.g. a custom scheme like "your.app://oauth"
+    redirectUri = "yourRedirectUri" // e.g. a custom scheme like "com.example://cloudbridge-auth"
 )
 CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
 
-// In your Activity's onNewIntent, parse the "code" from the redirect Uri:
-val code = intent.data?.getQueryParameter("code") ?: return
+// In your Activity's onNewIntent (and onCreate), call:
 val token = service.completeAuthentication(
     clientId = "yourClientId",
-    redirectUri = "yourRedirectUri",
-    code = code
+    redirectUri = "yourRedirectUri" // Needs to match the uri passed into authenticate()
 )
+```
+
+Note: Google Drive on web doesn't need any parameters passed into `completeAuthentication()`.
+
+**Android (Google Drive)**
+
+Google no longer supports custom-scheme redirects on Android, so the library has to use Google
+Identity Services instead. Also see [Underlying dependencies](#-underlying-dependencies).
+
+```kotlin
+val googleDriveAuthenticator = GoogleDriveAuthenticator(
+    activity = this,
+    onSuccess = { token -> TODO() },
+    onDenied = { TODO() },
+    onFailure = { error -> TODO() }
+)
+
 ```
 
 Securely store the token and pass it to the constructor of the service to use it.
@@ -182,4 +197,6 @@ This library uses:
 Only on Android:
 
 * [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) to temporarily
-  persist the OAuth code verifier.
+  persist the OAuth code verifier (Dropbox & OneDrive).
+* [Google Identity Services](https://developers.google.com/identity/authorization/android)
+  (`play-services-auth`) for Google Drive authorization.
