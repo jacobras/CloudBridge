@@ -57,7 +57,7 @@ public class GoogleDriveAuthenticator(
             is GoogleAuthorization.ConsentRequired -> consentLauncher.launch(
                 IntentSenderRequest.Builder(authorization.pendingIntent.intentSender).build()
             )
-            GoogleAuthorization.Denied -> onDenied
+            GoogleAuthorization.Denied -> onDenied()
         }
     }
 
