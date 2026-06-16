@@ -9,12 +9,20 @@ plugins {
 kotlin {
     js {
         outputModuleName = "demo"
-        browser()
+        browser {
+            commonWebpackConfig {
+                outputFileName = "demo.js"
+            }
+        }
         binaries.executable()
     }
     wasmJs {
         outputModuleName = "demo"
-        browser()
+        browser {
+            commonWebpackConfig {
+                outputFileName = "demo.js"
+            }
+        }
         binaries.executable()
     }
 
