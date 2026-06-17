@@ -1,6 +1,7 @@
 @file:Suppress("OPT_IN_USAGE")
 
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
@@ -16,13 +17,20 @@ val localProps = Properties().apply {
 }
 
 kotlin {
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
+    }
 
     sourceSets {
         named("desktopMain") {
             buildConfig {
                 packageName("nl.jacobras.cloudbridge.demo")
-                buildConfigField<String>("DRIVE_DESKTOP_SECRET", localProps.getProperty("driveDesktopSecret") ?: "")
+                buildConfigField<String>(
+                    "DRIVE_DESKTOP_SECRET",
+                    localProps.getProperty("driveDesktopSecret") ?: ""
+                )
             }
             dependencies {
                 implementation(projects.demo.shared)
@@ -39,7 +47,7 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "nl.jacobras.cloudbridge.demo.MainKt"
+        mainClass = "nl.jacobras.cloudbridge.demo.desktop.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

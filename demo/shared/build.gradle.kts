@@ -1,5 +1,8 @@
 @file:Suppress("OPT_IN_USAGE")
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -13,7 +16,11 @@ kotlin {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_21
+        }
+    }
     js { browser() }
     wasmJs { browser() }
 
@@ -21,6 +28,9 @@ kotlin {
         commonMain.dependencies {
             api(projects.library)
             api(libs.androidx.viewmodel)
+            api(libs.compose.adaptive)
+            api(libs.compose.adaptive.layout)
+            api(libs.compose.adaptive.navigation)
             api(libs.compose.foundation)
             api(libs.compose.material3)
             api(libs.compose.runtime)
@@ -43,5 +53,6 @@ kotlin {
 
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
+        freeCompilerArgs.add("-Xexplicit-backing-fields")
     }
 }

@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
-import nl.jacobras.cloudbridge.demo.ui.MainViewModel
+import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.authenticate
@@ -48,7 +48,7 @@ import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel = MainViewModel()
+    private val viewModel = DemoViewModel()
 
     private var authenticatingProvider: Provider? = null
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -134,7 +134,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DemoApp(
-    viewModel: MainViewModel,
+    viewModel: DemoViewModel,
     launchAuth: (Provider, String) -> Unit,
     onAuthenticateGoogleDrive: () -> Unit
 ) {

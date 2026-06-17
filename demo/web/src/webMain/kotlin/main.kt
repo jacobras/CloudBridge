@@ -37,7 +37,7 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.FileRow
-import nl.jacobras.cloudbridge.demo.ui.MainViewModel
+import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -65,7 +65,7 @@ fun main() {
 
 
     ComposeViewport {
-        val viewModel = remember { MainViewModel() }
+        val viewModel = remember { DemoViewModel() }
         val dropboxService = viewModel.dropbox
         val googleDriveService = viewModel.googleDrive
         val oneDriveService = viewModel.oneDrive

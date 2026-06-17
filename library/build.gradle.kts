@@ -1,5 +1,8 @@
 @file:Suppress("OPT_IN_USAGE")
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -19,7 +22,11 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     js { browser() }
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
+    }
     wasmJs {
         browser {
             testTask {
