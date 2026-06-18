@@ -24,6 +24,7 @@ fun DemoScreen(
     onDeauthenticate: (CloudService) -> Unit
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator()
+    val userInfos by viewModel.userInfos.collectAsState()
     val selectedService by viewModel.selectedService.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -32,8 +33,8 @@ fun DemoScreen(
         value = navigator.scaffoldValue,
         listPane = {
             ServicesList(
-                services = viewModel.services,
-                selectedService = selectedService?.service,
+                services = viewModel.services.associateWith { service -> userInfos[service] },
+                selectedService = selectedService,
                 onClick = {
                     viewModel.select(it)
                     scope.launch {
@@ -43,10 +44,10 @@ fun DemoScreen(
             )
         },
         detailPane = {
-            selectedService?.let { info ->
-                val service = info.service
+            selectedService?.let { service ->
                 DetailPane(
-                    info = info,
+                    service = service,
+                    userInfo = userInfos[service],
                     onAuthenticateClick = { onAuthenticate(service) },
                     onDeauthenticateClick = { onDeauthenticate(service) },
                     onBackClick = {

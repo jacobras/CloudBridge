@@ -23,16 +23,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.model.UserInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DetailPane(
-    info: ServiceWithInfo,
+    service: CloudService,
+    userInfo: UserInfo?,
     onAuthenticateClick: () -> Unit,
     onDeauthenticateClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val viewModel = remember(info.service) { ServiceViewModel(info.service) }
+    val viewModel = remember(service) { ServiceViewModel(service) }
     val files by viewModel.files.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -44,10 +47,10 @@ internal fun DetailPane(
             CenterAlignedTopAppBar(
                 title = {
                     Text(text = buildString {
-                        append(info.name)
+                        append(service.name)
 
-                        if (info.emailAddress.isNotBlank()) {
-                            append(" (${info.emailAddress})")
+                        if (userInfo?.emailAddress != null) {
+                            append(" (${userInfo.emailAddress})")
                         }
                     })
                 },
@@ -60,7 +63,6 @@ internal fun DetailPane(
                     containerColor = Color.Transparent
                 ),
                 actions = {
-                    val service = info.service
                     if (!service.isAuthenticated()) {
                         Button(onClick = onAuthenticateClick) {
                             Text("Sign in")
@@ -88,7 +90,7 @@ internal fun DetailPane(
 
             if (content.isNotEmpty() && selectedItem != null) {
                 FileDetailDialog(
-                    service = info.service,
+                    service = service,
                     content = content,
                     item = selectedItem!!,
                     onDismiss = { viewModel.deselectItem() }

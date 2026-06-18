@@ -16,20 +16,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.model.UserInfo
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal fun ServicesList(
-    services: List<ServiceWithInfo>,
+    services: Map<CloudService, UserInfo?>,
     selectedService: CloudService?,
-    onClick: (ServiceWithInfo) -> Unit
+    onClick: (CloudService) -> Unit
 ) {
     Column {
-        for (info in services) {
+        for ((service, userInfo) in services) {
             Service(
-                service = info,
-                selected = selectedService == info.service,
-                onClick = { onClick(info) }
+                service = service,
+                userInfo = userInfo,
+                selected = selectedService == service,
+                onClick = { onClick(service) }
             )
         }
     }
@@ -37,7 +39,8 @@ internal fun ServicesList(
 
 @Composable
 private fun Service(
-    service: ServiceWithInfo,
+    service: CloudService,
+    userInfo: UserInfo?,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -58,8 +61,8 @@ private fun Service(
             text = buildString {
                 append(service.name)
 
-                if (service.userName.isNotBlank()) {
-                    append(" (${service.userName})")
+                if (userInfo?.emailAddress != null) {
+                    append(" (${userInfo.emailAddress})")
                 }
             },
             fontWeight = if (selected) {
