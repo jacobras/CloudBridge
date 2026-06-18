@@ -20,8 +20,7 @@ import nl.jacobras.cloudbridge.CloudService
 @Composable
 fun DemoScreen(
     viewModel: DemoViewModel,
-    onAuthenticate: (CloudService) -> Unit,
-    onDeauthenticate: (CloudService) -> Unit
+    onAuthenticate: (CloudService) -> Unit
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator()
     val userInfos by viewModel.userInfos.collectAsState()
@@ -49,7 +48,7 @@ fun DemoScreen(
                     service = service,
                     userInfo = userInfos[service],
                     onAuthenticateClick = { onAuthenticate(service) },
-                    onDeauthenticateClick = { onDeauthenticate(service) },
+                    onDeauthenticateClick = { viewModel.deauthenticate(service) },
                     onBackClick = {
                         viewModel.deselect()
                         scope.launch {

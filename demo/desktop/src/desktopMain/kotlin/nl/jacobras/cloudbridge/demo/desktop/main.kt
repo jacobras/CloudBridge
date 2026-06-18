@@ -84,22 +84,6 @@ fun main() = application {
                         uriHandler.openUri(url)
                     }
                 }
-            },
-            onDeauthenticate = { service ->
-                when (service) {
-                    is DropboxService -> {
-                        DemoSettings.dropboxToken = null
-                        viewModel.updateTokens()
-                    }
-                    is GoogleDriveService -> {
-                        DemoSettings.googleDriveToken = null
-                        viewModel.updateTokens()
-                    }
-                    is OneDriveService -> {
-                        DemoSettings.oneDriveToken = null
-                        viewModel.updateTokens()
-                    }
-                }
             }
         )
     }

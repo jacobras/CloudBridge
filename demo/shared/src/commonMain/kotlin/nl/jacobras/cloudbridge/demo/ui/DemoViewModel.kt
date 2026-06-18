@@ -13,6 +13,9 @@ import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
+import nl.jacobras.cloudbridge.service.dropbox.DropboxService
+import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
+import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 
 class DemoViewModel : ViewModel() {
     val dropbox = CloudBridge.dropbox()
@@ -62,5 +65,22 @@ class DemoViewModel : ViewModel() {
 
     internal fun deselect() {
         selectedService.update { null }
+    }
+
+    fun deauthenticate(service: CloudService) {
+        when (service) {
+            is DropboxService -> {
+                DemoSettings.dropboxToken = null
+                updateTokens()
+            }
+            is GoogleDriveService -> {
+                DemoSettings.googleDriveToken = null
+                updateTokens()
+            }
+            is OneDriveService -> {
+                DemoSettings.oneDriveToken = null
+                updateTokens()
+            }
+        }
     }
 }
