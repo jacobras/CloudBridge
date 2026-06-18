@@ -15,6 +15,7 @@ kotlin {
         namespace = "nl.jacobras.cloudbridge.demo.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources { enable = true }
     }
     jvm("desktop") {
         compilerOptions {
