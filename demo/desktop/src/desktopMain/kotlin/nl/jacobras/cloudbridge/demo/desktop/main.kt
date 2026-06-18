@@ -1,10 +1,7 @@
 package nl.jacobras.cloudbridge.demo.desktop
 
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -25,8 +22,6 @@ import nl.jacobras.cloudbridge.service.onedrive.authenticate
 
 fun main() = application {
     val viewModel = remember { DemoViewModel() }
-
-    var showSuccessDialog by remember { mutableStateOf(false) }
     val localServer = remember { LocalAuthenticationServer() }
 
     DisposableEffect(Unit) {
@@ -52,7 +47,6 @@ fun main() = application {
                             clientId = "nw5f95uw77yrz3j",
                             onSuccess = { token ->
                                 DemoSettings.dropboxToken = token
-                                showSuccessDialog = true
                                 viewModel.updateTokens()
                             }
                         )
@@ -65,7 +59,6 @@ fun main() = application {
                             clientSecret = DesktopMainBuildConfig.DRIVE_DESKTOP_SECRET,
                             onSuccess = { token ->
                                 DemoSettings.googleDriveToken = token
-                                showSuccessDialog = true
                                 viewModel.updateTokens()
                             }
                         )
@@ -77,7 +70,6 @@ fun main() = application {
                             clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
                             onSuccess = { token ->
                                 DemoSettings.oneDriveToken = token
-                                showSuccessDialog = true
                                 viewModel.updateTokens()
                             }
                         )

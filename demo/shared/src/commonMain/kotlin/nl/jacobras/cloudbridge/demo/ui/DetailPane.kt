@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.demo.isWeb
 import nl.jacobras.cloudbridge.model.UserInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,6 +34,7 @@ internal fun DetailPane(
     userInfo: UserInfo?,
     onAuthenticateClick: () -> Unit,
     onDeauthenticateClick: () -> Unit,
+    onFinishAuthOnWeb: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val viewModel = remember(service) { ServiceViewModel(service) }
@@ -85,6 +87,13 @@ internal fun DetailPane(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
+                Spacer(Modifier.height(16.dp))
+            }
+
+            if (isWeb && !service.isAuthenticated()) {
+                Button(onClick = onFinishAuthOnWeb) {
+                    Text("Finish auth")
+                }
                 Spacer(Modifier.height(16.dp))
             }
 
