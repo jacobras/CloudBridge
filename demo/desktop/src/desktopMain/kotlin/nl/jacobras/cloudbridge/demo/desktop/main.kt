@@ -43,7 +43,7 @@ fun main() = application {
         val uriHandler = LocalUriHandler.current
 
         DemoScreen(
-            viewModel = DemoViewModel(),
+            viewModel = viewModel,
             onAuthenticate = { service ->
                 when (service) {
                     is DropboxService -> {
