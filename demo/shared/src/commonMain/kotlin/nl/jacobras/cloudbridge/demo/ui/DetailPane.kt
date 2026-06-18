@@ -36,6 +36,9 @@ internal fun DetailPane(
     val files by viewModel.files.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    val selectedItem by viewModel.selectedItem.collectAsState()
+    val content by viewModel.content.collectAsState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -83,12 +86,19 @@ internal fun DetailPane(
                 Spacer(Modifier.height(16.dp))
             }
 
+            if (content.isNotEmpty() && selectedItem != null) {
+                FileDetailDialog(
+                    service = info.service,
+                    content = content,
+                    item = selectedItem!!,
+                    onDismiss = { viewModel.deselectItem() }
+                )
+            }
+
             FilesList(
                 modifier = Modifier.fillMaxSize(),
                 files = files,
-                onItemClick = {
-                    // TODO
-                }
+                onItemClick = viewModel::selectItem
             )
         }
     }

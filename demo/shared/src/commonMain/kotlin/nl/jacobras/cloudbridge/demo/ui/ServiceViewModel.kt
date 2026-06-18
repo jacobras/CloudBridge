@@ -22,6 +22,11 @@ internal class ServiceViewModel(
     val error: StateFlow<String>
         field = MutableStateFlow("")
 
+    val selectedItem: StateFlow<CloudItem?>
+        field = MutableStateFlow(null)
+    val content: StateFlow<String>
+        field = MutableStateFlow("")
+
     init {
         refresh()
     }
@@ -34,5 +39,23 @@ internal class ServiceViewModel(
         } catch (e: CloudServiceException) {
             error.update { e.toString() }
         }
+    }
+
+    fun selectItem(item: CloudItem) {
+        selectedItem.update { item }
+        viewModelScope.launch {
+            try {
+                val items = service.downloadFile(item.id)
+                content.update { items }
+                error.update { "" }
+            } catch (e: CloudServiceException) {
+                error.update { e.toString() }
+            }
+        }
+    }
+
+    fun deselectItem() {
+        selectedItem.update { null }
+        content.update { "" }
     }
 }
