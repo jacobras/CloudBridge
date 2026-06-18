@@ -17,21 +17,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import nl.jacobras.cloudbridge.model.CloudItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DetailPane(
     info: ServiceWithInfo,
-    files: List<CloudItem>,
-    error: String,
     onAuthenticateClick: () -> Unit,
     onDeauthenticateClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    val viewModel = remember(info.service) { ServiceViewModel(info.service) }
+    val files by viewModel.files.collectAsState()
+    val error by viewModel.error.collectAsState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -81,9 +85,7 @@ internal fun DetailPane(
 
             FilesList(
                 modifier = Modifier.fillMaxSize(),
-                serviceWithInfo = info,
                 files = files,
-                onBackClick = onBackClick,
                 onItemClick = {
                     // TODO
                 }

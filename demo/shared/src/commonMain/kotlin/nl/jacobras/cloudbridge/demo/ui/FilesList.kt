@@ -14,9 +14,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun FilesList(
-    serviceWithInfo: ServiceWithInfo,
     files: List<CloudItem>,
-    onBackClick: () -> Unit,
     onItemClick: (CloudItem) -> Unit,
     modifier: Modifier = Modifier
 ) {

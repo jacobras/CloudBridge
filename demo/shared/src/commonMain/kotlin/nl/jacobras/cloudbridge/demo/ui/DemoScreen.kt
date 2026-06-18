@@ -27,9 +27,6 @@ fun DemoScreen(
     val selectedService by viewModel.selectedService.collectAsState()
     val scope = rememberCoroutineScope()
 
-    val files by viewModel.files.collectAsState()
-    val serviceErrors by viewModel.serviceErrors.collectAsState()
-
     ListDetailPaneScaffold(
         directive = navigator.scaffoldDirective,
         value = navigator.scaffoldValue,
@@ -50,8 +47,6 @@ fun DemoScreen(
                 val service = info.service
                 DetailPane(
                     info = info,
-                    files = files[service] ?: emptyList(),
-                    error = serviceErrors[service] ?: "",
                     onAuthenticateClick = { onAuthenticate(service) },
                     onDeauthenticateClick = { onDeauthenticate(service) },
                     onBackClick = {
