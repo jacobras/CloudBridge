@@ -53,7 +53,7 @@ fun main() = application {
                             onSuccess = { token ->
                                 DemoSettings.dropboxToken = token
                                 showSuccessDialog = true
-                                viewModel.refresh(service)
+                                viewModel.updateTokens()
                             }
                         )
                         uriHandler.openUri(url)
@@ -66,7 +66,7 @@ fun main() = application {
                             onSuccess = { token ->
                                 DemoSettings.googleDriveToken = token
                                 showSuccessDialog = true
-                                viewModel.refresh(service)
+                                viewModel.updateTokens()
                             }
                         )
                         uriHandler.openUri(url)
@@ -78,7 +78,7 @@ fun main() = application {
                             onSuccess = { token ->
                                 DemoSettings.oneDriveToken = token
                                 showSuccessDialog = true
-                                viewModel.refresh(service)
+                                viewModel.updateTokens()
                             }
                         )
                         uriHandler.openUri(url)
@@ -89,10 +89,16 @@ fun main() = application {
                 when (service) {
                     is DropboxService -> {
                         DemoSettings.dropboxToken = null
-                        viewModel.refresh(service)
+                        viewModel.updateTokens()
                     }
-                    is GoogleDriveService -> DemoSettings.googleDriveToken = null
-                    is OneDriveService -> DemoSettings.oneDriveToken = null
+                    is GoogleDriveService -> {
+                        DemoSettings.googleDriveToken = null
+                        viewModel.updateTokens()
+                    }
+                    is OneDriveService -> {
+                        DemoSettings.oneDriveToken = null
+                        viewModel.updateTokens()
+                    }
                 }
             }
         )
