@@ -37,6 +37,8 @@ fun main() = application {
     ) {
         val uriHandler = LocalUriHandler.current
 
+        // TODO: create folder + create file + path filter
+
         DemoScreen(
             viewModel = viewModel,
             onAuthenticate = { service ->

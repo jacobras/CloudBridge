@@ -9,7 +9,9 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudItem
+import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 
 internal class ServiceViewModel(
@@ -57,5 +59,47 @@ internal class ServiceViewModel(
     fun deselectItem() {
         selectedItem.update { null }
         content.update { "" }
+    }
+
+    fun createFolder(name: String) = viewModelScope.launch {
+        try {
+            service.createFolder(childPath(name).asFolderPath())
+            refresh()
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        }
+    }
+
+    fun createFile(name: String, content: String) = viewModelScope.launch {
+        try {
+            service.createFile(childPath(name).asFilePath(), content)
+            refresh()
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        }
+    }
+
+    fun updateFile(id: CloudItemId, content: String) = viewModelScope.launch {
+        try {
+            service.updateFile(id, content)
+            deselectItem()
+            refresh()
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        }
+    }
+
+    fun delete(item: CloudItem) = viewModelScope.launch {
+        try {
+            service.delete(item.id)
+            deselectItem()
+            refresh()
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        }
+    }
+
+    private fun childPath(name: String): String {
+        return if (path.value.isRoot) "/$name" else "${path.value}/$name"
     }
 }
