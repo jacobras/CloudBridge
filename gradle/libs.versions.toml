@@ -54,4 +54,4 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktorfit = { id = "de.jensklingenberg.ktorfit", version.ref = "ktorfit" }
-maven-publish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.37.0" }
