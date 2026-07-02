@@ -10,10 +10,11 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -123,8 +124,6 @@ private fun DemoApp(
     launchAuth: (Provider, String) -> Unit,
     onAuthenticateGoogleDrive: () -> Unit
 ) {
-    val viewModel = remember { DemoViewModel() }
-
     DemoScreen(
         viewModel = viewModel,
         onAuthenticate = { service ->
@@ -151,7 +150,8 @@ private fun DemoApp(
                     )
                 }
             }
-        }
+        },
+        modifier = Modifier.safeDrawingPadding()
     )
 }
 

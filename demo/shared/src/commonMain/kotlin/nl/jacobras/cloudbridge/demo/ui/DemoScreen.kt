@@ -21,7 +21,8 @@ import nl.jacobras.cloudbridge.CloudService
 fun DemoScreen(
     viewModel: DemoViewModel,
     onAuthenticate: (CloudService) -> Unit,
-    onFinishAuthOnWeb: (CloudService) -> Unit = {}
+    onFinishAuthOnWeb: (CloudService) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator()
     val userInfos by viewModel.userInfos.collectAsState()
@@ -29,6 +30,7 @@ fun DemoScreen(
     val scope = rememberCoroutineScope()
 
     ListDetailPaneScaffold(
+        modifier = modifier,
         directive = navigator.scaffoldDirective,
         value = navigator.scaffoldValue,
         listPane = {
