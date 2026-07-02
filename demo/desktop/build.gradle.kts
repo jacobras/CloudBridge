@@ -11,11 +11,6 @@ plugins {
     alias(libs.plugins.buildconfig)
 }
 
-val localProps = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
-}
-
 kotlin {
     jvm("desktop") {
         compilerOptions {
@@ -25,13 +20,6 @@ kotlin {
 
     sourceSets {
         named("desktopMain") {
-            buildConfig {
-                packageName("nl.jacobras.cloudbridge.demo")
-                buildConfigField<String>(
-                    "DRIVE_DESKTOP_SECRET",
-                    localProps.getProperty("driveDesktopSecret") ?: ""
-                )
-            }
             dependencies {
                 implementation(projects.demo.shared)
                 implementation(compose.desktop.currentOs)
@@ -43,6 +31,31 @@ kotlin {
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
     }
+}
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+buildConfig {
+    packageName("nl.jacobras.cloudbridge.demo")
+    buildConfigField<String>(
+        "DROPBOX_CLIENT_ID",
+        localProps.getProperty("dropboxClientId") ?: ""
+    )
+    buildConfigField<String>(
+        "GOOGLE_DRIVE_CLIENT_ID",
+        localProps.getProperty("googleDriveDesktopClientId") ?: ""
+    )
+    buildConfigField<String>(
+        "GOOGLE_DRIVE_CLIENT_SECRET",
+        localProps.getProperty("googleDriveDesktopSecret") ?: ""
+    )
+    buildConfigField<String>(
+        "ONEDRIVE_CLIENT_ID",
+        localProps.getProperty("onedriveClientId") ?: ""
+    )
 }
 
 compose.desktop {

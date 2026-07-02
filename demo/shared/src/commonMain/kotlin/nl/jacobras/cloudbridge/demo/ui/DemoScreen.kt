@@ -29,6 +29,8 @@ fun DemoScreen(
     val selectedService by viewModel.selectedService.collectAsState()
     val scope = rememberCoroutineScope()
 
+    // TODO: create folder + create file + path filter
+
     ListDetailPaneScaffold(
         modifier = modifier,
         directive = navigator.scaffoldDirective,

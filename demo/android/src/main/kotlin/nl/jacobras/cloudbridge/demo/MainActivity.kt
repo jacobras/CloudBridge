@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
         when (provider) {
             Provider.Dropbox -> {
                 val token = viewModel.dropbox.completeAuthentication(
-                    clientId = DROPBOX_CLIENT_ID,
+                    clientId = BuildConfig.DROPBOX_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
             Provider.OneDrive -> {
                 val oneDriveService = viewModel.oneDrive
                 val token = oneDriveService.completeAuthentication(
-                    clientId = ONEDRIVE_CLIENT_ID,
+                    clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
@@ -132,7 +132,7 @@ private fun DemoApp(
                     launchAuth(
                         Provider.Dropbox,
                         service.authenticate(
-                            DROPBOX_CLIENT_ID,
+                            BuildConfig.DROPBOX_CLIENT_ID,
                             REDIRECT_URI
                         )
                     )
@@ -144,7 +144,7 @@ private fun DemoApp(
                     launchAuth(
                         Provider.OneDrive,
                         service.authenticate(
-                            ONEDRIVE_CLIENT_ID,
+                            BuildConfig.ONEDRIVE_CLIENT_ID,
                             REDIRECT_URI
                         )
                     )
@@ -158,6 +158,3 @@ private fun DemoApp(
 private enum class Provider { Dropbox, OneDrive }
 
 private const val REDIRECT_URI = "nl.jacobras.cloudbridge.demo://cloudbridge-auth"
-
-private const val DROPBOX_CLIENT_ID = "nw5f95uw77yrz3j"
-private const val ONEDRIVE_CLIENT_ID = "40916102-96a6-46ca-929e-90cc62c3be9a"

@@ -8,6 +8,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
+import nl.jacobras.cloudbridge.demo.BuildConfig
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -42,21 +43,21 @@ fun main() {
                 when (service) {
                     is DropboxService -> {
                         val uri = service.authenticate(
-                            clientId = "nw5f95uw77yrz3j",
+                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
                             redirectUri = "http://localhost:8080"
                         )
                         window.location.href = uri
                     }
                     is GoogleDriveService -> {
                         val uri = service.authenticate(
-                            clientId = "218224394553-hd5j48a5uk9mjec0oq38ctijmpfq0krm.apps.googleusercontent.com",
+                            clientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
                             redirectUri = "http://localhost:8080"
                         )
                         window.location.href = uri
                     }
                     is OneDriveService -> {
                         val uri = service.authenticate(
-                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                             redirectUri = "http://localhost:8080"
                         )
                         window.location.href = uri
@@ -67,7 +68,7 @@ fun main() {
                 when (service) {
                     is DropboxService -> scope.launch {
                         val token = service.completeAuthentication(
-                            clientId = "nw5f95uw77yrz3j",
+                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
                             redirectUri = "http://localhost:8080"
                         )
                         DemoSettings.dropboxToken = token
@@ -80,7 +81,7 @@ fun main() {
                     }
                     is OneDriveService -> scope.launch {
                         val token = service.completeAuthentication(
-                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                             redirectUri = "http://localhost:8080"
                         )
                         DemoSettings.oneDriveToken = token

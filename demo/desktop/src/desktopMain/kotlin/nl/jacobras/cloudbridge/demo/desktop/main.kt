@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import nl.jacobras.cloudbridge.demo.DesktopMainBuildConfig
+import nl.jacobras.cloudbridge.demo.BuildConfig
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -37,8 +37,6 @@ fun main() = application {
     ) {
         val uriHandler = LocalUriHandler.current
 
-        // TODO: create folder + create file + path filter
-
         DemoScreen(
             viewModel = viewModel,
             onAuthenticate = { service ->
@@ -46,7 +44,7 @@ fun main() = application {
                     is DropboxService -> {
                         val url = service.authenticate(
                             authServer = localServer,
-                            clientId = "nw5f95uw77yrz3j",
+                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
                             onSuccess = { token ->
                                 DemoSettings.dropboxToken = token
                                 viewModel.updateTokens()
@@ -57,8 +55,8 @@ fun main() = application {
                     is GoogleDriveService -> {
                         val url = service.authenticate(
                             authServer = localServer,
-                            clientId = "218224394553-ls5llp4qcqlem66ovl0rp871jlq47m21.apps.googleusercontent.com",
-                            clientSecret = DesktopMainBuildConfig.DRIVE_DESKTOP_SECRET,
+                            clientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
+                            clientSecret = BuildConfig.GOOGLE_DRIVE_CLIENT_SECRET,
                             onSuccess = { token ->
                                 DemoSettings.googleDriveToken = token
                                 viewModel.updateTokens()
@@ -69,7 +67,7 @@ fun main() = application {
                     is OneDriveService -> {
                         val url = service.authenticate(
                             authServer = localServer,
-                            clientId = "40916102-96a6-46ca-929e-90cc62c3be9a",
+                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                             onSuccess = { token ->
                                 DemoSettings.oneDriveToken = token
                                 viewModel.updateTokens()
