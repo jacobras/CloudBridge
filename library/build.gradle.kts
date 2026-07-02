@@ -34,6 +34,8 @@ kotlin {
             }
         }
     }
+    iosArm64()
+    iosSimulatorArm64()
 
     explicitApi()
 
@@ -61,7 +63,6 @@ kotlin {
             implementation(libs.kotlinx.browser)
         }
         androidMain.dependencies {
-            implementation(libs.multiplatform.settings.no.arg)
             implementation(libs.androidx.activity)
             implementation(libs.play.services.auth)
         }
