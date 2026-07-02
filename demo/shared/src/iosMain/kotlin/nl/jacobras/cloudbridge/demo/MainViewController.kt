@@ -11,7 +11,7 @@ fun MainViewController() = ComposeUIViewController {
     DemoScreen(
         viewModel = viewModel,
         onAuthenticate = { service ->
-            TODO(service)
+            TODO(service.toString())
         }
     )
 }
