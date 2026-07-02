@@ -5,7 +5,7 @@ import com.russhwolf.settings.set
 
 internal actual val librarySettings: Settings = SharedPreferenceSettings()
 
-internal class SharedPreferenceSettings : Settings {
+private class SharedPreferenceSettings : Settings {
 
     private val sharedPrefSettings = com.russhwolf.settings.Settings()
 
