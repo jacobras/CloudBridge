@@ -68,6 +68,7 @@ kotlin {
             implementation(libs.play.services.auth)
         }
         iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
             implementation(libs.multiplatform.settings.no.arg)
         }
     }

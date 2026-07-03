@@ -1,6 +1,7 @@
 @file:Suppress("OPT_IN_USAGE")
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 
 plugins {
@@ -8,6 +9,7 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.buildconfig)
 }
 
 kotlin {
@@ -66,4 +68,21 @@ kotlin {
         optIn.add("kotlin.time.ExperimentalTime")
         freeCompilerArgs.add("-Xexplicit-backing-fields")
     }
+}
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+buildConfig {
+    packageName("nl.jacobras.cloudbridge.demo.shared")
+    buildConfigField<String>(
+        "DROPBOX_CLIENT_ID",
+        localProps.getProperty("dropboxClientId") ?: ""
+    )
+    buildConfigField<String>(
+        "ONEDRIVE_CLIENT_ID",
+        localProps.getProperty("onedriveClientId") ?: ""
+    )
 }
