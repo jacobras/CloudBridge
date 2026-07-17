@@ -72,14 +72,17 @@ class DemoViewModel : ViewModel() {
             is DropboxService -> {
                 DemoSettings.dropboxToken = null
                 updateTokens()
+                userInfos.update { it - service }
             }
             is GoogleDriveService -> {
                 DemoSettings.googleDriveToken = null
                 updateTokens()
+                userInfos.update { it - service }
             }
             is OneDriveService -> {
                 DemoSettings.oneDriveToken = null
                 updateTokens()
+                userInfos.update { it - service }
             }
         }
     }
