@@ -7,4 +7,6 @@ import kotlin.jvm.JvmInline
  * a path where an ID is expected, and vice versa.
  */
 @JvmInline
-public value class CloudItemId(public val value: String)
+public value class CloudItemId(public val value: String) {
+    override fun toString(): String = value
+}

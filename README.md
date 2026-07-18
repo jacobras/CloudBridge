@@ -1,12 +1,13 @@
 # CloudBridge
 
 ![Android](https://img.shields.io/badge/Android-green.svg?logo=android)
+![iOS](https://img.shields.io/badge/iOS-lightgray.svg?logo=apple)
 ![JS](https://img.shields.io/badge/JavaScript-yellow.svg?logo=javascript)
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
 ![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
-Multiple clouds, one Kotlin Multiplatform bridge. Currently supporting Android, web and desktop (
-JVM), but iOS support is planned.
+Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web and desktop (JVM).
+On iOS, Dropbox and OneDrive are available; Google Drive support is still to come.
 
 <img height="172" src="/docs/images/logo.png" alt = "CloudBridge Logo "/>
 
@@ -19,7 +20,7 @@ This library is not yet stable. The API will change and docs may be outdated.
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms (
   see [Underlying dependencies](#-underlying-dependencies) below).
-* 📱 **Cross-platform**: Supports Android, web and desktop (JVM); iOS is planned.
+* 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
 * 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
@@ -28,9 +29,9 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 
 |                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|-----------------|------------------|------------------|
-| **Dropbox**            | ✅                   | ⏳               | ✅                | ✅                |
+| **Dropbox**            | ✅                   | ✅               | ✅                | ✅                |
 | **Google Drive**       | ✅                   | ⏳               | ✅                | ✅                |
-| **Microsoft OneDrive** | ✅                   | ⏳               | ✅                | ✅                |
+| **Microsoft OneDrive** | ✅                   | ✅               | ✅                | ✅                |
 
 ✅ = Supported.<br>
 ⏳ = Planned.

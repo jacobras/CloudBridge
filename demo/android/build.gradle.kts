@@ -6,11 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
-}
-
-val localProps = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
+    alias(libs.plugins.buildconfig)
 }
 
 dependencies {
@@ -35,4 +31,21 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+buildConfig {
+    packageName("nl.jacobras.cloudbridge.demo")
+    buildConfigField<String>(
+        "DROPBOX_CLIENT_ID",
+        localProps.getProperty("dropboxClientId") ?: ""
+    )
+    buildConfigField<String>(
+        "ONEDRIVE_CLIENT_ID",
+        localProps.getProperty("onedriveClientId") ?: ""
+    )
 }

@@ -1,5 +1,8 @@
 @file:Suppress("OPT_IN_USAGE")
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -19,7 +22,11 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     js { browser() }
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
+    }
     wasmJs {
         browser {
             testTask {
@@ -27,6 +34,8 @@ kotlin {
             }
         }
     }
+    iosArm64()
+    iosSimulatorArm64()
 
     explicitApi()
 
@@ -54,9 +63,13 @@ kotlin {
             implementation(libs.kotlinx.browser)
         }
         androidMain.dependencies {
-            implementation(libs.multiplatform.settings.no.arg)
             implementation(libs.androidx.activity)
+            implementation(libs.multiplatform.settings.no.arg)
             implementation(libs.play.services.auth)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+            implementation(libs.multiplatform.settings.no.arg)
         }
     }
 

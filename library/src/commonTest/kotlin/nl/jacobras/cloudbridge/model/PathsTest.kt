@@ -63,4 +63,17 @@ class PathsTest {
         assertThat("/".asFolderPath().isRoot).isTrue()
         assertThat("/myDir/".asFolderPath().isRoot).isFalse()
     }
+
+    @Test
+    fun startsWith() {
+        assertThat("".asFolderPath().startsWith("".asFolderPath())).isTrue()
+        assertThat("/Test".asFolderPath().startsWith("".asFolderPath())).isTrue()
+        assertThat("/Test".asFolderPath().startsWith("Parent".asFolderPath())).isFalse()
+        assertThat("/Parent/Child".asFolderPath().startsWith("Parent".asFolderPath())).isTrue()
+
+        assertThat("File.txt".asFilePath().startsWith("".asFolderPath())).isTrue()
+        assertThat("File.txt".asFilePath().startsWith("Parent".asFolderPath())).isFalse()
+        assertThat("/Parent/File.txt".asFilePath().startsWith("Parent".asFolderPath())).isTrue()
+        assertThat("A/B/file.txt".asFilePath().startsWith("A/B".asFolderPath())).isTrue()
+    }
 }
