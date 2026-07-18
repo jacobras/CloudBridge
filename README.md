@@ -9,7 +9,7 @@
 Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web and desktop (JVM).
 On iOS, Dropbox and OneDrive are available; Google Drive support is still to come.
 
-<img height="172" src="/docs/images/logo.png" alt = "CloudBridge Logo "/>
+<img height="172" src="/docs/assets/images/logo.png" alt = "CloudBridge Logo "/>
 
 ## ⚠️ Under construction
 
@@ -36,7 +36,7 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 ✅ = Supported.<br>
 ⏳ = Planned.
 
-See [Compatibility.md](docs/Compatibility.md) for important remarks about each service.
+See specific service docs for important remarks about each service.
 
 ## 💾 Supported operations
 
@@ -49,7 +49,7 @@ See [Compatibility.md](docs/Compatibility.md) for important remarks about each s
 * **User**
     * Get name and email address
 
-See [Compatibility.md](docs/Compatibility.md) for details.
+See the docs for details.
 
 ## 💿 Installation
 
@@ -66,98 +66,23 @@ dependencies {
 The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or
 `CloudBridge.oneDrive()`.
 
-Here's an example with Dropbox. First instantiate the service:
+Here's an example with Dropbox.
 
 ```kotlin
+// 1: Instantiate a service
 val service = CloudBridge.dropbox()
+
+// 2: Authenticate (platform- and service-specific)
+val token = service.authenticate("clientId", "example://redirect-uri")
+service.setToken(token)
+
+// 3: Ready for use!
+service.listFiles()
 ```
 
-Then, have the user authenticate.
+See the docs on how to authenticate each service on every platform.
 
-**Desktop**
-
-```kotlin
-val authServer = LocalAuthenticationServer()
-
-// Build auth URL and open it in the browser
-val url = service.authenticate(
-    authServer = authServer,
-    clientId = "yourClientId",
-    onSuccess = { token ->
-        service.setToken(token)
-        TODO("Store the token locally")
-    }
-)
-openBrowser(url)
-```
-
-**Web**
-
-```kotlin
-// Always call this:
-val token = service.completeAuthentication()
-if (token != null) {
-    service.setToken(token)
-}
-
-// When user wants to authenticate:
-val uri = service.authenticate(
-    clientId = "yourClientId",
-    redirectUri = "yourRedirectUri"
-)
-window.location.href = uri
-```
-
-**Android (Dropbox & OneDrive)**
-
-Open the auth URL in a Custom Tab and capture the redirect via a deep link (`intent-filter`).
-Then exchange the authorization code for a token:
-
-```kotlin
-// When user wants to authenticate:
-val url = service.authenticate(
-    clientId = "yourClientId",
-    redirectUri = "yourRedirectUri" // e.g. a custom scheme like "com.example://cloudbridge-auth"
-)
-CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
-
-// In your Activity's onNewIntent (and onCreate), call:
-val token = service.completeAuthentication(
-    clientId = "yourClientId",
-    redirectUri = "yourRedirectUri" // Needs to match the uri passed into authenticate()
-)
-```
-
-Note: Google Drive on web doesn't need any parameters passed into `completeAuthentication()`.
-
-**Android (Google Drive)**
-
-Google no longer supports custom-scheme redirects on Android, so the library has to use Google
-Identity Services instead. Also see [Underlying dependencies](#-underlying-dependencies).
-
-```kotlin
-val googleDriveAuthenticator = GoogleDriveAuthenticator(
-    activity = this,
-    onSuccess = { token -> TODO() },
-    onDenied = { TODO() },
-    onFailure = { error -> TODO() }
-)
-
-```
-
-Securely store the token and pass it to the constructor of the service to use it.
-
-### Listing files
-
-```kotlin
-val service = CloudBridge.dropbox(token)
-
-try {
-    service.listFiles()
-} catch (e: CloudServiceException) {
-    // Handle...
-}
-```
+See the docs for all available operations.
 
 ## 📐 Design decisions
 
