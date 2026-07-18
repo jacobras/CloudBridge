@@ -5,6 +5,7 @@ import cloudbridge.demo.shared.generated.resources.ic_dropbox
 import cloudbridge.demo.shared.generated.resources.ic_google_drive
 import cloudbridge.demo.shared.generated.resources.ic_one_drive
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
 import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
@@ -16,6 +17,7 @@ internal val CloudService.name: String
             is DropboxService -> "Dropbox"
             is GoogleDriveService -> "Google Drive"
             is OneDriveService -> "OneDrive"
+            is DummyCloudService -> "Dummy"
             else -> error("Missing name for $this")
         }
     }
@@ -26,6 +28,7 @@ internal val CloudService.logo: DrawableResource
             is DropboxService -> Res.drawable.ic_dropbox
             is GoogleDriveService -> Res.drawable.ic_google_drive
             is OneDriveService -> Res.drawable.ic_one_drive
+            is DummyCloudService -> Res.drawable.ic_dropbox
             else -> error("Missing logo for $this")
         }
     }

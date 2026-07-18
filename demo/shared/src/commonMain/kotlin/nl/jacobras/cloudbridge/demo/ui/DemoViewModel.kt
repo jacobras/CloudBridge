@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
@@ -21,10 +22,15 @@ class DemoViewModel : ViewModel() {
     val dropbox = CloudBridge.dropbox()
     val googleDrive = CloudBridge.googleDrive()
     val oneDrive = CloudBridge.oneDrive()
-    val services = listOf(dropbox, googleDrive, oneDrive)
-
-    internal val userInfos: StateFlow<Map<CloudService, UserInfo>>
-        field = MutableStateFlow(emptyMap())
+    val dummy = DummyCloudService(null)
+    val services = MutableStateFlow(
+        mapOf<CloudService, UserInfo?>(
+            dropbox to null,
+            googleDrive to null,
+            oneDrive to null,
+            dummy to null
+        )
+    )
 
     internal val selectedService: StateFlow<CloudService?>
         field = MutableStateFlow<CloudService?>(null)
@@ -36,10 +42,35 @@ class DemoViewModel : ViewModel() {
         updateTokens()
     }
 
-    fun updateTokens() {
+    fun updateTokens() = viewModelScope.launch {
         dropbox.setToken(DemoSettings.dropboxToken)
         googleDrive.setToken(DemoSettings.googleDriveToken)
         oneDrive.setToken(DemoSettings.oneDriveToken)
+        services.update {
+            val map = it.toMutableMap()
+            map[dropbox] = try {
+                dropbox.getUserInfo()
+            } catch (_: Throwable) {
+                null
+            }
+            map[googleDrive] = try {
+                googleDrive.getUserInfo()
+            } catch (_: Throwable) {
+                null
+            }
+            map[oneDrive] = try {
+                oneDrive.getUserInfo()
+            } catch (_: Throwable) {
+                null
+            }
+            map[dummy] = try {
+                dummy.getUserInfo()
+            } catch (_: Throwable) {
+                null
+            }
+            map
+        }
+        selectedService.update { null }
     }
 
     internal fun select(service: CloudService) {
@@ -51,7 +82,7 @@ class DemoViewModel : ViewModel() {
             loadServiceDetailsJob = viewModelScope.launch {
                 try {
                     val userInfo = service.getUserInfo()
-                    userInfos.update {
+                    services.update {
                         val map = it.toMutableMap()
                         map[service] = userInfo
                         map
@@ -72,18 +103,24 @@ class DemoViewModel : ViewModel() {
             is DropboxService -> {
                 DemoSettings.dropboxToken = null
                 updateTokens()
-                userInfos.update { it - service }
             }
             is GoogleDriveService -> {
                 DemoSettings.googleDriveToken = null
                 updateTokens()
-                userInfos.update { it - service }
             }
             is OneDriveService -> {
                 DemoSettings.oneDriveToken = null
                 updateTokens()
-                userInfos.update { it - service }
             }
+            is DummyCloudService -> {
+                service.setToken(null)
+                updateTokens()
+            }
+        }
+        services.update {
+            val map = it.toMutableMap()
+            map[service] = null
+            map
         }
     }
 }

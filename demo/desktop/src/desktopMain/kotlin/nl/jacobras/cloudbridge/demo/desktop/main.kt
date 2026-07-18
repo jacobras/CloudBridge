@@ -8,7 +8,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.BuildConfig
+import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -74,6 +76,10 @@ fun main() = application {
                             }
                         )
                         uriHandler.openUri(url)
+                    }
+                    is DummyCloudService -> {
+                        service.setToken(CloudAccessToken(accessToken = "fake"))
+                        viewModel.updateTokens()
                     }
                 }
             }

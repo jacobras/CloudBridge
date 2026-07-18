@@ -25,7 +25,7 @@ fun DemoScreen(
     modifier: Modifier = Modifier
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator()
-    val userInfos by viewModel.userInfos.collectAsState()
+    val services by viewModel.services.collectAsState()
     val selectedService by viewModel.selectedService.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -37,7 +37,7 @@ fun DemoScreen(
         value = navigator.scaffoldValue,
         listPane = {
             ServicesList(
-                services = viewModel.services.associateWith { service -> userInfos[service] },
+                services = services,
                 selectedService = selectedService,
                 onClick = {
                     viewModel.select(it)
@@ -51,7 +51,7 @@ fun DemoScreen(
             selectedService?.let { service ->
                 DetailPane(
                     service = service,
-                    userInfo = userInfos[service],
+                    userInfo = services[service],
                     onAuthenticateClick = { onAuthenticate(service) },
                     onDeauthenticateClick = { viewModel.deauthenticate(service) },
                     onFinishAuthOnWeb = { onFinishAuthOnWeb(service) },

@@ -32,7 +32,7 @@ import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
-class MainActivity : ComponentActivity() {
+internal class MainActivity : ComponentActivity() {
 
     private val viewModel = DemoViewModel()
 
