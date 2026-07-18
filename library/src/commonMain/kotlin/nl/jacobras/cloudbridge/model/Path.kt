@@ -44,7 +44,10 @@ public value class FilePath(internal val value: String) : Path {
     }
 
     override fun startsWith(path: FolderPath): Boolean {
-        return value.startsWith(path.value)
+        if (path.isRoot) {
+            return true
+        }
+        return value.startsWith("${path.value}/")
     }
 
     /**
@@ -118,7 +121,10 @@ public value class FolderPath(internal val value: String) : Path {
     }
 
     override fun startsWith(path: FolderPath): Boolean {
-        return value.startsWith(path.value)
+        if (path.isRoot) {
+            return true
+        }
+        return value.startsWith("${path.value}/")
     }
 
     /**
