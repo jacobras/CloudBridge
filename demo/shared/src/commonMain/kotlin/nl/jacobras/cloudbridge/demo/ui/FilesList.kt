@@ -17,12 +17,12 @@ internal fun FilesList(
     modifier: Modifier = Modifier
 ) {
     Column(modifier.verticalScroll(rememberScrollState())) {
-        for (item in files) {
+        files.forEachIndexed { index, item ->
             FileRow(
                 item = item,
                 onClick = { onItemClick(item) }
             )
-            if (item != files.last()) {
+            if (index != files.lastIndex) {
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
             }
         }

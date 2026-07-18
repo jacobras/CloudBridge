@@ -10,6 +10,7 @@ import kotlin.jvm.JvmInline
  * @see FolderPath
  */
 public sealed interface Path {
+    public fun startsWith(path: FolderPath): Boolean
     public fun toFolderPath(): FolderPath
 }
 
@@ -40,6 +41,10 @@ public value class FilePath(internal val value: String) : Path {
 
     init {
         require(value.startsWith('/')) { "File path '$value' should start with a /" }
+    }
+
+    override fun startsWith(path: FolderPath): Boolean {
+        return value.startsWith(path.value)
     }
 
     /**
@@ -110,6 +115,10 @@ public value class FolderPath(internal val value: String) : Path {
     init {
         require(value.startsWith('/')) { "Folder path '$value' should start with a /" }
         require(value.length == 1 || !value.endsWith('/')) { "Folder path '$value' should not end with a /" }
+    }
+
+    override fun startsWith(path: FolderPath): Boolean {
+        return value.startsWith(path.value)
     }
 
     /**

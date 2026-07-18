@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
@@ -44,16 +46,34 @@ internal class ServiceViewModel(
     }
 
     fun selectItem(item: CloudItem) {
-        selectedItem.update { item }
+        when (item) {
+            is CloudFile -> selectFile(item)
+            is CloudFolder -> selectFolder(item)
+        }
+    }
+
+    private fun selectFile(file: CloudFile) {
+        selectedItem.update { file }
         viewModelScope.launch {
             try {
-                val items = service.downloadFile(item.id)
+                val items = service.downloadFile(file.id)
                 content.update { items }
                 error.update { "" }
             } catch (e: CloudServiceException) {
                 error.update { e.toString() }
             }
         }
+    }
+
+    private fun selectFolder(folder: CloudFolder) {
+        selectedItem.update { null }
+        path.update { folder.path }
+        refresh()
+    }
+
+    internal fun navigatePathUp() {
+        path.update { it.parent }
+        refresh()
     }
 
     fun deselectItem() {

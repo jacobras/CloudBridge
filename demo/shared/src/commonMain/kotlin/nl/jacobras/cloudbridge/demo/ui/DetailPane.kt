@@ -1,13 +1,13 @@
 package nl.jacobras.cloudbridge.demo.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.BottomAppBar
@@ -45,6 +45,7 @@ internal fun DetailPane(
     onBackClick: () -> Unit
 ) {
     val viewModel = remember(service) { ServiceViewModel(service) }
+    val path by viewModel.path.collectAsState()
     val files by viewModel.files.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -66,7 +67,13 @@ internal fun DetailPane(
                     })
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        if (path.isRoot) {
+                            onBackClick()
+                        } else {
+                            viewModel.navigatePathUp()
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close")
                     }
                 },

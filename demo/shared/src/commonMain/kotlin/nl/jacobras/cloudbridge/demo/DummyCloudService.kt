@@ -47,7 +47,7 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             throw CloudServiceException.NotAuthenticatedException()
         }
 
-        return cloudItems
+        return cloudItems.filter { it.path.startsWith(path) && it.path != path }
     }
 
     override suspend fun createFolder(path: FolderPath) {

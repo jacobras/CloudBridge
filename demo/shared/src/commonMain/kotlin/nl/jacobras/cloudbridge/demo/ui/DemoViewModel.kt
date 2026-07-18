@@ -12,7 +12,6 @@ import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
-import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
@@ -34,7 +33,6 @@ class DemoViewModel : ViewModel() {
 
     internal val selectedService: StateFlow<CloudService?>
         field = MutableStateFlow<CloudService?>(null)
-    val path = MutableStateFlow(FolderPath("/"))
 
     private var loadServiceDetailsJob: Job? = null
 
