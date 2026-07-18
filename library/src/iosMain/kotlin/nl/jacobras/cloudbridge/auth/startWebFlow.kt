@@ -29,7 +29,7 @@ internal suspend fun startWebFlow(
     url: String,
     redirectUri: String
 ): NSURL? = withContext(Dispatchers.Main) {
-    val authUrl = NSURL(string = url)
+    val authUrl = requireNotNull(NSURL(string = url)) { "Invalid URL: $url" }
     val redirectUriScheme = redirectUri.substringBefore("://")
 
     suspendCancellableCoroutine { continuation ->
