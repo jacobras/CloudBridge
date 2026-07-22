@@ -46,7 +46,7 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"
 ktorfit = { module = "de.jensklingenberg.ktorfit:ktorfit-lib", version.ref = "ktorfit" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version = "1.3.0" }
 multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version = "1.3.0" }
-play-services-auth = { module = "com.google.android.gms:play-services-auth", version = "21.3.0" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version = "21.6.0" }
 urlencoder = { module = "net.thauvin.erik.urlencoder:urlencoder-lib", version = "1.6.0" }
 
 [plugins]
