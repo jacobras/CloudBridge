@@ -1,0 +1,63 @@
+site_name: CloudBridge
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/images/icon_nopadding.png
+  favicon: assets/images/icon_nopadding.png
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      primary: 'deep purple'
+      accent: 'orange'
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      primary: 'deep purple'
+      accent: 'orange'
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.action.edit
+    - content.action.view
+    - navigation.tabs
+repo_name: CloudBridge
+repo_url: https://github.com/jacobras/CloudBridge
+edit_uri: edit/main/docs/
+
+plugins:
+  - search
+  - callouts
+  - section-index
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - toc:
+      permalink: true
+
+nav:
+  - 'Introduction': 'README.md'
+  - 'Cloud services':
+      - 'services/Overview.md'
+      - 'Dropbox': 'services/Dropbox.md'
+      - 'Google Drive': 'services/GoogleDrive.md'
+      - 'OneDrive': 'services/OneDrive.md'
+  - 'API':
+      - 'api/Overview.md'
+      - 'Authentication/User info': 'api/Authentication.md'
+      - 'Files': 'api/Files.md'
+      - 'Error handling': 'api/Errors.md'
