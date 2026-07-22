@@ -72,12 +72,11 @@ Here's an example with Dropbox.
 // 1: Instantiate a service
 val service = CloudBridge.dropbox()
 
-// 2: Authenticate (platform- and service-specific)
-val token = service.authenticate("clientId", "example://redirect-uri")
-service.setToken(token)
+// 2: Authenticate (platform- and service-specific, see docs)
+service.authenticate("clientId", "example://redirect-uri")
 
 // 3: Ready for use!
-service.listFiles()
+service.listFiles("/".asFolderPath())
 ```
 
 See the docs on how to authenticate each service on every platform.

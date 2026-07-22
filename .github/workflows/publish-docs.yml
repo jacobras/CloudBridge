@@ -32,6 +32,6 @@ jobs:
           restore-keys: |
             mkdocs-material-
 
-      - run: pip install mkdocs-material mkdocs-callouts
+      - run: pip install mkdocs-material mkdocs-callouts mkdocs-section-index
 
       - run: mkdocs gh-deploy --force

@@ -25,6 +25,7 @@ val url = service.authenticate(
 CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
 
 // In your Activity's onNewIntent (and onCreate), call:
+val uri = intent.data ?: return
 val token = service.completeAuthentication(
     clientId = "yourClientId",
     redirectUri = "yourRedirectUri", // Needs to match the uri passed into authenticate()
