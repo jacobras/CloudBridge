@@ -23,8 +23,6 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - content.action.edit
-    - content.action.view
     - navigation.tabs
 repo_name: CloudBridge
 repo_url: https://github.com/jacobras/CloudBridge
