@@ -40,16 +40,7 @@ See specific service docs for important remarks about each service.
 
 ## 💾 Supported operations
 
-* **Folders**
-    * List content
-    * Create/delete folder
-* **Files**
-    * Create/update/delete file
-    * Download file content
-* **User**
-    * Get name and email address
-
-See the docs for details.
+See <https://jacobras.github.io/CloudBridge/api/Overview/>.
 
 ## 💿 Installation
 
@@ -79,9 +70,10 @@ service.authenticate("clientId", "example://redirect-uri")
 service.listFiles("/".asFolderPath())
 ```
 
-See the docs on how to authenticate each service on every platform.
+See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authenticate each service
+on every platform.
 
-See the docs for all available operations.
+See <https://jacobras.github.io/CloudBridge/api/Overview/> for all available operations.
 
 ## 📐 Design decisions
 
