@@ -31,7 +31,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
 compose-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
-humanReadable = { module = "nl.jacobras:Human-Readable", version = "1.13.0" }
+humanReadable = { module = "nl.jacobras:Human-Readable", version = "1.13.1" }
 kermit = { module = "co.touchlab:kermit", version = "2.1.0" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin-coroutines" }
 kotlin-crypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version = "0.8.0" }
