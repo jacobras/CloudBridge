@@ -12,3 +12,7 @@ val uri = service.authenticate(
 )
 window.location.href = uri
 ```
+
+The redirect URL needs to be configured in the service's API console. For example,
+`https://example.com/cloudbridge-callback`, where `https://example.com` matches your app's domain,
+but there's no hard requirement for this structure.
