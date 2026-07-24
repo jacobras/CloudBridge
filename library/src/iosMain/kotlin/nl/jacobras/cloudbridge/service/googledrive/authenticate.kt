@@ -18,16 +18,17 @@ public suspend fun GoogleDriveService.authenticate(
         librarySettings.codeVerifier = verifier
         verifier
     }
+    val updatedRedirectUri = redirectUri.replace("://", ":/")
     val authenticator = GoogleDrivePkceAuthenticator(
         api = api,
         clientId = clientId,
         clientSecret = null,
-        redirectUri = redirectUri,
+        redirectUri = updatedRedirectUri,
         codeVerifier = codeVerifier
     )
     val callbackUrl = startWebFlow(
         url = authenticator.buildPkceUri(),
-        redirectUri = redirectUri
+        redirectUri = updatedRedirectUri
     ) ?: return null
     val code = callbackUrl.queryParameter("code") ?: return null
     return authenticator.exchangeCodeForToken(code)
