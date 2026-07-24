@@ -13,6 +13,8 @@ import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.dropbox.authenticate
+import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
+import nl.jacobras.cloudbridge.service.googledrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 
@@ -35,6 +37,16 @@ fun MainViewController() = ComposeUIViewController {
                         }
                     }
 
+                    is GoogleDriveService -> scope.launch {
+                        service.authenticate(
+                            clientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
+                            redirectUri = REDIRECT_URI
+                        )?.let { token ->
+                            DemoSettings.googleDriveToken = token
+                            viewModel.updateTokens()
+                        }
+                    }
+
                     is OneDriveService -> scope.launch {
                         service.authenticate(
                             clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
@@ -45,7 +57,6 @@ fun MainViewController() = ComposeUIViewController {
                         }
                     }
 
-                    // Google Drive on iOS is not yet supported
                     else -> Unit
                 }
             },

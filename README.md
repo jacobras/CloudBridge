@@ -7,7 +7,6 @@
 ![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
 Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web and desktop (JVM).
-On iOS, Dropbox and OneDrive are available; Google Drive support is still to come.
 
 <img height="172" src="/docs/assets/images/logo.png" alt = "CloudBridge Logo "/>
 
@@ -30,11 +29,10 @@ Limited access scopes by using _app folders_ are preferred by the library wherev
 |                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |------------------------|---------------------|-----------------|------------------|------------------|
 | **Dropbox**            | ✅                   | ✅               | ✅                | ✅                |
-| **Google Drive**       | ✅                   | ⏳               | ✅                | ✅                |
+| **Google Drive**       | ✅                   | ✅               | ✅                | ✅                |
 | **Microsoft OneDrive** | ✅                   | ✅               | ✅                | ✅                |
 
-✅ = Supported.<br>
-⏳ = Planned.
+✅ = Supported.
 
 See specific service docs for important remarks about each service.
 
