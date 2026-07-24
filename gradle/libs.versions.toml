@@ -18,7 +18,7 @@ ktorfit = "2.7.5"
 androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activityCompose" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
-androidx-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version = "2.10.0" }
+androidx-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version = "2.11.0" }
 assertK = { module = "com.willowtreeapps.assertk:assertk", version = "0.28.1" }
 compose-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "compose-adaptive" }
 compose-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "compose-adaptive" }
