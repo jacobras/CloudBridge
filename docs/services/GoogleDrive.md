@@ -58,9 +58,17 @@ the [shared API](../api/Overview.md) is available.
     
     Securely store the token and pass it to the constructor of the service to use it.
 
-=== "❌ iOS"
-
-    Not yet supported, see <https://github.com/jacobras/CloudBridge/issues/78>
+=== "iOS"
+    
+    ```kotlin
+    service.authenticate(
+        clientId = "yourClientId",
+        redirectUri = "com.example.app:/cloudbridge-auth" // change to your app
+    )?.let { token ->
+        service.setToken(token)
+        TODO("Store the token locally")
+    }
+    ```
 
 === "Desktop"
 
