@@ -30,7 +30,7 @@ internal suspend fun startWebFlow(
     redirectUri: String
 ): NSURL? = withContext(Dispatchers.Main) {
     val authUrl = requireNotNull(NSURL(string = url)) { "Invalid URL: $url" }
-    val redirectUriScheme = redirectUri.substringBefore("://")
+    val redirectUriScheme = redirectUri.substringBefore(":/") // Google Drive on iOS uses only one forward slash
 
     suspendCancellableCoroutine { continuation ->
         val contextProvider = PresentationContextProvider()
