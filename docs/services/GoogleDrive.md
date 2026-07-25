@@ -79,7 +79,7 @@ the [shared API](../api/Overview.md) is available.
     ```kotlin
     service.authenticate(
         clientId = "yourClientId",
-        redirectUri = "com.example.app://cloudbridge-auth" // change to your app
+        redirectUri = "com.example.app:/cloudbridge-auth" // change to your app
     )?.let { token ->
         service.setToken(token)
         TODO("Store the token locally")
