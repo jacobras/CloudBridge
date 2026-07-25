@@ -15,6 +15,17 @@ the [shared API](../api/Overview.md) is available.
 
     Dropbox paths are [case-insensitive](https://www.dropbox.com/developers/documentation/http/documentation#case-insensitivity), meaning `/Folder/File.txt` and `/folder/file.txt` refer to the same file.
 
+## Registration in App Console
+
+!!! info
+
+    Your app needs to be registered in 
+    the [Dropbox App Console](https://www.dropbox.com/developers/apps).
+
+    Make sure to register the redirect URIs there:
+
+    ![Screenshot of Dropbox App Console showing the redirect URIs section](../assets/images/dropbox_app_console.png)
+
 ## Authenticating
 
 === "Android"

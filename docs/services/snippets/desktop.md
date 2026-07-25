@@ -1,5 +1,5 @@
 ```kotlin
-val authServer = LocalAuthenticationServer() // Optionally, pass in a port
+val authServer = LocalAuthenticationServer() // optional parameter: `port=8080`
 
 // Build auth URL and open it in the browser
 val url = service.authenticate(

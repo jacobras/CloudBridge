@@ -2,45 +2,43 @@
 
 ![Android](https://img.shields.io/badge/Android-green.svg?logo=android)
 ![iOS](https://img.shields.io/badge/iOS-lightgray.svg?logo=apple)
+![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 ![JS](https://img.shields.io/badge/JavaScript-yellow.svg?logo=javascript)
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
-![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
 Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web and desktop (JVM).
-On iOS, Dropbox and OneDrive are available; Google Drive support is still to come.
 
 <img height="172" src="/docs/assets/images/logo.png" alt = "CloudBridge Logo "/>
 
-## ⚠️ Under construction
-
-This library is not yet stable. The API will change and docs may be outdated.
+> [!WARNING]
+> This library is not yet stable. The API will change and docs may be outdated.
 
 ## ✨ Features
 
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
-* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms (
-  see [Underlying dependencies](#-underlying-dependencies) below).
+* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms
+  (see [Underlying dependencies](#-underlying-dependencies)).
 * 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
 * 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
+* 💥 **Unified error handling**: No different error codes to handle, but unified, typed errors.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
+Furthermore, the library works with app folders, prefers IDs to paths and is strongly typed where
+possible.
+
+See <https://jacobras.github.io/CloudBridge/Vision> for details.
 
 ## ☁️ Cloud Services
 
-|                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
-|------------------------|---------------------|-----------------|------------------|------------------|
-| **Dropbox**            | ✅                   | ✅               | ✅                | ✅                |
-| **Google Drive**       | ✅                   | ⏳               | ✅                | ✅                |
-| **Microsoft OneDrive** | ✅                   | ✅               | ✅                | ✅                |
+|                                                                                     | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
+|-------------------------------------------------------------------------------------|---------------------|-----------------|------------------|------------------|
+| **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                   | ✅               | ✅                | ✅                |
+| **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                   | ✅               | ✅                | ✅                |
+| **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                   | ✅               | ✅                | ✅                |
 
-✅ = Supported.<br>
-⏳ = Planned.
+✅ = Supported.
 
 See specific service docs for important remarks about each service.
-
-## 💾 Supported operations
-
-See <https://jacobras.github.io/CloudBridge/api/Overview/>.
 
 ## 💿 Installation
 
@@ -48,7 +46,7 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.6.0")
+    implementation("nl.jacobras:cloudbridge:0.7.0")
 }
 ```
 
@@ -70,35 +68,9 @@ service.authenticate("clientId", "example://redirect-uri")
 service.listFiles("/".asFolderPath())
 ```
 
-See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authenticate each service
-on every platform.
-
-See <https://jacobras.github.io/CloudBridge/api/Overview/> for all available operations.
-
-## 📐 Design decisions
-
-### Privacy
-
-The library only supports limited/private app folders, no full access.
-
-### Paths
-
-The library prefers to work with IDs over paths.
-
-### Accounts
-
-Only one account per service is supported as of now.
-
-### Types
-
-`id` and `path` variables are typed as much as possible, to prevent accidental mix-ups.
-
-### Unified error handling
-
-Dropbox will throw `409` when it can't find a path. Other services throw
-`404` CloudBridge turns them both into `CloudServiceException.NotFoundException.`
-
-_Feel free to open an issue if you have a different use case for any of these._
+- See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authenticate each
+  service on every platform.
+- See <https://jacobras.github.io/CloudBridge/api/Overview/> for all available operations.
 
 ## 🔗 Underlying dependencies
 

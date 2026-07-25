@@ -82,6 +82,10 @@ buildConfig {
         localProps.getProperty("dropboxClientId") ?: ""
     )
     buildConfigField<String>(
+        "GOOGLE_DRIVE_CLIENT_ID",
+        localProps.getProperty("googleDriveIosClientId") ?: ""
+    )
+    buildConfigField<String>(
         "ONEDRIVE_CLIENT_ID",
         localProps.getProperty("onedriveClientId") ?: ""
     )

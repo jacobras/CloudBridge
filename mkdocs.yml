@@ -48,7 +48,9 @@ markdown_extensions:
       permalink: true
 
 nav:
-  - 'Introduction': 'README.md'
+  - 'Introduction':
+    - 'README.md'
+    - 'Vision': 'Vision.md'
   - 'Cloud services':
       - 'services/Overview.md'
       - 'Dropbox': 'services/Dropbox.md'
