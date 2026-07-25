@@ -73,7 +73,7 @@ the [shared API](../api/Overview.md) is available.
 
 === "iOS"
 
-    The redirect uri's scheme (`com.example.app`) needs to match the one defined in your app's
+    The redirect URI scheme (`com.example.app`) needs to match the one defined in your app's
     Info.plist.
 
     ```kotlin
