@@ -16,8 +16,8 @@ Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web a
 ## ✨ Features
 
 * ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
-* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms (
-  see [Underlying dependencies](#-underlying-dependencies) below).
+* 🪶 **Lightweight**: No need to integrate different SDKs for different platforms
+  (see [Underlying dependencies](#-underlying-dependencies)).
 * 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
 * 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
 * ⚠️ **Unified error handling**: No different error codes to handle, but unified, typed errors.
@@ -68,10 +68,9 @@ service.authenticate("clientId", "example://redirect-uri")
 service.listFiles("/".asFolderPath())
 ```
 
-See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authenticate each service
-on every platform.
-
-See <https://jacobras.github.io/CloudBridge/api/Overview/> for all available operations.
+- See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authenticate each
+  service on every platform.
+- See <https://jacobras.github.io/CloudBridge/api/Overview/> for all available operations.
 
 ## 🔗 Underlying dependencies
 
