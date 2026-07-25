@@ -2,17 +2,16 @@
 
 ![Android](https://img.shields.io/badge/Android-green.svg?logo=android)
 ![iOS](https://img.shields.io/badge/iOS-lightgray.svg?logo=apple)
+![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 ![JS](https://img.shields.io/badge/JavaScript-yellow.svg?logo=javascript)
 ![WASM](https://img.shields.io/badge/WebAssembly-purple.svg?logo=webassembly)
-![Desktop](https://img.shields.io/badge/Desktop-blue.svg?logo=kotlin)
 
 Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web and desktop (JVM).
 
 <img height="172" src="/docs/assets/images/logo.png" alt = "CloudBridge Logo "/>
 
-## ⚠️ Under construction
-
-This library is not yet stable. The API will change and docs may be outdated.
+> [!WARNING]
+> This library is not yet stable. The API will change and docs may be outdated.
 
 ## ✨ Features
 
@@ -21,8 +20,13 @@ This library is not yet stable. The API will change and docs may be outdated.
   see [Underlying dependencies](#-underlying-dependencies) below).
 * 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
 * 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
+* ⚠️ **Unified error handling**: No different error codes to handle, but unified, typed errors.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
+Furthermore, the library works with app folders, prefers IDs to paths and is strongly typed where
+possible.
+
+See <https://jacobras.github.io/CloudBridge/Vision> for details.
 
 ## ☁️ Cloud Services
 
@@ -72,31 +76,6 @@ See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authen
 on every platform.
 
 See <https://jacobras.github.io/CloudBridge/api/Overview/> for all available operations.
-
-## 📐 Design decisions
-
-### Privacy
-
-The library only supports limited/private app folders, no full access.
-
-### Paths
-
-The library prefers to work with IDs over paths.
-
-### Accounts
-
-Only one account per service is supported as of now.
-
-### Types
-
-`id` and `path` variables are typed as much as possible, to prevent accidental mix-ups.
-
-### Unified error handling
-
-Dropbox will throw `409` when it can't find a path. Other services throw
-`404` CloudBridge turns them both into `CloudServiceException.NotFoundException.`
-
-_Feel free to open an issue if you have a different use case for any of these._
 
 ## 🔗 Underlying dependencies
 

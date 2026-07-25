@@ -33,3 +33,8 @@ See [Cloud services](services/Overview.md) on how to authenticate each service o
 See [shared API](api/Overview.md) for all available operations.
 
 See the [demo app source](https://github.com/jacobras/CloudBridge/tree/main/demo) for more example code.
+
+!!! warning
+
+    The library doesn't refresh tokens yet, so once a token expires you'll need to re-authenticate.
+    Follow <https://github.com/jacobras/CloudBridge/issues/25> for updates.
