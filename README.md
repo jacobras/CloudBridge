@@ -40,10 +40,6 @@ See <https://jacobras.github.io/CloudBridge/Vision> for details.
 
 See specific service docs for important remarks about each service.
 
-## 💾 Supported operations
-
-See <https://jacobras.github.io/CloudBridge/api/Overview/>.
-
 ## 💿 Installation
 
 The library is published to Maven Central.
