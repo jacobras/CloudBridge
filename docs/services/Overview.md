@@ -9,4 +9,6 @@ services.
 | [Google Drive](GoogleDrive.md) | 📦 Not visible to users | ✔️ All platforms |
 | [OneDrive](OneDrive.md)        | 👁️ Visible to users    | ✔️ All platforms | 
 
-✔️ All platforms means Android, iOS, desktop (JVM) and web (JS/WASM).
+- ✔️ _All platforms_ means Android, iOS, desktop (JVM) and web (JS/WASM).
+- 📦 _App data not visible_ means the user will not see the app files when opening the cloud folder
+  themselves (e.g. on desktop or web interface of Google Drive).

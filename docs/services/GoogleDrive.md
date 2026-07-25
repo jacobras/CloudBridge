@@ -13,7 +13,10 @@ the [shared API](../api/Overview.md) is available.
 
 === "App Data folder visibility"
 
-    The App Data folder is not shown to users. A user can only see the amount of space it takes up by going to the Drive site and navigating to _Settings_ » _Manage apps_.
+    The App Data folder is not shown to users. A user can only see the amount of space it takes up
+    by going to [drive.google.com](https://drive.google.com/drive) and navigating to _Settings_ » _Manage apps_.
+
+    ![](../assets/images/google_drive_manage_apps.png)
 
 === "Duplication"
 
@@ -37,12 +40,22 @@ the [shared API](../api/Overview.md) is available.
     Passing in a deeper path on a file (for example `/id1/id2/file.txt`) has no effect, as
     only the last part (`id2`) is set as a parent to the file/folder.
 
+## Registration in Cloud Console
+
+!!! info
+
+    Every platform needs to be registered in
+    the [Google Cloud Console](https://console.cloud.google.com/auth/clients) as "OAuth 2.0 Client ID"
+    with the correct type (e.g., iOS, Android, Web, Desktop).
+
+    ![](../assets/images/google_api_console.png)
+
 ## Authenticating
 
 === "Android"
 
     Google no longer supports custom-scheme redirects on Android, so the library has to use Google
-    Identity Services instead. A wrapper around it is provided:
+    Identity Services instead. This happens automatically by using `GoogleDriveAuthenticator` wrapper:
     
     ```kotlin
     val googleDriveAuthenticator = GoogleDriveAuthenticator(
@@ -59,11 +72,14 @@ the [shared API](../api/Overview.md) is available.
     Securely store the token and pass it to the constructor of the service to use it.
 
 === "iOS"
-    
+
+    The redirect uri's scheme (`com.example.app`) needs to match the one defined in your app's
+    Info.plist.
+
     ```kotlin
     service.authenticate(
         clientId = "yourClientId",
-        redirectUri = "com.example.app:/cloudbridge-auth" // change to your app
+        redirectUri = "com.example.app://cloudbridge-auth" // change to your app
     )?.let { token ->
         service.setToken(token)
         TODO("Store the token locally")
@@ -72,7 +88,8 @@ the [shared API](../api/Overview.md) is available.
 
 === "Desktop"
 
-    Note that Google Drive requires a secret on desktop. This is provided in the Google Drive API console.
+    Note that Google Drive requires a secret on desktop. This is provided in the Google Drive API console
+    when you create a desktop client.
     
     ```kotlin
     val authServer = LocalAuthenticationServer()
@@ -92,10 +109,10 @@ the [shared API](../api/Overview.md) is available.
 
 === "Web"
 
-    Google Drive doesn't support PKCE flow on web, only implicit grant. This means the token cannot be
+    Google Drive does not support PKCE flow on web, only implicit grant. This means the token cannot be
     refreshed when it expires and the user needs to re-authenticate.
     
-    <https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow>
+    See <https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow>.
     
     ```kotlin
     // Always call this:
