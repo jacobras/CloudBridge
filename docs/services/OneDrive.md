@@ -18,7 +18,7 @@ the [shared API](../api/Overview.md) is available.
 
     Make sure to register the redirect URIs there:
 
-    ![](../assets/images/onedrive_portal.png)
+    ![Screenshot of OneDrive Portal showing where to specify redirect URIs](../assets/images/onedrive_portal.png)
 
     For web, choose _Single-page application_ as the platform.
 

@@ -24,7 +24,7 @@ the [shared API](../api/Overview.md) is available.
 
     Make sure to register the redirect URIs there:
 
-    ![](../assets/images/dropbox_app_console.png)
+    ![Screenshot of Dropbox App Console showing the redirect URIs section](../assets/images/dropbox_app_console.png)
 
 ## Authenticating
 

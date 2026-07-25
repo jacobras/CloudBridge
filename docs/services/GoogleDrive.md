@@ -16,7 +16,7 @@ the [shared API](../api/Overview.md) is available.
     The App Data folder is not shown to users. A user can only see the amount of space it takes up
     by going to [drive.google.com](https://drive.google.com/drive) and navigating to _Settings_ » _Manage apps_.
 
-    ![](../assets/images/google_drive_manage_apps.png)
+    ![Screenshot of Google Drive Manage Apps screen](../assets/images/google_drive_manage_apps.png)
 
 === "Duplication"
 
@@ -48,7 +48,7 @@ the [shared API](../api/Overview.md) is available.
     the [Google Cloud Console](https://console.cloud.google.com/auth/clients) as "OAuth 2.0 Client ID"
     with the correct type (e.g., iOS, Android, Web, Desktop).
 
-    ![](../assets/images/google_api_console.png)
+    ![Screenshot of Google API Console showing different client IDs](../assets/images/google_api_console.png)
 
 ## Authenticating
 
