@@ -30,11 +30,11 @@ See <https://jacobras.github.io/CloudBridge/Vision> for details.
 
 ## ☁️ Cloud Services
 
-|                        | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
-|------------------------|---------------------|-----------------|------------------|------------------|
-| **Dropbox**            | ✅                   | ✅               | ✅                | ✅                |
-| **Google Drive**       | ✅                   | ✅               | ✅                | ✅                |
-| **Microsoft OneDrive** | ✅                   | ✅               | ✅                | ✅                |
+|                                                                                     | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
+|-------------------------------------------------------------------------------------|---------------------|-----------------|------------------|------------------|
+| **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                   | ✅               | ✅                | ✅                |
+| **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                   | ✅               | ✅                | ✅                |
+| **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                   | ✅               | ✅                | ✅                |
 
 ✅ = Supported.
 
