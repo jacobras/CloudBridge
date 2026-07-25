@@ -20,7 +20,7 @@ Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web a
   (see [Underlying dependencies](#-underlying-dependencies)).
 * 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
 * 👥 **Multi-user**: Some official SDKs allow only one user, CloudBridge has no limit.
-* ⚠️ **Unified error handling**: No different error codes to handle, but unified, typed errors.
+* 💥 **Unified error handling**: No different error codes to handle, but unified, typed errors.
 
 Limited access scopes by using _app folders_ are preferred by the library wherever possible.
 Furthermore, the library works with app folders, prefers IDs to paths and is strongly typed where
