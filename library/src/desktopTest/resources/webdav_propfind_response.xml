@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<D:multistatus xmlns:D="DAV:">
+    <D:response>
+        <D:href>/</D:href>
+        <D:propstat>
+            <D:prop>
+                <D:resourcetype>
+                    <D:collection xmlns:D="DAV:"/>
+                </D:resourcetype>
+                <D:getlastmodified>Thu, 20 Aug 2026 21:55:59 GMT</D:getlastmodified>
+                <D:displayname></D:displayname>
+            </D:prop>
+            <D:status>HTTP/1.1 200 OK</D:status>
+        </D:propstat>
+        <D:propstat>
+            <D:prop>
+                <D:getcontentlength></D:getcontentlength>
+                <D:getetag></D:getetag>
+            </D:prop>
+            <D:status>HTTP/1.1 404 Not Found</D:status>
+        </D:propstat>
+    </D:response>
+    <D:response>
+        <D:href>/AAA/</D:href>
+        <D:propstat>
+            <D:prop>
+                <D:resourcetype>
+                    <D:collection xmlns:D="DAV:"/>
+                </D:resourcetype>
+                <D:getlastmodified>Thu, 20 Aug 2026 21:55:51 GMT</D:getlastmodified>
+                <D:displayname>AAA</D:displayname>
+            </D:prop>
+            <D:status>HTTP/1.1 200 OK</D:status>
+        </D:propstat>
+        <D:propstat>
+            <D:prop>
+                <D:getcontentlength></D:getcontentlength>
+                <D:getetag></D:getetag>
+            </D:prop>
+            <D:status>HTTP/1.1 404 Not Found</D:status>
+        </D:propstat>
+    </D:response>
+    <D:response>
+        <D:href>/BBB.txt</D:href>
+        <D:propstat>
+            <D:prop>
+                <D:resourcetype></D:resourcetype>
+                <D:getcontentlength>1</D:getcontentlength>
+                <D:getlastmodified>Thu, 20 Aug 2026 21:55:59 GMT</D:getlastmodified>
+                <D:displayname>BBB.txt</D:displayname>
+                <D:getetag>"18cda2314fe769b41"</D:getetag>
+            </D:prop>
+            <D:status>HTTP/1.1 200 OK</D:status>
+        </D:propstat>
+    </D:response>
+    <D:response>
+        <D:href>/Hello%20world%21.txt</D:href>
+        <D:propstat>
+            <D:prop>
+                <D:resourcetype></D:resourcetype>
+                <D:getcontentlength>4</D:getcontentlength>
+                <D:getlastmodified>Thu, 20 Aug 2026 20:36:34 GMT</D:getlastmodified>
+                <D:displayname>Hello world!.txt</D:displayname>
+                <D:getetag>"18cd9ddbe30796d84"</D:getetag>
+            </D:prop>
+            <D:status>HTTP/1.1 200 OK</D:status>
+        </D:propstat>
+    </D:response>
+    <D:response>
+        <D:href>/Test%20folder/</D:href>
+        <D:propstat>
+            <D:prop>
+                <D:resourcetype>
+                    <D:collection xmlns:D="DAV:"/>
+                </D:resourcetype>
+                <D:getlastmodified>Thu, 20 Aug 2026 20:36:05 GMT</D:getlastmodified>
+                <D:displayname>Test folder</D:displayname>
+            </D:prop>
+            <D:status>HTTP/1.1 200 OK</D:status>
+        </D:propstat>
+        <D:propstat>
+            <D:prop>
+                <D:getcontentlength></D:getcontentlength>
+                <D:getetag></D:getetag>
+            </D:prop>
+            <D:status>HTTP/1.1 404 Not Found</D:status>
+        </D:propstat>
+    </D:response>
+</D:multistatus>

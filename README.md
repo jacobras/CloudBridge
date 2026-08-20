@@ -82,6 +82,7 @@ This library uses:
 * [Ktor](https://ktor.io/) and [Ktorfit](https://foso.github.io/Ktorfit/) for network requests.
 * [Coroutines](https://github.com/Kotlin/kotlinx.coroutines) for concurrency.
 * [KotlinCrypto hash](https://github.com/KotlinCrypto/hash) for SHA256 hashing.
+* [KotlinX DateTime](https://github.com/Kotlin/kotlinx-datetime) for time parsing.
 * [urlencoder](https://github.com/ethauvin/urlencoder) for URL encoding.
 
 Only on Android:

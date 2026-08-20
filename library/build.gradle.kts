@@ -46,6 +46,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlin.coroutines.core)
             implementation(libs.kotlin.crypto.sha2)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.kotlinx.json)

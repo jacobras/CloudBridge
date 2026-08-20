@@ -16,15 +16,21 @@ import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
 import io.ktor.http.withCharset
 import io.ktor.utils.io.charsets.Charsets
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.io.IOException
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
+import nl.jacobras.cloudbridge.model.asFilePath
+import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.util.ensureSuffix
 
 /**
@@ -48,10 +54,6 @@ public class WebDavService internal constructor(
         this.credentials = credentials
     }
 
-    override fun setToken(token: CloudAccessToken?) {
-        TODO() // FIXME this method shouldn't be here
-    }
-
     override fun isAuthenticated(): Boolean {
         return true
     }
@@ -66,8 +68,30 @@ public class WebDavService internal constructor(
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
         val response = client.request(buildUrl(path.toString())) {
             method = HttpMethod("PROPFIND")
+            setBody(PROPFIND_BODY)
         }
-        emptyList() // TODO
+        val resources = withContext(Dispatchers.Default) {
+            WebDavListParser.parse(response.bodyAsText())
+        }
+        resources
+            .drop(1) // Skip the self-entity
+            .map {
+                if (it.isCollection) {
+                    CloudFolder(
+                        id = CloudItemId(it.href),
+                        path = it.href.asFolderPath(),
+                        name = it.displayName
+                    )
+                } else {
+                    CloudFile(
+                        id = CloudItemId(it.href),
+                        path = it.href.asFilePath(),
+                        name = it.displayName,
+                        sizeInBytes = it.contentLength ?: -1L,
+                        modified = it.lastModified
+                    )
+                }
+            }
     }
 
     override suspend fun createFolder(path: FolderPath): Unit = tryCall(path.toString()) {
@@ -143,3 +167,14 @@ public class WebDavService internal constructor(
         }
     }
 }
+
+private const val PROPFIND_BODY = """<?xml version="1.0" encoding="utf-8"?>
+<d:propfind xmlns:d="DAV:">
+  <d:prop>
+    <d:resourcetype/>
+    <d:getcontentlength/>
+    <d:getlastmodified/>
+    <d:displayname/>
+    <d:getetag/>
+  </d:prop>
+</d:propfind>"""
