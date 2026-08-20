@@ -15,7 +15,7 @@ Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web a
 
 ## ✨ Features
 
-* ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
+* ⚡ **Unified**: One library to access Dropbox, Google Drive, OneDrive and WebDAV.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms
   (see [Underlying dependencies](#-underlying-dependencies)).
 * 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
@@ -35,6 +35,7 @@ See <https://jacobras.github.io/CloudBridge/Vision> for details.
 | **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                   | ✅               | ✅                | ✅                |
 | **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                   | ✅               | ✅                | ✅                |
 | **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                   | ✅               | ✅                | ✅                |
+| **[WebDAV](https://jacobras.github.io/CloudBridge/services/WebDav/)**              | ✅                   | ✅               | ✅                | ✅                |
 
 ✅ = Supported.
 
@@ -52,8 +53,8 @@ dependencies {
 
 ## 🚀 Quick Start
 
-The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or
-`CloudBridge.oneDrive()`.
+The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()`,
+`CloudBridge.oneDrive()` or `CloudBridge.webDav()`.
 
 Here's an example with Dropbox.
 

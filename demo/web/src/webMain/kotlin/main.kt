@@ -72,12 +72,12 @@ fun main() {
                             redirectUri = "http://localhost:8080"
                         )
                         DemoSettings.dropboxToken = token
-                        viewModel.updateTokens()
+                        viewModel.refresh()
                     }
                     is GoogleDriveService -> {
                         val token = service.completeAuthentication()
                         DemoSettings.googleDriveToken = token
-                        viewModel.updateTokens()
+                        viewModel.refresh()
                     }
                     is OneDriveService -> scope.launch {
                         val token = service.completeAuthentication(
@@ -85,7 +85,7 @@ fun main() {
                             redirectUri = "http://localhost:8080"
                         )
                         DemoSettings.oneDriveToken = token
-                        viewModel.updateTokens()
+                        viewModel.refresh()
                     }
                 }
             }

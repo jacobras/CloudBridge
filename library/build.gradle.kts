@@ -55,6 +55,7 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.assertK)
+            implementation(libs.kotlin.coroutines.test)
         }
         named("desktopMain") {
             dependencies {

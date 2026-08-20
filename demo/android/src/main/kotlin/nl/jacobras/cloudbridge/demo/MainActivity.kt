@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -36,14 +37,14 @@ internal class MainActivity : ComponentActivity() {
 
     private val viewModel = DemoViewModel()
 
-    private var authenticatingProvider: Provider? = null
+    private var authenticatingService: CloudService? = null
     private val scope = CoroutineScope(Dispatchers.Main)
 
     private val googleDriveAuthenticator = GoogleDriveAuthenticator(
         activity = this,
         onSuccess = { token ->
             DemoSettings.googleDriveToken = token
-            viewModel.updateTokens()
+            viewModel.refresh()
         },
         onDenied = {},
         onFailure = { error ->
@@ -67,8 +68,8 @@ internal class MainActivity : ComponentActivity() {
             MaterialTheme {
                 DemoApp(
                     viewModel = viewModel,
-                    launchAuth = { provider, url ->
-                        authenticatingProvider = provider
+                    launchAuth = { service, url ->
+                        authenticatingService = service
                         CustomTabsIntent.Builder().build().launchUrl(this, url.toUri())
                     },
                     onAuthenticateGoogleDrive = googleDriveAuthenticator::authenticate
@@ -91,28 +92,28 @@ internal class MainActivity : ComponentActivity() {
     }
 
     private fun completeAuthentication(uri: Uri) = scope.launch {
-        val provider = authenticatingProvider ?: return@launch
-        when (provider) {
-            Provider.Dropbox -> {
-                val token = viewModel.dropbox.completeAuthentication(
+        when (val service = authenticatingService) {
+            is DropboxService -> {
+                val token = service.completeAuthentication(
                     clientId = BuildConfig.DROPBOX_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
                 DemoSettings.dropboxToken = token
-                viewModel.updateTokens()
+                viewModel.refresh()
             }
 
-            Provider.OneDrive -> {
-                val oneDriveService = viewModel.oneDrive
-                val token = oneDriveService.completeAuthentication(
+            is OneDriveService -> {
+                val token = service.completeAuthentication(
                     clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
                 DemoSettings.oneDriveToken = token
-                viewModel.updateTokens()
+                viewModel.refresh()
             }
+
+            else -> Unit
         }
     }
 }
@@ -121,7 +122,7 @@ internal class MainActivity : ComponentActivity() {
 @Composable
 private fun DemoApp(
     viewModel: DemoViewModel,
-    launchAuth: (Provider, String) -> Unit,
+    launchAuth: (CloudService, String) -> Unit,
     onAuthenticateGoogleDrive: () -> Unit
 ) {
     DemoScreen(
@@ -130,7 +131,7 @@ private fun DemoApp(
             when (service) {
                 is DropboxService -> {
                     launchAuth(
-                        Provider.Dropbox,
+                        service,
                         service.authenticate(
                             BuildConfig.DROPBOX_CLIENT_ID,
                             REDIRECT_URI
@@ -142,7 +143,7 @@ private fun DemoApp(
                 }
                 is OneDriveService -> {
                     launchAuth(
-                        Provider.OneDrive,
+                        service,
                         service.authenticate(
                             BuildConfig.ONEDRIVE_CLIENT_ID,
                             REDIRECT_URI
@@ -154,7 +155,5 @@ private fun DemoApp(
         modifier = Modifier.safeDrawingPadding()
     )
 }
-
-private enum class Provider { Dropbox, OneDrive }
 
 private const val REDIRECT_URI = "nl.jacobras.cloudbridge.demo://cloudbridge-auth"

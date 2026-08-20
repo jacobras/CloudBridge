@@ -8,9 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.BuildConfig
-import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -49,7 +47,7 @@ fun main() = application {
                             clientId = BuildConfig.DROPBOX_CLIENT_ID,
                             onSuccess = { token ->
                                 DemoSettings.dropboxToken = token
-                                viewModel.updateTokens()
+                                viewModel.refresh()
                             }
                         )
                         uriHandler.openUri(url)
@@ -61,7 +59,7 @@ fun main() = application {
                             clientSecret = BuildConfig.GOOGLE_DRIVE_CLIENT_SECRET,
                             onSuccess = { token ->
                                 DemoSettings.googleDriveToken = token
-                                viewModel.updateTokens()
+                                viewModel.refresh()
                             }
                         )
                         uriHandler.openUri(url)
@@ -72,14 +70,10 @@ fun main() = application {
                             clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                             onSuccess = { token ->
                                 DemoSettings.oneDriveToken = token
-                                viewModel.updateTokens()
+                                viewModel.refresh()
                             }
                         )
                         uriHandler.openUri(url)
-                    }
-                    is DummyCloudService -> {
-                        service.setToken(CloudAccessToken(accessToken = "fake"))
-                        viewModel.updateTokens()
                     }
                 }
             }

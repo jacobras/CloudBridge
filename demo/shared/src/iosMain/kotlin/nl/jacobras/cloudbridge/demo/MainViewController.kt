@@ -33,7 +33,7 @@ fun MainViewController() = ComposeUIViewController {
                             redirectUri = REDIRECT_URI
                         )?.let { token ->
                             DemoSettings.dropboxToken = token
-                            viewModel.updateTokens()
+                            viewModel.refresh()
                         }
                     }
 
@@ -43,7 +43,7 @@ fun MainViewController() = ComposeUIViewController {
                             redirectUri = REDIRECT_URI
                         )?.let { token ->
                             DemoSettings.googleDriveToken = token
-                            viewModel.updateTokens()
+                            viewModel.refresh()
                         }
                     }
 
@@ -53,7 +53,7 @@ fun MainViewController() = ComposeUIViewController {
                             redirectUri = REDIRECT_URI
                         )?.let { token ->
                             DemoSettings.oneDriveToken = token
-                            viewModel.updateTokens()
+                            viewModel.refresh()
                         }
                     }
 
