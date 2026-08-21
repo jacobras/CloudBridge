@@ -12,7 +12,7 @@ internal data class XmlNode(
     fun child(name: String): XmlNode? = children.firstOrNull { it.name == name.lowercase() }
 
     /**
-     * Returns all children named [name], in document order (which can be random!).
+     * Returns all children named [name], in document order (which can be random from back-end!).
      */
     fun children(name: String): List<XmlNode> = children.filter { it.name == name.lowercase() }
 }
