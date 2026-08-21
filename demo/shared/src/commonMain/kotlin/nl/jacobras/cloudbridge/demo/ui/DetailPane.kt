@@ -79,7 +79,11 @@ internal fun DetailPane(
                             } else {
                                 Icons.AutoMirrored.Filled.ArrowBack
                             },
-                            contentDescription = "Close"
+                            contentDescription = if (path.isRoot) {
+                                "Close"
+                            } else {
+                                "Back"
+                            }
                         )
                     }
                 },
