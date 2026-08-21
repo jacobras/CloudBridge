@@ -68,6 +68,8 @@ public class WebDavService internal constructor(
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
         val response = client.request(buildUrl(path.toString())) {
             method = HttpMethod("PROPFIND")
+            header("Depth", "1")
+            contentType(ContentType.Application.Xml)
             setBody(PROPFIND_BODY)
         }
         val resources = withContext(Dispatchers.Default) {
