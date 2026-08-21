@@ -99,7 +99,7 @@ internal object XmlParser {
         private fun readName(): String {
             val start = pos
             while (pos < xml.length && xml[pos] !in " \t\r\n>/") pos++
-            return xml.substring(start, pos)
+            return xml.substring(start, pos).lowercase()
         }
 
         private fun skipAttributes() {

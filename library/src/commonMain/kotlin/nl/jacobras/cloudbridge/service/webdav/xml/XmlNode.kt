@@ -9,10 +9,10 @@ internal data class XmlNode(
     /**
      * Returns the first child named [name], or null when absent.
      */
-    fun child(name: String): XmlNode? = children.firstOrNull { it.name == name }
+    fun child(name: String): XmlNode? = children.firstOrNull { it.name == name.lowercase() }
 
     /**
      * Returns all children named [name], in document order (which can be random!).
      */
-    fun children(name: String): List<XmlNode> = children.filter { it.name == name }
+    fun children(name: String): List<XmlNode> = children.filter { it.name == name.lowercase() }
 }

@@ -58,24 +58,24 @@ class XmlParserTest {
 
         val res = XmlParser.parse(xml)
 
-        assertThat(res.name).isEqualTo("D:multistatus")
+        assertThat(res.name).isEqualTo("d:multistatus")
         assertThat(res.value).isEmpty()
         assertThat(res.children).hasSize(2)
 
         val response1 = res.children.first()
-        assertThat(response1.name).isEqualTo("D:response")
+        assertThat(response1.name).isEqualTo("d:response")
         assertThat(response1.value).isEmpty()
         assertThat(response1.children).hasSize(2)
-        assertThat(response1.child("D:href")?.value).isEqualTo("http://www.example.com/Coll/")
+        assertThat(response1.child("d:href")?.value).isEqualTo("http://www.example.com/Coll/")
 
-        val propstat1 = response1.child("D:propstat")!!
+        val propstat1 = response1.child("d:propstat")!!
         assertThat(propstat1.value).isEmpty()
-        assertThat(propstat1.child("D:status")?.value).isEqualTo("HTTP/1.1 200 OK")
-        assertThat(propstat1.child("D:prop")?.child("D:displayname")?.value).isEqualTo("Loop Demo")
+        assertThat(propstat1.child("d:status")?.value).isEqualTo("HTTP/1.1 200 OK")
+        assertThat(propstat1.child("d:prop")?.child("d:displayname")?.value).isEqualTo("Loop Demo")
 
         val response2 = res.children[1]
-        assertThat(response2.child("D:href")?.value).isEqualTo("http://www.example.com/Coll/Bar")
-        assertThat(response2.child("D:propstat")?.child("D:status")?.value)
+        assertThat(response2.child("d:href")?.value).isEqualTo("http://www.example.com/Coll/Bar")
+        assertThat(response2.child("d:propstat")?.child("d:status")?.value)
             .isEqualTo("HTTP/1.1 208 Already Reported")
     }
 }

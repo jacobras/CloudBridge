@@ -45,8 +45,8 @@ internal object WebDavListParser {
 
     @Throws(WebDavParseException::class)
     private fun XmlNode.expectName(name: String) {
-        if (this.name != name) {
-            throw WebDavParseException("Expected $name but found ${this.name}")
+        if (this.name != name.lowercase()) {
+            throw WebDavParseException("Expected ${name.lowercase()} but found ${this.name}")
         }
     }
 
