@@ -41,7 +41,13 @@ public abstract class OAuthCloudService(startToken: CloudAccessToken?) : CloudSe
         }
     }
 
-    override fun setToken(token: CloudAccessToken?) {
+    /**
+     * Sets [token] to this service.
+     *
+     * @param token The access token to use for authentication, or `null` to authenticate a new
+     * account with this service.
+     */
+    public fun setToken(token: CloudAccessToken?) {
         this.token = token
     }
 

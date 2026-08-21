@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -30,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.demo.isWeb
+import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.UserInfo
 
@@ -39,9 +40,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 internal fun DetailPane(
     service: CloudService,
     userInfo: UserInfo?,
-    onAuthenticateClick: () -> Unit,
-    onDeauthenticateClick: () -> Unit,
-    onFinishAuthOnWeb: () -> Unit,
+    onDisconnectClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val viewModel = remember(service) { ServiceViewModel(service) }
@@ -59,7 +58,7 @@ internal fun DetailPane(
             CenterAlignedTopAppBar(
                 title = {
                     Text(text = buildString {
-                        append(service.name)
+                        append(service.displayName)
 
                         if (userInfo?.emailAddress != null) {
                             append(" (${userInfo.emailAddress})")
@@ -74,19 +73,27 @@ internal fun DetailPane(
                             viewModel.navigatePathUp()
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close")
+                        Icon(
+                            imageVector = if (path.isRoot) {
+                                Icons.Default.Close
+                            } else {
+                                Icons.AutoMirrored.Filled.ArrowBack
+                            },
+                            contentDescription = if (path.isRoot) {
+                                "Close"
+                            } else {
+                                "Back"
+                            }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
                 ),
                 actions = {
-                    if (!service.isAuthenticated()) {
-                        Button(onClick = onAuthenticateClick) {
-                            Text("Sign in")
-                        }
-                    } else {
-                        Button(onClick = onDeauthenticateClick) {
+                    // The dummy service is always signed in.
+                    if (service !is DummyCloudService) {
+                        Button(onClick = onDisconnectClick) {
                             Text("Sign out")
                         }
                     }
@@ -95,18 +102,16 @@ internal fun DetailPane(
             )
         },
         bottomBar = {
-            if (service.isAuthenticated()) {
-                BottomAppBar {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(onClick = { pendingCreate = CreateType.FOLDER }) {
-                            Text("Create folder")
-                        }
-                        Button(onClick = { pendingCreate = CreateType.FILE }) {
-                            Text("Create file")
-                        }
+            BottomAppBar {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(onClick = { pendingCreate = CreateType.FOLDER }) {
+                        Text("Create folder")
+                    }
+                    Button(onClick = { pendingCreate = CreateType.FILE }) {
+                        Text("Create file")
                     }
                 }
             }
@@ -120,13 +125,6 @@ internal fun DetailPane(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
-                Spacer(Modifier.height(16.dp))
-            }
-
-            if (isWeb && !service.isAuthenticated()) {
-                Button(onClick = onFinishAuthOnWeb) {
-                    Text("Finish auth")
-                }
                 Spacer(Modifier.height(16.dp))
             }
 

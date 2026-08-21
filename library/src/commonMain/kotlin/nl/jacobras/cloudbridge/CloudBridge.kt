@@ -6,6 +6,8 @@ import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
 import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
+import nl.jacobras.cloudbridge.service.webdav.WebDavCredentials
+import nl.jacobras.cloudbridge.service.webdav.WebDavService
 
 /**
  * CloudBridge: Multiple clouds, one Kotlin Multiplatform bridge.
@@ -40,4 +42,13 @@ public object CloudBridge {
     public fun oneDrive(
         token: CloudAccessToken? = null
     ): OneDriveService = OneDriveService(token)
+
+    /**
+     * Instance of a WebDAV server.
+     *
+     * @param credentials The credentials to use for authentication.
+     */
+    public fun webDav(
+        credentials: WebDavCredentials
+    ): WebDavService = WebDavService(credentials)
 }

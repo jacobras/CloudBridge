@@ -69,6 +69,15 @@ object DemoSettings {
                 demoSettings.remove(KEY_ONEDRIVE_EXPIRES_IN)
             }
         }
+    var webDavServerUrl: String?
+        get() = demoSettings.getStringOrNull(KEY_WEBDAV_URL)
+        set(value) = demoSettings.putStringOrRemove(KEY_WEBDAV_URL, value)
+    var webDavUsername: String?
+        get() = demoSettings.getStringOrNull(KEY_WEBDAV_USERNAME)
+        set(value) = demoSettings.putStringOrRemove(KEY_WEBDAV_USERNAME, value)
+    var webDavPassword: String?
+        get() = demoSettings.getStringOrNull(KEY_WEBDAV_PASSWORD)
+        set(value) = demoSettings.putStringOrRemove(KEY_WEBDAV_PASSWORD, value)
 
     fun clear() {
         demoSettings.clear()
@@ -102,5 +111,9 @@ private const val KEY_GOOGLE_DRIVE_EXPIRES_IN = "googleDriveTokenExpiresIn"
 private const val KEY_ONEDRIVE_TOKEN = "oneDriveToken"
 private const val KEY_ONEDRIVE_REFRESH_TOKEN = "oneDriveRefreshToken"
 private const val KEY_ONEDRIVE_EXPIRES_IN = "oneDriveTokenExpiresIn"
+
+private const val KEY_WEBDAV_URL = "webDavUrl"
+private const val KEY_WEBDAV_USERNAME = "webDavUsername"
+private const val KEY_WEBDAV_PASSWORD = "webDavPassword"
 
 internal expect val demoSettings: Settings

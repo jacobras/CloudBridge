@@ -10,7 +10,10 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -25,9 +28,10 @@ fun DemoScreen(
     modifier: Modifier = Modifier
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator()
-    val services by viewModel.services.collectAsState()
+    val connectedServices by viewModel.connectedServices.collectAsState()
     val selectedService by viewModel.selectedService.collectAsState()
     val scope = rememberCoroutineScope()
+    var connectingWebDav by remember { mutableStateOf(false) }
 
     ListDetailPaneScaffold(
         modifier = modifier,
@@ -35,24 +39,36 @@ fun DemoScreen(
         value = navigator.scaffoldValue,
         listPane = {
             ServicesList(
-                services = services,
+                connectedServices = connectedServices,
                 selectedService = selectedService,
-                onClick = {
+                onServiceClick = {
                     viewModel.select(it)
                     scope.launch {
                         navigator.navigateTo(ListDetailPaneScaffoldRole.Detail)
                     }
-                }
+                },
+                onAddClick = { availableService ->
+                    if (availableService == AvailableService.WebDav) {
+                        // WebDAV will show a dialog to enter credentials
+                        connectingWebDav = true
+                    } else {
+                        onAuthenticate(availableService.toService())
+                    }
+                },
+                onFinishAuthClick = { onFinishAuthOnWeb(it.toService()) }
             )
         },
         detailPane = {
             selectedService?.let { service ->
                 DetailPane(
                     service = service,
-                    userInfo = services[service],
-                    onAuthenticateClick = { onAuthenticate(service) },
-                    onDeauthenticateClick = { viewModel.deauthenticate(service) },
-                    onFinishAuthOnWeb = { onFinishAuthOnWeb(service) },
+                    userInfo = connectedServices[service],
+                    onDisconnectClick = {
+                        viewModel.disconnect(service)
+                        scope.launch {
+                            navigator.navigateTo(ListDetailPaneScaffoldRole.List)
+                        }
+                    },
                     onBackClick = {
                         viewModel.deselect()
                         scope.launch {
@@ -67,4 +83,14 @@ fun DemoScreen(
         },
         paneExpansionDragHandle = { _ -> VerticalDivider() }
     )
+
+    if (connectingWebDav) {
+        WebDavConnectDialog(
+            onConfirm = { serverUrl, username, password ->
+                viewModel.connectWebDav(serverUrl, username, password)
+                connectingWebDav = false
+            },
+            onDismiss = { connectingWebDav = false }
+        )
+    }
 }

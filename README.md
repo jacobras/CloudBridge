@@ -11,11 +11,11 @@ Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web a
 <img height="172" src="/docs/assets/images/logo.png" alt = "CloudBridge Logo "/>
 
 > [!WARNING]
-> This library is not yet stable. The API will change and docs may be outdated.
+> This library is not yet stable. The API will change.
 
 ## ✨ Features
 
-* ⚡ **Unified**: One library to access Dropbox, Google Drive and OneDrive.
+* ⚡ **Unified**: One library to access Dropbox, Google Drive, OneDrive and WebDAV.
 * 🪶 **Lightweight**: No need to integrate different SDKs for different platforms
   (see [Underlying dependencies](#-underlying-dependencies)).
 * 📱 **Cross-platform**: Supports Android, iOS, web and desktop (JVM).
@@ -35,6 +35,7 @@ See <https://jacobras.github.io/CloudBridge/Vision> for details.
 | **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                   | ✅               | ✅                | ✅                |
 | **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                   | ✅               | ✅                | ✅                |
 | **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                   | ✅               | ✅                | ✅                |
+| **[WebDAV](https://jacobras.github.io/CloudBridge/services/WebDAV/)**               | ✅                   | ✅               | ✅                | ✅                |
 
 ✅ = Supported.
 
@@ -46,14 +47,14 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.7.0")
+    implementation("nl.jacobras:cloudbridge:0.8.0")
 }
 ```
 
 ## 🚀 Quick Start
 
-The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()` or
-`CloudBridge.oneDrive()`.
+The main entry point is `CloudBridge.dropbox()`, `CloudBridge.googleDrive()`,
+`CloudBridge.oneDrive()` or `CloudBridge.webDav()`.
 
 Here's an example with Dropbox.
 
@@ -81,6 +82,7 @@ This library uses:
 * [Ktor](https://ktor.io/) and [Ktorfit](https://foso.github.io/Ktorfit/) for network requests.
 * [Coroutines](https://github.com/Kotlin/kotlinx.coroutines) for concurrency.
 * [KotlinCrypto hash](https://github.com/KotlinCrypto/hash) for SHA256 hashing.
+* [KotlinX DateTime](https://github.com/Kotlin/kotlinx-datetime) for time parsing.
 * [urlencoder](https://github.com/ethauvin/urlencoder) for URL encoding.
 
 Only on Android:

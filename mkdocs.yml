@@ -23,6 +23,7 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - content.footnote.tooltips
     - navigation.tabs
 repo_name: CloudBridge
 repo_url: https://github.com/jacobras/CloudBridge
@@ -35,6 +36,7 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - footnotes
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.snippets
@@ -56,6 +58,7 @@ nav:
       - 'Dropbox': 'services/Dropbox.md'
       - 'Google Drive': 'services/GoogleDrive.md'
       - 'OneDrive': 'services/OneDrive.md'
+      - 'WebDAV': 'services/WebDav.md'
   - 'API':
       - 'api/Overview.md'
       - 'Authentication/User info': 'api/Authentication.md'
