@@ -35,7 +35,7 @@ See <https://jacobras.github.io/CloudBridge/Vision> for details.
 | **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                   | ✅               | ✅                | ✅                |
 | **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                   | ✅               | ✅                | ✅                |
 | **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                   | ✅               | ✅                | ✅                |
-| **[WebDAV](https://jacobras.github.io/CloudBridge/services/WebDav/)**              | ✅                   | ✅               | ✅                | ✅                |
+| **[WebDAV](https://jacobras.github.io/CloudBridge/services/WebDAV/)**               | ✅                   | ✅               | ✅                | ✅                |
 
 ✅ = Supported.
 
