@@ -58,7 +58,7 @@ nav:
       - 'Dropbox': 'services/Dropbox.md'
       - 'Google Drive': 'services/GoogleDrive.md'
       - 'OneDrive': 'services/OneDrive.md'
-      - 'WebDAV': 'services/WebDav.md'
+      - 'WebDAV': 'services/WebDAV.md'
   - 'API':
       - 'api/Overview.md'
       - 'Authentication/User info': 'api/Authentication.md'
