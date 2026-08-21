@@ -11,7 +11,7 @@ Multiple clouds, one Kotlin Multiplatform bridge. Supporting Android, iOS, web a
 <img height="172" src="/docs/assets/images/logo.png" alt = "CloudBridge Logo "/>
 
 > [!WARNING]
-> This library is not yet stable. The API will change and docs may be outdated.
+> This library is not yet stable. The API will change.
 
 ## ✨ Features
 
