@@ -8,7 +8,7 @@ services.
 | [Dropbox](Dropbox.md)          | 👁️ Visible to users        | ✔️ All platforms     |
 | [Google Drive](GoogleDrive.md) | 📦 Not visible to users[^1] | ✔️ All platforms     |
 | [OneDrive](OneDrive.md)        | 👁️ Visible to users        | ✔️ All platforms     | 
-| [WebDAV](WebDav.md)            | 👁️ Visible to users        | ✔️ All platforms[^2] |
+| [WebDAV](WebDAV.md)            | 👁️ Visible to users        | ✔️ All platforms[^2] |
 
 ✔️ _All platforms_ means Android, iOS, desktop (JVM) and web (JS/WASM).
 
