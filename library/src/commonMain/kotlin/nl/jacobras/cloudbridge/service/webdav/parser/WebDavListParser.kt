@@ -32,12 +32,14 @@ internal object WebDavListParser {
                         .requireChild(PROP_RESOURCE_TYPE)
                         .child(RESOURCE_TYPE_COLLECTION) != null,
                     displayName = props.requireChild(PROP_DISPLAY_NAME).value,
-                    contentLength = null,
+                    // Only available for files
+                    contentLength = props.child(PROP_CONTENT_LENGTH)?.value?.toLongOrNull(),
                     lastModified = Instant.parse(
                         input = props.requireChild(PROP_LAST_MODIFIED).value,
                         format = DateTimeComponents.Formats.RFC_1123
                     ),
-                    etag = null
+                    // Only available for files
+                    etag = props.child(PROP_ETAG)?.value
                 )
             }
             .sortedBy { it.href }
@@ -55,7 +57,9 @@ internal object WebDavListParser {
 }
 
 private const val PROP = "D:prop"
+private const val PROP_CONTENT_LENGTH = "D:getcontentlength"
 private const val PROP_DISPLAY_NAME = "D:displayname"
+private const val PROP_ETAG = "D:getetag"
 private const val PROP_LAST_MODIFIED = "D:getlastmodified"
 private const val PROP_RESOURCE_TYPE = "D:resourcetype"
 private const val PROP_STAT = "D:propstat"
