@@ -63,7 +63,12 @@ fun DemoScreen(
                 DetailPane(
                     service = service,
                     userInfo = connectedServices[service],
-                    onDisconnectClick = { viewModel.disconnect(service) },
+                    onDisconnectClick = {
+                        viewModel.disconnect(service)
+                        scope.launch {
+                            navigator.navigateTo(ListDetailPaneScaffoldRole.List)
+                        }
+                    },
                     onBackClick = {
                         viewModel.deselect()
                         scope.launch {
