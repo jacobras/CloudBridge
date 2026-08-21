@@ -1,0 +1,245 @@
+public final class nl/jacobras/cloudbridge/CloudBridge {
+	public static final field INSTANCE Lnl/jacobras/cloudbridge/CloudBridge;
+	public final fun dropbox (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;
+	public static synthetic fun dropbox$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;
+	public final fun getLogger ()Lnl/jacobras/cloudbridge/logging/Logger;
+	public final fun googleDrive (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;
+	public static synthetic fun googleDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;
+	public final fun oneDrive (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
+	public static synthetic fun oneDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
+	public final fun setLogger (Lnl/jacobras/cloudbridge/logging/Logger;)V
+}
+
+public abstract interface class nl/jacobras/cloudbridge/CloudService {
+	public abstract fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun isAuthenticated ()Z
+	public abstract fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	public abstract fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public class nl/jacobras/cloudbridge/CloudServiceException : java/lang/Exception {
+}
+
+public final class nl/jacobras/cloudbridge/CloudServiceException$ConnectionException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> (Ljava/io/IOException;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudServiceException$NotAuthenticatedException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> ()V
+}
+
+public final class nl/jacobras/cloudbridge/CloudServiceException$NotFoundException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudServiceException$Unknown : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> (Ljava/lang/Throwable;)V
+}
+
+public abstract class nl/jacobras/cloudbridge/OAuthCloudService : nl/jacobras/cloudbridge/CloudService {
+	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	protected abstract fun getBaseUrl ()Ljava/lang/String;
+	protected final fun getKtorfit ()Lde/jensklingenberg/ktorfit/Ktorfit;
+	public fun isAuthenticated ()Z
+	protected final fun requireAuthenticated ()V
+	public fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+}
+
+public final class nl/jacobras/cloudbridge/auth/CloudAccessToken {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3-FghU774 ()Lkotlin/time/Duration;
+	public final fun copy-moChb0s (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
+	public static synthetic fun copy-moChb0s$default (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAccessToken ()Ljava/lang/String;
+	public final fun getExpiresIn-FghU774 ()Lkotlin/time/Duration;
+	public final fun getRefreshToken ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class nl/jacobras/cloudbridge/logging/Logger {
+	public abstract fun log (Ljava/lang/String;)V
+}
+
+public final class nl/jacobras/cloudbridge/model/CloudFile : nl/jacobras/cloudbridge/model/CloudItem {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-BApJcr0 ()Ljava/lang/String;
+	public final fun component2-9IMs6Nk ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()J
+	public final fun component5 ()Lkotlin/time/Instant;
+	public final fun copy-8ewzOZE (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;)Lnl/jacobras/cloudbridge/model/CloudFile;
+	public static synthetic fun copy-8ewzOZE$default (Lnl/jacobras/cloudbridge/model/CloudFile;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/model/CloudFile;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getId-BApJcr0 ()Ljava/lang/String;
+	public final fun getModified ()Lkotlin/time/Instant;
+	public fun getName ()Ljava/lang/String;
+	public synthetic fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
+	public fun getPath-9IMs6Nk ()Ljava/lang/String;
+	public final fun getSizeInBytes ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/model/CloudFolder : nl/jacobras/cloudbridge/model/CloudItem {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-BApJcr0 ()Ljava/lang/String;
+	public final fun component2-vklnrsc ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy-uvjY-GY (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/CloudFolder;
+	public static synthetic fun copy-uvjY-GY$default (Lnl/jacobras/cloudbridge/model/CloudFolder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/model/CloudFolder;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getId-BApJcr0 ()Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
+	public synthetic fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
+	public fun getPath-vklnrsc ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class nl/jacobras/cloudbridge/model/CloudItem {
+	public abstract fun getId-BApJcr0 ()Ljava/lang/String;
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
+}
+
+public final class nl/jacobras/cloudbridge/model/CloudItemId {
+	public static final synthetic fun box-impl (Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/CloudItemId;
+	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/String;)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/model/FilePath : nl/jacobras/cloudbridge/model/Path {
+	public static final synthetic fun box-impl (Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/FilePath;
+	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
+	public static final fun getName-impl (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun getNameWithoutExtension-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/String;)I
+	public fun startsWith-j2zfG0w (Ljava/lang/String;)Z
+	public static fun startsWith-j2zfG0w (Ljava/lang/String;Ljava/lang/String;)Z
+	public fun toFolderPath-vklnrsc ()Ljava/lang/String;
+	public static fun toFolderPath-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/model/FolderPath : nl/jacobras/cloudbridge/model/Path {
+	public static final synthetic fun box-impl (Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/FolderPath;
+	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
+	public static final fun getLevelCount-impl (Ljava/lang/String;)I
+	public static final fun getName-impl (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun getParent-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/String;)I
+	public static final fun isRoot-impl (Ljava/lang/String;)Z
+	public fun startsWith-j2zfG0w (Ljava/lang/String;)Z
+	public static fun startsWith-j2zfG0w (Ljava/lang/String;Ljava/lang/String;)Z
+	public fun toFolderPath-vklnrsc ()Ljava/lang/String;
+	public static fun toFolderPath-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun toString-impl (Ljava/lang/String;Z)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/String;
+}
+
+public abstract interface class nl/jacobras/cloudbridge/model/Path {
+	public abstract fun startsWith-j2zfG0w (Ljava/lang/String;)Z
+	public abstract fun toFolderPath-vklnrsc ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/model/PathKt {
+	public static final fun asFilePath (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun asFolderPath (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/model/UserInfo {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/UserInfo;
+	public static synthetic fun copy$default (Lnl/jacobras/cloudbridge/model/UserInfo;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/model/UserInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEmailAddress ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/persistence/LocalAuthenticationServer {
+	public fun <init> ()V
+	public fun <init> (I)V
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getUrl ()Ljava/lang/String;
+	public final fun stop ()V
+}
+
+public final class nl/jacobras/cloudbridge/service/dropbox/AuthenticateKt {
+	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;Lnl/jacobras/cloudbridge/persistence/LocalAuthenticationServer;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/jacobras/cloudbridge/OAuthCloudService {
+	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class nl/jacobras/cloudbridge/service/googledrive/AuthenticateKt {
+	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;Lnl/jacobras/cloudbridge/persistence/LocalAuthenticationServer;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/OAuthCloudService {
+	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class nl/jacobras/cloudbridge/service/onedrive/AuthenticateKt {
+	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;Lnl/jacobras/cloudbridge/persistence/LocalAuthenticationServer;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl/jacobras/cloudbridge/OAuthCloudService {
+	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

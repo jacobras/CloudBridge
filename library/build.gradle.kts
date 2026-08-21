@@ -1,6 +1,7 @@
 @file:Suppress("OPT_IN_USAGE")
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 
 plugins {
@@ -15,6 +16,7 @@ plugins {
 
 group = "nl.jacobras"
 
+@OptIn(ExperimentalAbiValidation::class)
 kotlin {
     android {
         namespace = "nl.jacobras.cloudbridge"
@@ -38,6 +40,7 @@ kotlin {
     iosSimulatorArm64()
 
     explicitApi()
+    abiValidation()
 
     sourceSets {
         commonMain.dependencies {

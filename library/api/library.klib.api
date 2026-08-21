@@ -1,0 +1,270 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, js, wasmJs]
+// Alias: ios => [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <nl.jacobras:library>
+abstract interface nl.jacobras.cloudbridge.logging/Logger { // nl.jacobras.cloudbridge.logging/Logger|null[0]
+    abstract fun log(kotlin/String) // nl.jacobras.cloudbridge.logging/Logger.log|log(kotlin.String){}[0]
+}
+
+abstract interface nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbridge/CloudService|null[0]
+    abstract fun isAuthenticated(): kotlin/Boolean // nl.jacobras.cloudbridge/CloudService.isAuthenticated|isAuthenticated(){}[0]
+    abstract fun setToken(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge/CloudService.setToken|setToken(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+    abstract suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge/CloudService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    abstract suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge/CloudService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    abstract suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge/CloudService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    abstract suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge/CloudService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    abstract suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge/CloudService.getUserInfo|getUserInfo(){}[0]
+    abstract suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge/CloudService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    abstract suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge/CloudService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+}
+
+sealed interface nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudbridge.model/CloudItem|null[0]
+    abstract val id // nl.jacobras.cloudbridge.model/CloudItem.id|{}id[0]
+        abstract fun <get-id>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.model/CloudItem.id.<get-id>|<get-id>(){}[0]
+    abstract val name // nl.jacobras.cloudbridge.model/CloudItem.name|{}name[0]
+        abstract fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/CloudItem.name.<get-name>|<get-name>(){}[0]
+    abstract val path // nl.jacobras.cloudbridge.model/CloudItem.path|{}path[0]
+        abstract fun <get-path>(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.model/CloudItem.path.<get-path>|<get-path>(){}[0]
+}
+
+sealed interface nl.jacobras.cloudbridge.model/Path { // nl.jacobras.cloudbridge.model/Path|null[0]
+    abstract fun startsWith(nl.jacobras.cloudbridge.model/FolderPath): kotlin/Boolean // nl.jacobras.cloudbridge.model/Path.startsWith|startsWith(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    abstract fun toFolderPath(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/Path.toFolderPath|toFolderPath(){}[0]
+}
+
+abstract class nl.jacobras.cloudbridge/OAuthCloudService : nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbridge/OAuthCloudService|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge/OAuthCloudService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+
+    abstract val baseUrl // nl.jacobras.cloudbridge/OAuthCloudService.baseUrl|{}baseUrl[0]
+        abstract fun <get-baseUrl>(): kotlin/String // nl.jacobras.cloudbridge/OAuthCloudService.baseUrl.<get-baseUrl>|<get-baseUrl>(){}[0]
+    final val ktorfit // nl.jacobras.cloudbridge/OAuthCloudService.ktorfit|{}ktorfit[0]
+        final fun <get-ktorfit>(): de.jensklingenberg.ktorfit/Ktorfit // nl.jacobras.cloudbridge/OAuthCloudService.ktorfit.<get-ktorfit>|<get-ktorfit>(){}[0]
+
+    final fun requireAuthenticated() // nl.jacobras.cloudbridge/OAuthCloudService.requireAuthenticated|requireAuthenticated(){}[0]
+    open fun isAuthenticated(): kotlin/Boolean // nl.jacobras.cloudbridge/OAuthCloudService.isAuthenticated|isAuthenticated(){}[0]
+    open fun setToken(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge/OAuthCloudService.setToken|setToken(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+}
+
+final class nl.jacobras.cloudbridge.auth/CloudAccessToken { // nl.jacobras.cloudbridge.auth/CloudAccessToken|null[0]
+    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin.time/Duration? = ...) // nl.jacobras.cloudbridge.auth/CloudAccessToken.<init>|<init>(kotlin.String;kotlin.String?;kotlin.time.Duration?){}[0]
+
+    final val accessToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.accessToken|{}accessToken[0]
+        final fun <get-accessToken>(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.accessToken.<get-accessToken>|<get-accessToken>(){}[0]
+    final val expiresIn // nl.jacobras.cloudbridge.auth/CloudAccessToken.expiresIn|{}expiresIn[0]
+        final fun <get-expiresIn>(): kotlin.time/Duration? // nl.jacobras.cloudbridge.auth/CloudAccessToken.expiresIn.<get-expiresIn>|<get-expiresIn>(){}[0]
+    final val refreshToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.refreshToken|{}refreshToken[0]
+        final fun <get-refreshToken>(): kotlin/String? // nl.jacobras.cloudbridge.auth/CloudAccessToken.refreshToken.<get-refreshToken>|<get-refreshToken>(){}[0]
+
+    final fun component1(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // nl.jacobras.cloudbridge.auth/CloudAccessToken.component2|component2(){}[0]
+    final fun component3(): kotlin.time/Duration? // nl.jacobras.cloudbridge.auth/CloudAccessToken.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin.time/Duration? = ...): nl.jacobras.cloudbridge.auth/CloudAccessToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.copy|copy(kotlin.String;kotlin.String?;kotlin.time.Duration?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.auth/CloudAccessToken.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.auth/CloudAccessToken.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.model/CloudFile : nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudbridge.model/CloudFile|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/FilePath, kotlin/String, kotlin/Long, kotlin.time/Instant) // nl.jacobras.cloudbridge.model/CloudFile.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FilePath;kotlin.String;kotlin.Long;kotlin.time.Instant){}[0]
+
+    final val id // nl.jacobras.cloudbridge.model/CloudFile.id|{}id[0]
+        final fun <get-id>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.model/CloudFile.id.<get-id>|<get-id>(){}[0]
+    final val modified // nl.jacobras.cloudbridge.model/CloudFile.modified|{}modified[0]
+        final fun <get-modified>(): kotlin.time/Instant // nl.jacobras.cloudbridge.model/CloudFile.modified.<get-modified>|<get-modified>(){}[0]
+    final val name // nl.jacobras.cloudbridge.model/CloudFile.name|{}name[0]
+        final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.name.<get-name>|<get-name>(){}[0]
+    final val path // nl.jacobras.cloudbridge.model/CloudFile.path|{}path[0]
+        final fun <get-path>(): nl.jacobras.cloudbridge.model/FilePath // nl.jacobras.cloudbridge.model/CloudFile.path.<get-path>|<get-path>(){}[0]
+    final val sizeInBytes // nl.jacobras.cloudbridge.model/CloudFile.sizeInBytes|{}sizeInBytes[0]
+        final fun <get-sizeInBytes>(): kotlin/Long // nl.jacobras.cloudbridge.model/CloudFile.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
+
+    final fun component1(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.model/CloudFile.component1|component1(){}[0]
+    final fun component2(): nl.jacobras.cloudbridge.model/FilePath // nl.jacobras.cloudbridge.model/CloudFile.component2|component2(){}[0]
+    final fun component3(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.component3|component3(){}[0]
+    final fun component4(): kotlin/Long // nl.jacobras.cloudbridge.model/CloudFile.component4|component4(){}[0]
+    final fun component5(): kotlin.time/Instant // nl.jacobras.cloudbridge.model/CloudFile.component5|component5(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/FilePath = ..., kotlin/String = ..., kotlin/Long = ..., kotlin.time/Instant = ...): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.model/CloudFile.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FilePath;kotlin.String;kotlin.Long;kotlin.time.Instant){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/CloudFile.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/CloudFile.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.model/CloudFolder : nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudbridge.model/CloudFolder|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/FolderPath, kotlin/String) // nl.jacobras.cloudbridge.model/CloudFolder.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FolderPath;kotlin.String){}[0]
+
+    final val id // nl.jacobras.cloudbridge.model/CloudFolder.id|{}id[0]
+        final fun <get-id>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.model/CloudFolder.id.<get-id>|<get-id>(){}[0]
+    final val name // nl.jacobras.cloudbridge.model/CloudFolder.name|{}name[0]
+        final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFolder.name.<get-name>|<get-name>(){}[0]
+    final val path // nl.jacobras.cloudbridge.model/CloudFolder.path|{}path[0]
+        final fun <get-path>(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/CloudFolder.path.<get-path>|<get-path>(){}[0]
+
+    final fun component1(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.model/CloudFolder.component1|component1(){}[0]
+    final fun component2(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/CloudFolder.component2|component2(){}[0]
+    final fun component3(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFolder.component3|component3(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/FolderPath = ..., kotlin/String = ...): nl.jacobras.cloudbridge.model/CloudFolder // nl.jacobras.cloudbridge.model/CloudFolder.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FolderPath;kotlin.String){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/CloudFolder.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/CloudFolder.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFolder.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.model/UserInfo { // nl.jacobras.cloudbridge.model/UserInfo|null[0]
+    constructor <init>(kotlin/String?, kotlin/String?) // nl.jacobras.cloudbridge.model/UserInfo.<init>|<init>(kotlin.String?;kotlin.String?){}[0]
+
+    final val emailAddress // nl.jacobras.cloudbridge.model/UserInfo.emailAddress|{}emailAddress[0]
+        final fun <get-emailAddress>(): kotlin/String? // nl.jacobras.cloudbridge.model/UserInfo.emailAddress.<get-emailAddress>|<get-emailAddress>(){}[0]
+    final val name // nl.jacobras.cloudbridge.model/UserInfo.name|{}name[0]
+        final fun <get-name>(): kotlin/String? // nl.jacobras.cloudbridge.model/UserInfo.name.<get-name>|<get-name>(){}[0]
+
+    final fun component1(): kotlin/String? // nl.jacobras.cloudbridge.model/UserInfo.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // nl.jacobras.cloudbridge.model/UserInfo.component2|component2(){}[0]
+    final fun copy(kotlin/String? = ..., kotlin/String? = ...): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.model/UserInfo.copy|copy(kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/UserInfo.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/UserInfo.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/UserInfo.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.service.dropbox/DropboxService : nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.dropbox/DropboxService|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.dropbox/DropboxService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.dropbox/DropboxService.getUserInfo|getUserInfo(){}[0]
+    final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.dropbox/DropboxService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+}
+
+final class nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService : nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.getUserInfo|getUserInfo(){}[0]
+    final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+}
+
+final class nl.jacobras.cloudbridge.service.onedrive/OneDriveService : nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.onedrive/OneDriveService|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
+    final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.getUserInfo|getUserInfo(){}[0]
+    final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+}
+
+final value class nl.jacobras.cloudbridge.model/CloudItemId { // nl.jacobras.cloudbridge.model/CloudItemId|null[0]
+    constructor <init>(kotlin/String) // nl.jacobras.cloudbridge.model/CloudItemId.<init>|<init>(kotlin.String){}[0]
+
+    final val value // nl.jacobras.cloudbridge.model/CloudItemId.value|{}value[0]
+        final fun <get-value>(): kotlin/String // nl.jacobras.cloudbridge.model/CloudItemId.value.<get-value>|<get-value>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/CloudItemId.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/CloudItemId.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/CloudItemId.toString|toString(){}[0]
+}
+
+final value class nl.jacobras.cloudbridge.model/FilePath : nl.jacobras.cloudbridge.model/Path { // nl.jacobras.cloudbridge.model/FilePath|null[0]
+    constructor <init>(kotlin/String) // nl.jacobras.cloudbridge.model/FilePath.<init>|<init>(kotlin.String){}[0]
+
+    final val name // nl.jacobras.cloudbridge.model/FilePath.name|{}name[0]
+        final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/FilePath.name.<get-name>|<get-name>(){}[0]
+    final val nameWithoutExtension // nl.jacobras.cloudbridge.model/FilePath.nameWithoutExtension|{}nameWithoutExtension[0]
+        final fun <get-nameWithoutExtension>(): kotlin/String // nl.jacobras.cloudbridge.model/FilePath.nameWithoutExtension.<get-nameWithoutExtension>|<get-nameWithoutExtension>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/FilePath.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/FilePath.hashCode|hashCode(){}[0]
+    final fun startsWith(nl.jacobras.cloudbridge.model/FolderPath): kotlin/Boolean // nl.jacobras.cloudbridge.model/FilePath.startsWith|startsWith(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final fun toFolderPath(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/FilePath.toFolderPath|toFolderPath(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/FilePath.toString|toString(){}[0]
+}
+
+final value class nl.jacobras.cloudbridge.model/FolderPath : nl.jacobras.cloudbridge.model/Path { // nl.jacobras.cloudbridge.model/FolderPath|null[0]
+    constructor <init>(kotlin/String) // nl.jacobras.cloudbridge.model/FolderPath.<init>|<init>(kotlin.String){}[0]
+
+    final val isRoot // nl.jacobras.cloudbridge.model/FolderPath.isRoot|{}isRoot[0]
+        final fun <get-isRoot>(): kotlin/Boolean // nl.jacobras.cloudbridge.model/FolderPath.isRoot.<get-isRoot>|<get-isRoot>(){}[0]
+    final val levelCount // nl.jacobras.cloudbridge.model/FolderPath.levelCount|{}levelCount[0]
+        final fun <get-levelCount>(): kotlin/Int // nl.jacobras.cloudbridge.model/FolderPath.levelCount.<get-levelCount>|<get-levelCount>(){}[0]
+    final val name // nl.jacobras.cloudbridge.model/FolderPath.name|{}name[0]
+        final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/FolderPath.name.<get-name>|<get-name>(){}[0]
+    final val parent // nl.jacobras.cloudbridge.model/FolderPath.parent|{}parent[0]
+        final fun <get-parent>(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/FolderPath.parent.<get-parent>|<get-parent>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/FolderPath.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/FolderPath.hashCode|hashCode(){}[0]
+    final fun startsWith(nl.jacobras.cloudbridge.model/FolderPath): kotlin/Boolean // nl.jacobras.cloudbridge.model/FolderPath.startsWith|startsWith(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final fun toFolderPath(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/FolderPath.toFolderPath|toFolderPath(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/FolderPath.toString|toString(){}[0]
+    final fun toString(kotlin/Boolean): kotlin/String // nl.jacobras.cloudbridge.model/FolderPath.toString|toString(kotlin.Boolean){}[0]
+}
+
+open class nl.jacobras.cloudbridge/CloudServiceException : kotlin/Exception { // nl.jacobras.cloudbridge/CloudServiceException|null[0]
+    final class ConnectionException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.ConnectionException|null[0]
+        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudServiceException.ConnectionException.<init>|<init>(kotlinx.io.IOException){}[0]
+    }
+
+    final class NotAuthenticatedException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.NotAuthenticatedException|null[0]
+        constructor <init>() // nl.jacobras.cloudbridge/CloudServiceException.NotAuthenticatedException.<init>|<init>(){}[0]
+    }
+
+    final class NotFoundException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.NotFoundException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudServiceException.NotFoundException.<init>|<init>(kotlin.String){}[0]
+    }
+
+    final class Unknown : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.Unknown|null[0]
+        constructor <init>(kotlin/Throwable) // nl.jacobras.cloudbridge/CloudServiceException.Unknown.<init>|<init>(kotlin.Throwable){}[0]
+    }
+}
+
+final object nl.jacobras.cloudbridge/CloudBridge { // nl.jacobras.cloudbridge/CloudBridge|null[0]
+    final var logger // nl.jacobras.cloudbridge/CloudBridge.logger|{}logger[0]
+        final fun <get-logger>(): nl.jacobras.cloudbridge.logging/Logger // nl.jacobras.cloudbridge/CloudBridge.logger.<get-logger>|<get-logger>(){}[0]
+        final fun <set-logger>(nl.jacobras.cloudbridge.logging/Logger) // nl.jacobras.cloudbridge/CloudBridge.logger.<set-logger>|<set-logger>(nl.jacobras.cloudbridge.logging.Logger){}[0]
+
+    final fun dropbox(nl.jacobras.cloudbridge.auth/CloudAccessToken? = ...): nl.jacobras.cloudbridge.service.dropbox/DropboxService // nl.jacobras.cloudbridge/CloudBridge.dropbox|dropbox(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+    final fun googleDrive(nl.jacobras.cloudbridge.auth/CloudAccessToken? = ...): nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService // nl.jacobras.cloudbridge/CloudBridge.googleDrive|googleDrive(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+    final fun oneDrive(nl.jacobras.cloudbridge.auth/CloudAccessToken? = ...): nl.jacobras.cloudbridge.service.onedrive/OneDriveService // nl.jacobras.cloudbridge/CloudBridge.oneDrive|oneDrive(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
+}
+
+final fun (kotlin/String).nl.jacobras.cloudbridge.model/asFilePath(): nl.jacobras.cloudbridge.model/FilePath // nl.jacobras.cloudbridge.model/asFilePath|asFilePath@kotlin.String(){}[0]
+final fun (kotlin/String).nl.jacobras.cloudbridge.model/asFolderPath(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/asFolderPath|asFolderPath@kotlin.String(){}[0]
+
+// Targets: [ios]
+final suspend fun (nl.jacobras.cloudbridge.service.dropbox/DropboxService).nl.jacobras.cloudbridge.service.dropbox/authenticate(kotlin/String, kotlin/String): nl.jacobras.cloudbridge.auth/CloudAccessToken? // nl.jacobras.cloudbridge.service.dropbox/authenticate|authenticate@nl.jacobras.cloudbridge.service.dropbox.DropboxService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [ios]
+final suspend fun (nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService).nl.jacobras.cloudbridge.service.googledrive/authenticate(kotlin/String, kotlin/String): nl.jacobras.cloudbridge.auth/CloudAccessToken? // nl.jacobras.cloudbridge.service.googledrive/authenticate|authenticate@nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [ios]
+final suspend fun (nl.jacobras.cloudbridge.service.onedrive/OneDriveService).nl.jacobras.cloudbridge.service.onedrive/authenticate(kotlin/String, kotlin/String): nl.jacobras.cloudbridge.auth/CloudAccessToken? // nl.jacobras.cloudbridge.service.onedrive/authenticate|authenticate@nl.jacobras.cloudbridge.service.onedrive.OneDriveService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [js, wasmJs]
+final fun (nl.jacobras.cloudbridge.service.dropbox/DropboxService).nl.jacobras.cloudbridge.service.dropbox/authenticate(kotlin/String, kotlin/String): kotlin/String // nl.jacobras.cloudbridge.service.dropbox/authenticate|authenticate@nl.jacobras.cloudbridge.service.dropbox.DropboxService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [js, wasmJs]
+final fun (nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService).nl.jacobras.cloudbridge.service.googledrive/authenticate(kotlin/String, kotlin/String): kotlin/String // nl.jacobras.cloudbridge.service.googledrive/authenticate|authenticate@nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [js, wasmJs]
+final fun (nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService).nl.jacobras.cloudbridge.service.googledrive/completeAuthentication(): nl.jacobras.cloudbridge.auth/CloudAccessToken? // nl.jacobras.cloudbridge.service.googledrive/completeAuthentication|completeAuthentication@nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService(){}[0]
+
+// Targets: [js, wasmJs]
+final fun (nl.jacobras.cloudbridge.service.onedrive/OneDriveService).nl.jacobras.cloudbridge.service.onedrive/authenticate(kotlin/String, kotlin/String): kotlin/String // nl.jacobras.cloudbridge.service.onedrive/authenticate|authenticate@nl.jacobras.cloudbridge.service.onedrive.OneDriveService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [js, wasmJs]
+final suspend fun (nl.jacobras.cloudbridge.service.dropbox/DropboxService).nl.jacobras.cloudbridge.service.dropbox/completeAuthentication(kotlin/String, kotlin/String): nl.jacobras.cloudbridge.auth/CloudAccessToken? // nl.jacobras.cloudbridge.service.dropbox/completeAuthentication|completeAuthentication@nl.jacobras.cloudbridge.service.dropbox.DropboxService(kotlin.String;kotlin.String){}[0]
+
+// Targets: [js, wasmJs]
+final suspend fun (nl.jacobras.cloudbridge.service.onedrive/OneDriveService).nl.jacobras.cloudbridge.service.onedrive/completeAuthentication(kotlin/String, kotlin/String): nl.jacobras.cloudbridge.auth/CloudAccessToken? // nl.jacobras.cloudbridge.service.onedrive/completeAuthentication|completeAuthentication@nl.jacobras.cloudbridge.service.onedrive.OneDriveService(kotlin.String;kotlin.String){}[0]

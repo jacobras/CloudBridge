@@ -26,6 +26,9 @@ jobs:
       - name: Build setup
         uses: ./.github/actions/build-setup
 
+      - name: Validate ABI
+        run: ./gradlew :library:checkKotlinAbi
+
       - name: Compile & run tests
         run: >
           ./gradlew kotlinUpgradeYarnLock
