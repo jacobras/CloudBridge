@@ -72,7 +72,9 @@ internal object XmlParser {
                 val end = if (nextTagStart == -1) xml.length else nextTagStart
                 textContent.append(xml, pos, end)
                 pos = end
-                if (nextTagStart == -1) break
+                if (nextTagStart == -1) {
+                    throw XmlParseException("Unclosed tag <$name>")
+                }
             }
 
             return XmlNode(
