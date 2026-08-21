@@ -8,6 +8,7 @@ public final class nl/jacobras/cloudbridge/CloudBridge {
 	public final fun oneDrive (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
 	public static synthetic fun oneDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
 	public final fun setLogger (Lnl/jacobras/cloudbridge/logging/Logger;)V
+	public final fun webDav (Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;)Lnl/jacobras/cloudbridge/service/webdav/WebDavService;
 }
 
 public abstract interface class nl/jacobras/cloudbridge/CloudService {
@@ -18,7 +19,6 @@ public abstract interface class nl/jacobras/cloudbridge/CloudService {
 	public abstract fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun isAuthenticated ()Z
 	public abstract fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public abstract fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -47,7 +47,7 @@ public abstract class nl/jacobras/cloudbridge/OAuthCloudService : nl/jacobras/cl
 	protected final fun getKtorfit ()Lde/jensklingenberg/ktorfit/Ktorfit;
 	public fun isAuthenticated ()Z
 	protected final fun requireAuthenticated ()V
-	public fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	public final fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 }
 
 public final class nl/jacobras/cloudbridge/auth/CloudAccessToken {
@@ -240,6 +240,33 @@ public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class nl/jacobras/cloudbridge/service/webdav/WebDavCredentials {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;
+	public static synthetic fun copy$default (Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPassword ()Ljava/lang/String;
+	public final fun getServerUrl ()Ljava/lang/String;
+	public final fun getUsername ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/service/webdav/WebDavService : nl/jacobras/cloudbridge/CloudService {
+	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun isAuthenticated ()Z
+	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setCredentials (Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;)V
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
