@@ -16,6 +16,7 @@ public sealed interface DeltaChange {
 /**
  * An item that was either created or updated.
  *
+ * @param name Name of the item. For files, this includes the extension.
  * @param revision The item's revision, or `null` if the service doesn't provide one
  * (for example: folders on Dropbox).
  * @param modified Last time the item was modified, or `null` if the service doesn't
@@ -24,6 +25,7 @@ public sealed interface DeltaChange {
 public data class UpdatedDeltaChange(
     override val itemId: CloudItemId,
     override val path: Path,
+    val name: String,
     val revision: String?,
     val modified: Instant?
 ) : DeltaChange

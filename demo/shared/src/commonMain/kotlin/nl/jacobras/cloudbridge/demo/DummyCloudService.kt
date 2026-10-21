@@ -177,6 +177,7 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         return UpdatedDeltaChange(
             itemId = id,
             path = path,
+            name = name,
             revision = "rev-${revisions[id] ?: 0}",
             modified = when (this) {
                 is CloudFile -> modified

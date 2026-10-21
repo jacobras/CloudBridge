@@ -139,6 +139,7 @@ public class DropboxService(token: CloudAccessToken?) : OAuthCloudService(token)
                         UpdatedDeltaChange(
                             itemId = CloudItemId(it.id ?: error("Missing id for file")),
                             path = it.pathLower.asFilePath(),
+                            name = it.name,
                             revision = it.rev,
                             modified = it.clientModified?.let(Instant::parse)
                         )
@@ -147,6 +148,7 @@ public class DropboxService(token: CloudAccessToken?) : OAuthCloudService(token)
                         UpdatedDeltaChange(
                             itemId = CloudItemId(it.id ?: error("Missing id for folder")),
                             path = it.pathLower.asFolderPath(),
+                            name = it.name,
                             revision = null,
                             modified = null
                         )

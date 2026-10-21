@@ -186,6 +186,7 @@ public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(to
         return UpdatedDeltaChange(
             itemId = CloudItemId(id),
             path = if (isFolder) toFolderPath(isRoot) else toFilePath(isRoot),
+            name = name,
             revision = version,
             modified = Instant.parse(modified)
         )

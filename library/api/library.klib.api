@@ -112,12 +112,14 @@ final class nl.jacobras.cloudbridge.delta/DeltaResult { // nl.jacobras.cloudbrid
 }
 
 final class nl.jacobras.cloudbridge.delta/UpdatedDeltaChange : nl.jacobras.cloudbridge.delta/DeltaChange { // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange|null[0]
-    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/Path, kotlin/String?, kotlin.time/Instant?) // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path;kotlin.String?;kotlin.time.Instant?){}[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/Path, kotlin/String, kotlin/String?, kotlin.time/Instant?) // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path;kotlin.String;kotlin.String?;kotlin.time.Instant?){}[0]
 
     final val itemId // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.itemId|{}itemId[0]
         final fun <get-itemId>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.itemId.<get-itemId>|<get-itemId>(){}[0]
     final val modified // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.modified|{}modified[0]
         final fun <get-modified>(): kotlin.time/Instant? // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.modified.<get-modified>|<get-modified>(){}[0]
+    final val name // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.name|{}name[0]
+        final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.name.<get-name>|<get-name>(){}[0]
     final val path // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.path|{}path[0]
         final fun <get-path>(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.path.<get-path>|<get-path>(){}[0]
     final val revision // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.revision|{}revision[0]
@@ -125,9 +127,10 @@ final class nl.jacobras.cloudbridge.delta/UpdatedDeltaChange : nl.jacobras.cloud
 
     final fun component1(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component1|component1(){}[0]
     final fun component2(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component3|component3(){}[0]
-    final fun component4(): kotlin.time/Instant? // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component4|component4(){}[0]
-    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/Path = ..., kotlin/String? = ..., kotlin.time/Instant? = ...): nl.jacobras.cloudbridge.delta/UpdatedDeltaChange // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path;kotlin.String?;kotlin.time.Instant?){}[0]
+    final fun component3(): kotlin/String // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component4|component4(){}[0]
+    final fun component5(): kotlin.time/Instant? // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component5|component5(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/Path = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.time/Instant? = ...): nl.jacobras.cloudbridge.delta/UpdatedDeltaChange // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path;kotlin.String;kotlin.String?;kotlin.time.Instant?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.toString|toString(){}[0]

@@ -196,12 +196,15 @@ private fun ChangeBullet(change: DeltaChange) {
                     }
                 )
                 Text(
-                    text = change.path.toString(),
+                    text = when (change) {
+                        is UpdatedDeltaChange -> change.name
+                        is DeletedDeltaChange -> change.path.toString()
+                    },
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
             val details = (change as? UpdatedDeltaChange)
-                ?.let { listOfNotNull(it.revision, it.modified?.toString()) }
+                ?.let { listOfNotNull(it.path.toString(), it.revision, it.modified?.toString()) }
                 .orEmpty()
             if (details.isNotEmpty()) {
                 Text(
