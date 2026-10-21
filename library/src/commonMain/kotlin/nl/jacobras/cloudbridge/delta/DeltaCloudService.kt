@@ -12,5 +12,5 @@ public interface DeltaCloudService {
      * @param previousCursor The cursor returned in [DeltaResult.newCursor] the last time
      * this method was called. For the first time, pass in [DeltaCursor.INITIAL].
      */
-    public fun getDelta(previousCursor: DeltaCursor): DeltaResult
+    public suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult
 }

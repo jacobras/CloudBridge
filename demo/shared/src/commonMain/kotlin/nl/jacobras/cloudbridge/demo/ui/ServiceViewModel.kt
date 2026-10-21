@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.delta.DeltaCloudService
+import nl.jacobras.cloudbridge.delta.DeltaCursor
+import nl.jacobras.cloudbridge.delta.DeltaResult
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -30,6 +33,11 @@ internal class ServiceViewModel(
         field = MutableStateFlow(null)
     val content: StateFlow<String>
         field = MutableStateFlow("")
+
+    val deltaCursor: StateFlow<DeltaCursor>
+        field = MutableStateFlow(DeltaCursor.INITIAL)
+    val deltaResult: StateFlow<DeltaResult?>
+        field = MutableStateFlow(null)
 
     init {
         refresh()
@@ -117,6 +125,31 @@ internal class ServiceViewModel(
         } catch (e: CloudServiceException) {
             error.update { e.toString() }
         }
+    }
+
+    /**
+     * Fetches the changes since [deltaCursor] without moving the cursor forward.
+     */
+    fun fetchDelta() = viewModelScope.launch {
+        val deltaService = service as? DeltaCloudService ?: return@launch
+        try {
+            val result = deltaService.getDelta(deltaCursor.value)
+            deltaResult.update { result }
+            error.update { "" }
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        }
+    }
+
+    fun advanceDeltaCursor() {
+        val result = deltaResult.value ?: return
+        deltaCursor.update { result.newCursor }
+        deltaResult.update { null }
+    }
+
+    fun resetDeltaCursor() {
+        deltaCursor.update { DeltaCursor.INITIAL }
+        deltaResult.update { null }
     }
 
     private fun childPath(name: String): String {

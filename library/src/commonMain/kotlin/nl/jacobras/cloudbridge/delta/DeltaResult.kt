@@ -8,6 +8,6 @@ package nl.jacobras.cloudbridge.delta
  * @param changes The changes that occurred between the passed in cursor and [newCursor].
  */
 public data class DeltaResult(
-    val newCursor: String,
+    val newCursor: DeltaCursor,
     val changes: List<DeltaChange>
 )

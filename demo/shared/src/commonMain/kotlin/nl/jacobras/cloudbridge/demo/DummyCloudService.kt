@@ -3,6 +3,12 @@ package nl.jacobras.cloudbridge.demo
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
+import nl.jacobras.cloudbridge.delta.DeltaChange
+import nl.jacobras.cloudbridge.delta.DeltaCloudService
+import nl.jacobras.cloudbridge.delta.DeltaCursor
+import nl.jacobras.cloudbridge.delta.DeltaResult
+import nl.jacobras.cloudbridge.delta.UpdatedDeltaChange
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -14,7 +20,7 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Clock
 
-class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken) {
+class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken), DeltaCloudService {
 
     override val baseUrl: String = ""
 
@@ -33,6 +39,12 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
     private var cloudItemContents = mutableMapOf(
         CloudItemId("456") to "Hello world!"
     )
+
+    /**
+     * All file changes in chronological order. A cursor is an index into this list.
+     */
+    private val changeLog = mutableListOf<DeltaChange>()
+    private val revisions = mutableMapOf<CloudItemId, Int>()
 
     override suspend fun getUserInfo(): UserInfo {
         if (!isAuthenticated()) {
@@ -71,14 +83,16 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         }
 
         val id = CloudItemId(path.hashCode().toString())
-        cloudItems += CloudFile(
+        val file = CloudFile(
             id = id,
             path = path,
             name = path.name,
             sizeInBytes = content.length * 8L,
             modified = Clock.System.now()
         )
+        cloudItems += file
         cloudItemContents[id] = content
+        recordUpdate(file)
     }
 
     override suspend fun updateFile(
@@ -91,12 +105,14 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
 
         val existing = cloudItems.firstOrNull { it.id == id }
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
-        cloudItems -= existing
-        cloudItems += existing.copy(
+        val updated = existing.copy(
             sizeInBytes = content.length * 8L,
             modified = Clock.System.now()
         )
+        cloudItems -= existing
+        cloudItems += updated
         cloudItemContents[id] = content
+        recordUpdate(updated)
     }
 
     override suspend fun downloadFile(id: CloudItemId): String {
@@ -116,5 +132,42 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
         cloudItems -= existing
         cloudItemContents.remove(id)
+        changeLog += DeletedDeltaChange(itemId = id, path = existing.path)
+    }
+
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        val changes = if (previousCursor == DeltaCursor.INITIAL) {
+            cloudItems.filterIsInstance<CloudFile>().map { it.toUpdatedChange() }
+        } else {
+            val index = previousCursor.value.toIntOrNull()
+                ?.takeIf { it in 0..changeLog.size }
+                ?: throw CloudServiceException.NotFoundException(previousCursor.value)
+
+            // Only report the latest change per file, like real services do.
+            changeLog.drop(index).associateBy { it.itemId }.values.toList()
+        }
+
+        return DeltaResult(
+            newCursor = DeltaCursor(changeLog.size.toString()),
+            changes = changes
+        )
+    }
+
+    private fun recordUpdate(file: CloudFile) {
+        revisions[file.id] = (revisions[file.id] ?: 0) + 1
+        changeLog += file.toUpdatedChange()
+    }
+
+    private fun CloudFile.toUpdatedChange(): UpdatedDeltaChange {
+        return UpdatedDeltaChange(
+            itemId = id,
+            path = path,
+            revision = "rev-${revisions[id] ?: 0}",
+            modified = modified
+        )
     }
 }

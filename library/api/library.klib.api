@@ -7,6 +7,10 @@
 // - Show declarations: true
 
 // Library unique name: <nl.jacobras:library>
+abstract interface nl.jacobras.cloudbridge.delta/DeltaCloudService { // nl.jacobras.cloudbridge.delta/DeltaCloudService|null[0]
+    abstract suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.delta/DeltaCloudService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
+}
+
 abstract interface nl.jacobras.cloudbridge.logging/Logger { // nl.jacobras.cloudbridge.logging/Logger|null[0]
     abstract fun log(kotlin/String) // nl.jacobras.cloudbridge.logging/Logger.log|log(kotlin.String){}[0]
 }
@@ -20,6 +24,13 @@ abstract interface nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbr
     abstract suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge/CloudService.getUserInfo|getUserInfo(){}[0]
     abstract suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge/CloudService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     abstract suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge/CloudService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+}
+
+sealed interface nl.jacobras.cloudbridge.delta/DeltaChange { // nl.jacobras.cloudbridge.delta/DeltaChange|null[0]
+    abstract val itemId // nl.jacobras.cloudbridge.delta/DeltaChange.itemId|{}itemId[0]
+        abstract fun <get-itemId>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/DeltaChange.itemId.<get-itemId>|<get-itemId>(){}[0]
+    abstract val path // nl.jacobras.cloudbridge.delta/DeltaChange.path|{}path[0]
+        abstract fun <get-path>(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/DeltaChange.path.<get-path>|<get-path>(){}[0]
 }
 
 sealed interface nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudbridge.model/CloudItem|null[0]
@@ -66,6 +77,60 @@ final class nl.jacobras.cloudbridge.auth/CloudAccessToken { // nl.jacobras.cloud
     final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.auth/CloudAccessToken.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.auth/CloudAccessToken.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.delta/DeletedDeltaChange : nl.jacobras.cloudbridge.delta/DeltaChange { // nl.jacobras.cloudbridge.delta/DeletedDeltaChange|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/Path) // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path){}[0]
+
+    final val itemId // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.itemId|{}itemId[0]
+        final fun <get-itemId>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.itemId.<get-itemId>|<get-itemId>(){}[0]
+    final val path // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.path|{}path[0]
+        final fun <get-path>(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.path.<get-path>|<get-path>(){}[0]
+
+    final fun component1(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.component1|component1(){}[0]
+    final fun component2(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.component2|component2(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/Path = ...): nl.jacobras.cloudbridge.delta/DeletedDeltaChange // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.delta/DeletedDeltaChange.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.delta/DeltaResult { // nl.jacobras.cloudbridge.delta/DeltaResult|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.delta/DeltaCursor, kotlin.collections/List<nl.jacobras.cloudbridge.delta/DeltaChange>) // nl.jacobras.cloudbridge.delta/DeltaResult.<init>|<init>(nl.jacobras.cloudbridge.delta.DeltaCursor;kotlin.collections.List<nl.jacobras.cloudbridge.delta.DeltaChange>){}[0]
+
+    final val changes // nl.jacobras.cloudbridge.delta/DeltaResult.changes|{}changes[0]
+        final fun <get-changes>(): kotlin.collections/List<nl.jacobras.cloudbridge.delta/DeltaChange> // nl.jacobras.cloudbridge.delta/DeltaResult.changes.<get-changes>|<get-changes>(){}[0]
+    final val newCursor // nl.jacobras.cloudbridge.delta/DeltaResult.newCursor|{}newCursor[0]
+        final fun <get-newCursor>(): nl.jacobras.cloudbridge.delta/DeltaCursor // nl.jacobras.cloudbridge.delta/DeltaResult.newCursor.<get-newCursor>|<get-newCursor>(){}[0]
+
+    final fun component1(): nl.jacobras.cloudbridge.delta/DeltaCursor // nl.jacobras.cloudbridge.delta/DeltaResult.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/List<nl.jacobras.cloudbridge.delta/DeltaChange> // nl.jacobras.cloudbridge.delta/DeltaResult.component2|component2(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.delta/DeltaCursor = ..., kotlin.collections/List<nl.jacobras.cloudbridge.delta/DeltaChange> = ...): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.delta/DeltaResult.copy|copy(nl.jacobras.cloudbridge.delta.DeltaCursor;kotlin.collections.List<nl.jacobras.cloudbridge.delta.DeltaChange>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.delta/DeltaResult.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.delta/DeltaResult.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.delta/DeltaResult.toString|toString(){}[0]
+}
+
+final class nl.jacobras.cloudbridge.delta/UpdatedDeltaChange : nl.jacobras.cloudbridge.delta/DeltaChange { // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange|null[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/Path, kotlin/String, kotlin.time/Instant) // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path;kotlin.String;kotlin.time.Instant){}[0]
+
+    final val itemId // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.itemId|{}itemId[0]
+        final fun <get-itemId>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.itemId.<get-itemId>|<get-itemId>(){}[0]
+    final val modified // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.modified|{}modified[0]
+        final fun <get-modified>(): kotlin.time/Instant // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.modified.<get-modified>|<get-modified>(){}[0]
+    final val path // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.path|{}path[0]
+        final fun <get-path>(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.path.<get-path>|<get-path>(){}[0]
+    final val revision // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.revision|{}revision[0]
+        final fun <get-revision>(): kotlin/String // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.revision.<get-revision>|<get-revision>(){}[0]
+
+    final fun component1(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component1|component1(){}[0]
+    final fun component2(): nl.jacobras.cloudbridge.model/Path // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component2|component2(){}[0]
+    final fun component3(): kotlin/String // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component3|component3(){}[0]
+    final fun component4(): kotlin.time/Instant // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.component4|component4(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/Path = ..., kotlin/String = ..., kotlin.time/Instant = ...): nl.jacobras.cloudbridge.delta/UpdatedDeltaChange // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.Path;kotlin.String;kotlin.time.Instant){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.delta/UpdatedDeltaChange.toString|toString(){}[0]
 }
 
 final class nl.jacobras.cloudbridge.model/CloudFile : nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudbridge.model/CloudFile|null[0]
@@ -193,6 +258,22 @@ final class nl.jacobras.cloudbridge.service.webdav/WebDavService : nl.jacobras.c
     final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.webdav/WebDavService.getUserInfo|getUserInfo(){}[0]
     final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.webdav/WebDavService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.webdav/WebDavService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+}
+
+final value class nl.jacobras.cloudbridge.delta/DeltaCursor { // nl.jacobras.cloudbridge.delta/DeltaCursor|null[0]
+    constructor <init>(kotlin/String) // nl.jacobras.cloudbridge.delta/DeltaCursor.<init>|<init>(kotlin.String){}[0]
+
+    final val value // nl.jacobras.cloudbridge.delta/DeltaCursor.value|{}value[0]
+        final fun <get-value>(): kotlin/String // nl.jacobras.cloudbridge.delta/DeltaCursor.value.<get-value>|<get-value>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.delta/DeltaCursor.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.delta/DeltaCursor.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // nl.jacobras.cloudbridge.delta/DeltaCursor.toString|toString(){}[0]
+
+    final object Companion { // nl.jacobras.cloudbridge.delta/DeltaCursor.Companion|null[0]
+        final val INITIAL // nl.jacobras.cloudbridge.delta/DeltaCursor.Companion.INITIAL|{}INITIAL[0]
+            final fun <get-INITIAL>(): nl.jacobras.cloudbridge.delta/DeltaCursor // nl.jacobras.cloudbridge.delta/DeltaCursor.Companion.INITIAL.<get-INITIAL>|<get-INITIAL>(){}[0]
+    }
 }
 
 final value class nl.jacobras.cloudbridge.model/CloudItemId { // nl.jacobras.cloudbridge.model/CloudItemId|null[0]
