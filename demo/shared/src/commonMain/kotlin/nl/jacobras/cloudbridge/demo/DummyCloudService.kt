@@ -19,6 +19,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken), DeltaCloudService {
 
@@ -41,10 +42,17 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
     )
 
     /**
-     * All file changes in chronological order. A cursor is an index into this list.
+     * All file/folder changes in chronological order. A cursor is an index into this list.
      */
     private val changeLog = mutableListOf<DeltaChange>()
     private val revisions = mutableMapOf<CloudItemId, Int>()
+
+    /**
+     * [CloudFolder] has no modified date, so track it here. Folders that existed
+     * from the start fall back to [startTime].
+     */
+    private val folderModified = mutableMapOf<CloudItemId, Instant>()
+    private val startTime = Clock.System.now()
 
     override suspend fun getUserInfo(): UserInfo {
         if (!isAuthenticated()) {
@@ -67,11 +75,14 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             throw CloudServiceException.NotAuthenticatedException()
         }
 
-        cloudItems += CloudFolder(
+        val folder = CloudFolder(
             id = CloudItemId(path.hashCode().toString()),
             path = path,
             name = path.name
         )
+        cloudItems += folder
+        folderModified[folder.id] = Clock.System.now()
+        recordUpdate(folder)
     }
 
     override suspend fun createFile(
@@ -141,13 +152,13 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         }
 
         val changes = if (previousCursor == DeltaCursor.INITIAL) {
-            cloudItems.filterIsInstance<CloudFile>().map { it.toUpdatedChange() }
+            cloudItems.map { it.toUpdatedChange() }
         } else {
             val index = previousCursor.value.toIntOrNull()
                 ?.takeIf { it in 0..changeLog.size }
                 ?: throw CloudServiceException.NotFoundException(previousCursor.value)
 
-            // Only report the latest change per file, like real services do.
+            // Only report the latest change per item, like real services do.
             changeLog.drop(index).associateBy { it.itemId }.values.toList()
         }
 
@@ -157,17 +168,20 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         )
     }
 
-    private fun recordUpdate(file: CloudFile) {
-        revisions[file.id] = (revisions[file.id] ?: 0) + 1
-        changeLog += file.toUpdatedChange()
+    private fun recordUpdate(item: CloudItem) {
+        revisions[item.id] = (revisions[item.id] ?: 0) + 1
+        changeLog += item.toUpdatedChange()
     }
 
-    private fun CloudFile.toUpdatedChange(): UpdatedDeltaChange {
+    private fun CloudItem.toUpdatedChange(): UpdatedDeltaChange {
         return UpdatedDeltaChange(
             itemId = id,
             path = path,
             revision = "rev-${revisions[id] ?: 0}",
-            modified = modified
+            modified = when (this) {
+                is CloudFile -> modified
+                is CloudFolder -> folderModified[id] ?: startTime
+            }
         )
     }
 }
