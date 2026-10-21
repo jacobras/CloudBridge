@@ -36,11 +36,26 @@ internal interface GoogleDriveApi {
 
     @GET("drive/v3/files")
     suspend fun listFiles(
-        @Query("q") query: String,
+        @Query("q") query: String?,
+        @Query("pageToken") pageToken: String? = null,
         @Query("spaces") spaces: String = "appDataFolder",
-        @Query("fields") fields: String = "files(id,name,mimeType,size,modifiedTime,parents)",
+        @Query("fields") fields: String = "nextPageToken,files($FILE_FIELDS)",
         @Query("pageSize") pageSize: Int = 100
     ): FileResponse
+
+    @GET("drive/v3/files/appDataFolder?fields=id")
+    suspend fun getAppDataFolder(): DriveFileId
+
+    @GET("drive/v3/changes/startPageToken")
+    suspend fun getStartPageToken(): StartPageTokenResponse
+
+    @GET("drive/v3/changes")
+    suspend fun listChanges(
+        @Query("pageToken") pageToken: String,
+        @Query("spaces") spaces: String = "appDataFolder",
+        @Query("fields") fields: String = "nextPageToken,newStartPageToken,changes(fileId,removed,file($FILE_FIELDS))",
+        @Query("pageSize") pageSize: Int = 100
+    ): ChangesResponse
 
     @POST("drive/v3/files")
     suspend fun createFolder(@Body content: String)
@@ -81,7 +96,55 @@ internal data class UserInfo(
 @Serializable
 internal data class FileResponse(
     @SerialName("files")
-    val files: List<DriveFile>
+    val files: List<DriveFile>,
+
+    @SerialName("nextPageToken")
+    val nextPageToken: String? = null
+)
+
+@Serializable
+internal data class DriveFileId(
+    @SerialName("id")
+    val id: String
+)
+
+@Serializable
+internal data class StartPageTokenResponse(
+    @SerialName("startPageToken")
+    val startPageToken: String
+)
+
+@Serializable
+internal data class ChangesResponse(
+    @SerialName("changes")
+    val changes: List<DriveChange>,
+
+    /**
+     * Only present if there are more pages.
+     */
+    @SerialName("nextPageToken")
+    val nextPageToken: String? = null,
+
+    /**
+     * Only present on the last page.
+     */
+    @SerialName("newStartPageToken")
+    val newStartPageToken: String? = null
+)
+
+@Serializable
+internal data class DriveChange(
+    @SerialName("fileId")
+    val fileId: String,
+
+    @SerialName("removed")
+    val removed: Boolean = false,
+
+    /**
+     * Absent when [removed] is `true`.
+     */
+    @SerialName("file")
+    val file: DriveFile? = null
 )
 
 @Serializable
@@ -102,7 +165,13 @@ internal data class DriveFile(
     val modified: String,
 
     @SerialName("parents")
-    val parents: List<String>
+    val parents: List<String> = emptyList(),
+
+    @SerialName("version")
+    val version: String? = null,
+
+    @SerialName("trashed")
+    val trashed: Boolean = false
 )
 
 @Serializable
@@ -128,3 +197,5 @@ internal data class CreateFolderRequest(
     @SerialName("parents")
     val parents: List<String>
 )
+
+private const val FILE_FIELDS = "id,name,mimeType,size,modifiedTime,parents,version,trashed"

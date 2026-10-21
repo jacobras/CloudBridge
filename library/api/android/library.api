@@ -287,12 +287,13 @@ public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveAuthen
 	public final fun authenticate ()V
 }
 
-public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/OAuthCloudService {
+public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
