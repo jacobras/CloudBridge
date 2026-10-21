@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaChange
@@ -153,12 +154,15 @@ private fun LabeledCursor(
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(6.dp),
+                modifier = Modifier.weight(1f, fill = false)
             ) {
                 Text(
                     text = cursor.value,
                     style = MaterialTheme.typography.bodyMedium,
                     fontFamily = FontFamily.Monospace,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
@@ -196,9 +200,12 @@ private fun ChangeBullet(change: DeltaChange) {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            if (change is UpdatedDeltaChange) {
+            val details = (change as? UpdatedDeltaChange)
+                ?.let { listOfNotNull(it.revision, it.modified?.toString()) }
+                .orEmpty()
+            if (details.isNotEmpty()) {
                 Text(
-                    text = "${change.revision} · ${change.modified}",
+                    text = details.joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
