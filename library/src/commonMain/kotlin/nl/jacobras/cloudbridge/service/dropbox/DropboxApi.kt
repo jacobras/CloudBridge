@@ -33,6 +33,12 @@ internal interface DropboxApi {
         @Body arg: String
     ): FileResponse
 
+    @POST("2/files/list_folder/continue")
+    @Headers("Content-Type: application/json")
+    suspend fun listFilesContinue(
+        @Body arg: String
+    ): FileResponse
+
     @POST("2/files/create_folder_v2")
     @Headers("Content-Type: application/json")
     suspend fun createFolder(@Body content: String)
@@ -86,13 +92,16 @@ internal data class FileResponse(
 internal data class FileEntry(
 
     /**
-     * "file" or "folder".
+     * "file", "folder" or "deleted".
      */
     @SerialName(".tag")
     val tag: String,
 
+    /**
+     * Absent for "deleted" entries.
+     */
     @SerialName("id")
-    val id: String,
+    val id: String? = null,
 
     @SerialName("name")
     val name: String,
@@ -107,7 +116,10 @@ internal data class FileEntry(
     val size: Long? = null,
 
     @SerialName("client_modified")
-    val clientModified: String? = null
+    val clientModified: String? = null,
+
+    @SerialName("rev")
+    val rev: String? = null
 )
 
 @Serializable
@@ -120,6 +132,12 @@ internal data class ListFolderArg(
 
     @SerialName("recursive")
     val recursive: Boolean = false
+)
+
+@Serializable
+internal data class ListFolderContinueArg(
+    @SerialName("cursor")
+    val cursor: String
 )
 
 @Serializable
