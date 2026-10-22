@@ -170,6 +170,9 @@ public class OneDriveService internal constructor(
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
                 }
+                HttpStatusCode.InsufficientStorage -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
                 else -> {
                     CloudServiceException.Unknown(e)
                 }

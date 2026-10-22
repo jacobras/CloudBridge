@@ -76,6 +76,30 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `uploading without space left throws InsufficientSpaceException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":"quotaLimitReached","message":"Insufficient Space Available","innerError":{"date":"2026-10-22T14:37:00","request-id":"b5c1f0e2-7a3d-4e9b-8c61-2f4d9a0e3b17","client-request-id":"b5c1f0e2-7a3d-4e9b-8c61-2f4d9a0e3b17"}}}""",
+                status = HttpStatusCode.InsufficientStorage,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.updateFile(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"), "content") }
+            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Put)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc/content"
+            )
+        }
+    }
+
+    @Test
     fun `list files in root`() = runTest {
         val engine = MockEngine {
             respond(
