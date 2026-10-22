@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import kotlinx.io.IOException
@@ -18,7 +19,12 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Instant
 
-public class OneDriveService(token: CloudAccessToken?) : OAuthCloudService(token) {
+public class OneDriveService internal constructor(
+    token: CloudAccessToken?,
+    httpClient: HttpClient?
+) : OAuthCloudService(token, httpClient) {
+
+    public constructor(token: CloudAccessToken?) : this(token, null)
 
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
