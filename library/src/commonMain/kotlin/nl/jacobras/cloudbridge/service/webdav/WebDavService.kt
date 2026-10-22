@@ -168,6 +168,10 @@ public class WebDavService internal constructor(
                     CloudServiceException.NotFoundException(itemId)
                 }
 
+                HttpStatusCode.InsufficientStorage -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
+
                 else -> {
                     CloudServiceException.Unknown(e)
                 }

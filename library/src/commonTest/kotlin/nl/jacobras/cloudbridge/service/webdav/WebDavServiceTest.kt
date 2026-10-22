@@ -1,8 +1,10 @@
 package nl.jacobras.cloudbridge.service.webdav
 
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -13,13 +15,40 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
+import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.test.Test
 
 class WebDavServiceTest {
+
+    @Test
+    fun `uploading without space left throws InsufficientSpaceException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "",
+                status = HttpStatusCode.InsufficientStorage
+            )
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFile("/Notes for Android/big.txt".asFilePath(), "content") }
+            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Put)
+            assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/big.txt")
+        }
+    }
 
     @Test
     fun `list files in root`() = runTest {
