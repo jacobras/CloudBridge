@@ -42,8 +42,7 @@ class OneDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+        assertFailure { service.getUserInfo() }.isInstanceOf<CloudServiceException.NotAuthenticatedException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/oidc/userinfo")
