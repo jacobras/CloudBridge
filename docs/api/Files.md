@@ -21,6 +21,21 @@ try {
 }
 ```
 
+## Listing changes (delta)
+
+Lists all file/folder changes since the last time this was called. Not supported by all services,
+see [Cloud services](../services/Overview.md) for the support matrix.
+
+```kotlin
+try {
+    val result = service.getDelta(previousCursor)
+    val previouCursor = result.newCursor
+    val changes = result.changes
+} catch (e: CloudServiceException) {
+    // Handle...
+}
+```
+
 ## Creating a folder
 
 ```kotlin

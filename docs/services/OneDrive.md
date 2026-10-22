@@ -9,8 +9,6 @@ val service = CloudBridge.oneDrive()
 Then, authenticate using the platform-specific methods below. Once authenticated,
 the [shared API](../api/Overview.md) is available.
 
-## Compatibility
-
 ## Registration in App Console
 
 !!! info
