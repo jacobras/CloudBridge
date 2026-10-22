@@ -1,8 +1,10 @@
 package nl.jacobras.cloudbridge.service.onedrive
 
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -13,6 +15,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
+import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
@@ -24,6 +27,28 @@ import kotlin.test.Test
 import kotlin.time.Instant
 
 class OneDriveServiceTest {
+
+    @Test
+    fun `invalid access token throws NotAuthenticatedException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":"InvalidAuthenticationToken","message":"AuthenticationException","innerError":{"date":"2026-10-22T13:24:33","request-id":"c436f56e-996f-49c5-adbb-9374b3a5db09","client-request-id":"c436f56e-996f-49c5-adbb-9374b3a5db09"}}}""",
+                status = HttpStatusCode.Unauthorized,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("invalid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/oidc/userinfo")
+        }
+    }
 
     @Test
     fun `list files in root`() = runTest {
