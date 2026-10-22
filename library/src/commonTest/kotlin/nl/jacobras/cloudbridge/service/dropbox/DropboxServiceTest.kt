@@ -3,6 +3,7 @@ package nl.jacobras.cloudbridge.service.dropbox
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.single
@@ -48,6 +49,30 @@ class DropboxServiceTest {
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/users/get_current_account")
+        }
+    }
+
+    @Test
+    fun `downloading missing file throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{".tag":"path","path":{".tag":"not_found"}},"error_summary":"path/not_found/"}""",
+                status = HttpStatusCode.Conflict,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("id:missing")) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .hasMessage("The requested item 'id:missing' could not be found")
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/download")
+            assertThat(it.headers["Dropbox-API-Arg"]).isEqualTo("""{"path":"id:missing"}""")
         }
     }
 

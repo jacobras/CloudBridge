@@ -3,6 +3,7 @@ package nl.jacobras.cloudbridge.service.onedrive
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.single
@@ -46,6 +47,31 @@ class OneDriveServiceTest {
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/oidc/userinfo")
+        }
+    }
+
+    @Test
+    fun `downloading missing file throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":"itemNotFound","message":"Item not found","innerError":{"date":"2026-10-22T13:40:39","request-id":"a1814fdd-d01d-434e-8d29-ff3f21767150","client-request-id":"a1814fdd-d01d-434e-8d29-ff3f21767150"}}}""",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a")) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .hasMessage("The requested item '33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a' could not be found")
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a/content"
+            )
         }
     }
 
