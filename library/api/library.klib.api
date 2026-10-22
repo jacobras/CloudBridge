@@ -21,8 +21,8 @@ abstract interface nl.jacobras.cloudbridge.logging/Logger { // nl.jacobras.cloud
 
 abstract interface nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbridge/CloudService|null[0]
     abstract fun isAuthenticated(): kotlin/Boolean // nl.jacobras.cloudbridge/CloudService.isAuthenticated|isAuthenticated(){}[0]
-    abstract suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge/CloudService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
-    abstract suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge/CloudService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    abstract suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge/CloudService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    abstract suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath): nl.jacobras.cloudbridge.model/CloudFolder // nl.jacobras.cloudbridge/CloudService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     abstract suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge/CloudService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     abstract suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge/CloudService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     abstract suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge/CloudService.getUserInfo|getUserInfo(){}[0]
@@ -141,7 +141,7 @@ final class nl.jacobras.cloudbridge.delta/UpdatedDeltaChange : nl.jacobras.cloud
 }
 
 final class nl.jacobras.cloudbridge.model/CloudFile : nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudbridge.model/CloudFile|null[0]
-    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/FilePath, kotlin/String, kotlin/Long, kotlin.time/Instant) // nl.jacobras.cloudbridge.model/CloudFile.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FilePath;kotlin.String;kotlin.Long;kotlin.time.Instant){}[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/CloudItemId, nl.jacobras.cloudbridge.model/FilePath, kotlin/String, kotlin/Long, kotlin.time/Instant, kotlin/String) // nl.jacobras.cloudbridge.model/CloudFile.<init>|<init>(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FilePath;kotlin.String;kotlin.Long;kotlin.time.Instant;kotlin.String){}[0]
 
     final val id // nl.jacobras.cloudbridge.model/CloudFile.id|{}id[0]
         final fun <get-id>(): nl.jacobras.cloudbridge.model/CloudItemId // nl.jacobras.cloudbridge.model/CloudFile.id.<get-id>|<get-id>(){}[0]
@@ -151,6 +151,8 @@ final class nl.jacobras.cloudbridge.model/CloudFile : nl.jacobras.cloudbridge.mo
         final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.name.<get-name>|<get-name>(){}[0]
     final val path // nl.jacobras.cloudbridge.model/CloudFile.path|{}path[0]
         final fun <get-path>(): nl.jacobras.cloudbridge.model/FilePath // nl.jacobras.cloudbridge.model/CloudFile.path.<get-path>|<get-path>(){}[0]
+    final val revision // nl.jacobras.cloudbridge.model/CloudFile.revision|{}revision[0]
+        final fun <get-revision>(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.revision.<get-revision>|<get-revision>(){}[0]
     final val sizeInBytes // nl.jacobras.cloudbridge.model/CloudFile.sizeInBytes|{}sizeInBytes[0]
         final fun <get-sizeInBytes>(): kotlin/Long // nl.jacobras.cloudbridge.model/CloudFile.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
 
@@ -159,7 +161,8 @@ final class nl.jacobras.cloudbridge.model/CloudFile : nl.jacobras.cloudbridge.mo
     final fun component3(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.component3|component3(){}[0]
     final fun component4(): kotlin/Long // nl.jacobras.cloudbridge.model/CloudFile.component4|component4(){}[0]
     final fun component5(): kotlin.time/Instant // nl.jacobras.cloudbridge.model/CloudFile.component5|component5(){}[0]
-    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/FilePath = ..., kotlin/String = ..., kotlin/Long = ..., kotlin.time/Instant = ...): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.model/CloudFile.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FilePath;kotlin.String;kotlin.Long;kotlin.time.Instant){}[0]
+    final fun component6(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.component6|component6(){}[0]
+    final fun copy(nl.jacobras.cloudbridge.model/CloudItemId = ..., nl.jacobras.cloudbridge.model/FilePath = ..., kotlin/String = ..., kotlin/Long = ..., kotlin.time/Instant = ..., kotlin/String = ...): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.model/CloudFile.copy|copy(nl.jacobras.cloudbridge.model.CloudItemId;nl.jacobras.cloudbridge.model.FilePath;kotlin.String;kotlin.Long;kotlin.time.Instant;kotlin.String){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/CloudFile.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/CloudFile.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // nl.jacobras.cloudbridge.model/CloudFile.toString|toString(){}[0]
@@ -203,8 +206,8 @@ final class nl.jacobras.cloudbridge.model/UserInfo { // nl.jacobras.cloudbridge.
 final class nl.jacobras.cloudbridge.service.dropbox/DropboxService : nl.jacobras.cloudbridge.delta/DeltaCloudService, nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.dropbox/DropboxService|null[0]
     constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
 
-    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
-    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.dropbox/DropboxService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath): nl.jacobras.cloudbridge.model/CloudFolder // nl.jacobras.cloudbridge.service.dropbox/DropboxService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.dropbox/DropboxService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.service.dropbox/DropboxService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
@@ -216,8 +219,8 @@ final class nl.jacobras.cloudbridge.service.dropbox/DropboxService : nl.jacobras
 final class nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService : nl.jacobras.cloudbridge.delta/DeltaCloudService, nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService|null[0]
     constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
 
-    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
-    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath): nl.jacobras.cloudbridge.model/CloudFolder // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
@@ -229,8 +232,8 @@ final class nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService : nl.
 final class nl.jacobras.cloudbridge.service.onedrive/OneDriveService : nl.jacobras.cloudbridge.delta/DeltaCloudService, nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.onedrive/OneDriveService|null[0]
     constructor <init>(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.<init>|<init>(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
 
-    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
-    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath): nl.jacobras.cloudbridge.model/CloudFolder // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
@@ -261,8 +264,8 @@ final class nl.jacobras.cloudbridge.service.webdav/WebDavCredentials { // nl.jac
 final class nl.jacobras.cloudbridge.service.webdav/WebDavService : nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbridge.service.webdav/WebDavService|null[0]
     final fun isAuthenticated(): kotlin/Boolean // nl.jacobras.cloudbridge.service.webdav/WebDavService.isAuthenticated|isAuthenticated(){}[0]
     final fun setCredentials(nl.jacobras.cloudbridge.service.webdav/WebDavCredentials) // nl.jacobras.cloudbridge.service.webdav/WebDavService.setCredentials|setCredentials(nl.jacobras.cloudbridge.service.webdav.WebDavCredentials){}[0]
-    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String) // nl.jacobras.cloudbridge.service.webdav/WebDavService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
-    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath) // nl.jacobras.cloudbridge.service.webdav/WebDavService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
+    final suspend fun createFile(nl.jacobras.cloudbridge.model/FilePath, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.webdav/WebDavService.createFile|createFile(nl.jacobras.cloudbridge.model.FilePath;kotlin.String){}[0]
+    final suspend fun createFolder(nl.jacobras.cloudbridge.model/FolderPath): nl.jacobras.cloudbridge.model/CloudFolder // nl.jacobras.cloudbridge.service.webdav/WebDavService.createFolder|createFolder(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     final suspend fun delete(nl.jacobras.cloudbridge.model/CloudItemId) // nl.jacobras.cloudbridge.service.webdav/WebDavService.delete|delete(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.webdav/WebDavService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.webdav/WebDavService.getUserInfo|getUserInfo(){}[0]

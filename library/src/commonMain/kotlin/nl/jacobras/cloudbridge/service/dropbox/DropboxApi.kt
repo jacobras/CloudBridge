@@ -41,7 +41,7 @@ internal interface DropboxApi {
 
     @POST("2/files/create_folder_v2")
     @Headers("Content-Type: application/json")
-    suspend fun createFolder(@Body content: String)
+    suspend fun createFolder(@Body content: String): CreateFolderResponse
 
     @POST("https://content.dropboxapi.com/2/files/download")
     suspend fun downloadFile(
@@ -53,7 +53,7 @@ internal interface DropboxApi {
     suspend fun uploadFile(
         @Header("Dropbox-API-Arg") arguments: String,
         @Body content: ByteArray
-    ): String
+    ): UploadResponse
 
     @POST("2/files/delete_v2")
     @Headers("Content-Type: application/json")
@@ -177,6 +177,45 @@ internal data class DropboxDownloadArg(
 internal data class CreateFolderRequest(
     @SerialName("path")
     val path: String
+)
+
+@Serializable
+internal data class CreateFolderResponse(
+    @SerialName("metadata")
+    val metadata: FolderMetadata
+)
+
+@Serializable
+internal data class FolderMetadata(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("path_lower")
+    val pathLower: String
+)
+
+@Serializable
+internal data class UploadResponse(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("path_lower")
+    val pathLower: String,
+
+    @SerialName("size")
+    val size: Long,
+
+    @SerialName("client_modified")
+    val clientModified: String,
+
+    @SerialName("rev")
+    val rev: String
 )
 
 @Serializable

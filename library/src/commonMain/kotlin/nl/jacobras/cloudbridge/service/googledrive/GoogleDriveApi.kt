@@ -58,11 +58,17 @@ internal interface GoogleDriveApi {
     ): ChangesResponse
 
     @POST("drive/v3/files")
-    suspend fun createFolder(@Body content: String)
+    suspend fun createFolder(
+        @Body content: String,
+        @Query("fields") fields: String = FILE_FIELDS
+    ): DriveFile
 
     @POST("upload/drive/v3/files?uploadType=multipart")
     @Multipart
-    suspend fun createFile(@Body map: MultiPartFormDataContent)
+    suspend fun createFile(
+        @Body map: MultiPartFormDataContent,
+        @Query("fields") fields: String = FILE_FIELDS
+    ): DriveFile
 
     @PATCH("upload/drive/v3/files/{fileId}?uploadType=media")
     @Multipart

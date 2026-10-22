@@ -99,6 +99,67 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `create file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1,"is_downloadable":true,"content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile("/asdf.txt".asFilePath(), "a")
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
+                path = "/asdf.txt".asFilePath(),
+                name = "asdf.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:30:47Z"),
+                revision = "01640e48e7e6a010000000301ae1691"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/upload")
+        }
+    }
+
+    @Test
+    fun `create folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"metadata":{"name":"Work","path_lower":"/work","path_display":"/Work","id":"id:uwStUuhj4qYAAAAAAAAACg"}}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.createFolder("/Work".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("id:uwStUuhj4qYAAAAAAAAACg"),
+                path = "/work".asFolderPath(),
+                name = "Work"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/create_folder_v2")
+        }
+    }
+
+    @Test
     fun `list files in root`() = runTest {
         val engine = MockEngine {
             respond(
@@ -154,7 +215,8 @@ class DropboxServiceTest {
                 path = "/asdf.txt".asFilePath(),
                 name = "asdf.txt",
                 sizeInBytes = 1,
-                modified = Instant.parse("2025-10-11T16:30:47Z")
+                modified = Instant.parse("2025-10-11T16:30:47Z"),
+                revision = "01640e48e7e6a010000000301ae1691"
             )
         )
         val request = engine.requestHistory.single()

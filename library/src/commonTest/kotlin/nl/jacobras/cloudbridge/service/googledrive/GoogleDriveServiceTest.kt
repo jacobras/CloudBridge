@@ -135,12 +135,109 @@ class GoogleDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.updateFile(CloudItemId("1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"), "content") }
+        assertFailure {
+            service.updateFile(
+                CloudItemId("1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"),
+                "content"
+            )
+        }
             .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Patch)
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/upload/drive/v3/files/1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg?uploadType=media"
+            )
+        }
+    }
+
+    @Test
+    fun `create file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "mimeType": "text/plain",
+                      "parents": [
+                        "1THG-A2vXis2oKtcHO7fK6u_1VLRN"
+                      ],
+                      "size": "10",
+                      "id": "1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg",
+                      "name": "hello.txt",
+                      "trashed": false,
+                      "modifiedTime": "2025-10-11T16:31:27.438Z",
+                      "version": "1"
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile("/hello.txt".asFilePath(), "Hello you!")
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+                path = "/hello.txt".asFilePath(),
+                name = "hello.txt",
+                sizeInBytes = 10,
+                modified = Instant.parse("2025-10-11T16:31:27.438Z"),
+                revision = "1"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart" +
+                        "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
+            )
+        }
+    }
+
+    @Test
+    fun `create folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "mimeType": "application/vnd.google-apps.folder",
+                      "parents": [
+                        "1THG-A2vXis2oKtcHO7fK6u_1VLRN"
+                      ],
+                      "id": "131oVBv55ScZRUNJiUft_pihQWdnJP3FoTM4kgLpgW52VJqkHbA",
+                      "name": "Work",
+                      "trashed": false,
+                      "modifiedTime": "2025-10-11T15:22:38.925Z",
+                      "version": "1"
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.createFolder("/Work".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("131oVBv55ScZRUNJiUft_pihQWdnJP3FoTM4kgLpgW52VJqkHbA"),
+                path = "/131oVBv55ScZRUNJiUft_pihQWdnJP3FoTM4kgLpgW52VJqkHbA".asFolderPath(),
+                name = "Work"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://www.googleapis.com/drive/v3/files" +
+                        "?fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
             )
         }
     }
@@ -200,15 +297,16 @@ class GoogleDriveServiceTest {
                 path = "/hello.txt".asFilePath(),
                 name = "hello.txt",
                 sizeInBytes = 10,
-                modified = Instant.parse("2025-10-11T16:31:27.438Z")
+                modified = Instant.parse("2025-10-11T16:31:27.438Z"),
+                revision = "5"
             )
         )
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/drive/v3/files?q=%27appDataFolder%27+in+parents&spaces=appDataFolder" +
-                    "&fields=nextPageToken%2Cfiles%28id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed%29" +
-                    "&pageSize=100"
+                        "&fields=nextPageToken%2Cfiles%28id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed%29" +
+                        "&pageSize=100"
             )
         }
     }

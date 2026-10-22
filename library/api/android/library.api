@@ -152,20 +152,22 @@ public abstract interface class nl/jacobras/cloudbridge/logging/Logger {
 }
 
 public final class nl/jacobras/cloudbridge/model/CloudFile : nl/jacobras/cloudbridge/model/CloudItem {
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1-BApJcr0 ()Ljava/lang/String;
 	public final fun component2-9IMs6Nk ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()J
 	public final fun component5 ()Lkotlin/time/Instant;
-	public final fun copy-8ewzOZE (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;)Lnl/jacobras/cloudbridge/model/CloudFile;
-	public static synthetic fun copy-8ewzOZE$default (Lnl/jacobras/cloudbridge/model/CloudFile;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/model/CloudFile;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy-Be7qL-A (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/CloudFile;
+	public static synthetic fun copy-Be7qL-A$default (Lnl/jacobras/cloudbridge/model/CloudFile;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/time/Instant;Ljava/lang/String;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/model/CloudFile;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getId-BApJcr0 ()Ljava/lang/String;
 	public final fun getModified ()Lkotlin/time/Instant;
 	public fun getName ()Ljava/lang/String;
 	public synthetic fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
 	public fun getPath-9IMs6Nk ()Ljava/lang/String;
+	public final fun getRevision ()Ljava/lang/String;
 	public final fun getSizeInBytes ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

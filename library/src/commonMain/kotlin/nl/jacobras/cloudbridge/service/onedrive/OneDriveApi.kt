@@ -45,7 +45,7 @@ internal interface OneDriveApi {
 
     @POST("v1.0/me/drive/special/approot/children")
     @Headers("Content-Type: application/json")
-    suspend fun createFolder(@Body content: String)
+    suspend fun createFolder(@Body content: String): DriveItem
 
     @GET("v1.0/me/drive/special/approot:/{path}:/content")
     suspend fun downloadFileByPath(
@@ -62,7 +62,7 @@ internal interface OneDriveApi {
     suspend fun createFile(
         @Path("path") path: String,
         @Body content: String
-    )
+    ): DriveItem
 
     @PUT("v1.0/me/drive/items/{itemId}/content")
     @Headers("Content-Type: text/plain")
@@ -133,6 +133,9 @@ internal data class DriveItem(
 
     @SerialName("lastModifiedDateTime")
     val lastModified: String,
+
+    @SerialName("eTag")
+    val eTag: String? = null,
 
     @SerialName("folder")
     val folder: Folder? = null

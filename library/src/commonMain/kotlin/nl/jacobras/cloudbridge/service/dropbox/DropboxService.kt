@@ -60,7 +60,8 @@ public class DropboxService internal constructor(
                         sizeInBytes = it.size ?: error("Missing size for file"),
                         modified = Instant.parse(
                             it.clientModified ?: error("Missing modified time for file")
-                        )
+                        ),
+                        revision = it.rev ?: error("Missing rev for file")
                     )
                 }
                 "folder" -> {
@@ -75,16 +76,21 @@ public class DropboxService internal constructor(
         }
     }
 
-    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
-        api.createFolder(
+    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
+        val response = api.createFolder(
             Json.encodeToString(
                 CreateFolderRequest(path = "/" + path.name)
             )
         )
+        CloudFolder(
+            id = CloudItemId(response.metadata.id),
+            path = response.metadata.pathLower.asFolderPath(),
+            name = response.metadata.name
+        )
     }
 
-    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
-        api.uploadFile(
+    override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
+        val response = api.uploadFile(
             arguments = Json.encodeToString(
                 DropboxUploadArg(
                     path = path.toString(),
@@ -92,6 +98,14 @@ public class DropboxService internal constructor(
                 )
             ),
             content = content.toByteArray()
+        )
+        CloudFile(
+            id = CloudItemId(response.id),
+            path = response.pathLower.asFilePath(),
+            name = response.name,
+            sizeInBytes = response.size,
+            modified = Instant.parse(response.clientModified),
+            revision = response.rev
         )
     }
 

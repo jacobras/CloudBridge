@@ -34,6 +34,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
+import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.ensureSuffix
 
 /**
@@ -71,52 +72,30 @@ public class WebDavService internal constructor(
     }
 
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
-        val response = client.request(buildUrl(path.toString())) {
-            method = HttpMethod("PROPFIND")
-            header("Depth", "1")
-            contentType(ContentType.Application.Xml)
-            setBody(PROPFIND_BODY)
-        }
-        val resources = withContext(Dispatchers.Default) {
-            WebDavListParser.parse(response.bodyAsText())
-        }
-        val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
-        resources
+        propfind(path.toString(), depth = 1)
             .drop(1) // Skip the self-entity
-            .map {
-                // Hrefs include the server's own path, which buildUrl() adds again
-                val relativePath = it.href.removePrefix(serverPath)
-                if (it.isCollection) {
-                    CloudFolder(
-                        id = CloudItemId(relativePath),
-                        path = relativePath.asFolderPath(),
-                        name = it.displayName
-                    )
-                } else {
-                    CloudFile(
-                        id = CloudItemId(relativePath),
-                        path = relativePath.asFilePath(),
-                        name = it.displayName,
-                        sizeInBytes = it.contentLength ?: -1L,
-                        modified = it.lastModified
-                    )
-                }
-            }
+            .map { it.toCloudItem() }
     }
 
-    override suspend fun createFolder(path: FolderPath): Unit = tryCall(path.toString()) {
+    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
         client.request(buildUrl(path.toString(), suffixSlash = true)) {
             method = HttpMethod(("MKCOL"))
         }
+
+        // MKCOL doesn't return any metadata, so fetch it separately
+        propfind(path.toString(), depth = 0, suffixSlash = true).single().toCloudItem() as CloudFolder
     }
 
-    override suspend fun createFile(path: FilePath, content: String): Unit =
+    override suspend fun createFile(path: FilePath, content: String): CloudFile =
         tryCall(path.toString()) {
             client.request(buildUrl(path.toString())) {
                 method = HttpMethod.Put
                 contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
                 setBody(content)
             }
+
+            // PUT doesn't return any metadata, so fetch it separately
+            propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
         }
 
     override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
@@ -136,6 +115,49 @@ public class WebDavService internal constructor(
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Delete
+        }
+    }
+
+    /**
+     * Fetches the properties of [path] and, for [depth] 1, its direct children.
+     *
+     * @param suffixSlash True to suffix a slash, required for collections.
+     */
+    private suspend fun propfind(
+        path: String,
+        depth: Int,
+        suffixSlash: Boolean = false
+    ): List<WebDavResource> {
+        val response = client.request(buildUrl(path, suffixSlash)) {
+            method = HttpMethod("PROPFIND")
+            header("Depth", depth.toString())
+            contentType(ContentType.Application.Xml)
+            setBody(PROPFIND_BODY)
+        }
+        return withContext(Dispatchers.Default) {
+            WebDavListParser.parse(response.bodyAsText())
+        }
+    }
+
+    private fun WebDavResource.toCloudItem(): CloudItem {
+        // Hrefs include the server's own path, which buildUrl() adds again
+        val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
+        val relativePath = href.removePrefix(serverPath)
+        return if (isCollection) {
+            CloudFolder(
+                id = CloudItemId(relativePath),
+                path = relativePath.asFolderPath(),
+                name = displayName
+            )
+        } else {
+            CloudFile(
+                id = CloudItemId(relativePath),
+                path = relativePath.asFilePath(),
+                name = displayName,
+                sizeInBytes = contentLength ?: -1L,
+                modified = lastModified,
+                revision = etag ?: error("Missing etag for file")
+            )
         }
     }
 

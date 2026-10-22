@@ -16,12 +16,14 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.test.Test
+import kotlin.time.Instant
 
 class WebDavServiceTest {
 
@@ -48,6 +50,47 @@ class WebDavServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Put)
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/big.txt")
         }
+    }
+
+    @Test
+    fun `create file returns CloudFile`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Put) {
+                respond(content = "", status = HttpStatusCode.Created)
+            } else {
+                respond(
+                    content = """
+                        <?xml version="1.0"?>
+                        <d:multistatus xmlns:d="DAV:"><d:response><d:href>/server.php/Notes%20for%20Android/note.txt</d:href><d:propstat><d:prop><d:resourcetype/><d:getcontentlength>5</d:getcontentlength><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified><d:displayname>note.txt</d:displayname><d:getetag>"abc123"</d:getetag></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>
+                    """.trimIndent(),
+                    status = HttpStatusCode.MultiStatus,
+                    headers = headersOf(HttpHeaders.ContentType, "application/xml; charset=utf-8")
+                )
+            }
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile("/Notes for Android/note.txt".asFilePath(), "hello")
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("/Notes for Android/note.txt"),
+                path = "/Notes for Android/note.txt".asFilePath(),
+                name = "note.txt",
+                sizeInBytes = 5,
+                modified = Instant.parse("2024-04-02T18:27:06Z"),
+                revision = "\"abc123\""
+            )
+        )
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put, HttpMethod("PROPFIND"))
+        assertThat(engine.requestHistory.last().headers["Depth"]).isEqualTo("0")
     }
 
     @Test

@@ -74,24 +74,38 @@ public class OneDriveService internal constructor(
                     path = filePath,
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
-                    modified = Instant.parse(it.lastModified)
+                    modified = Instant.parse(it.lastModified),
+                    revision = it.eTag ?: error("Missing eTag for file")
                 )
             }
         }
     }
 
-    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
-        api.createFolder(
+    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
+        val response = api.createFolder(
             json.encodeToString(
                 CreateFolderArg(name = path.name)
             )
         )
+        CloudFolder(
+            id = CloudItemId(response.id),
+            path = path,
+            name = response.name
+        )
     }
 
-    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
-        api.createFile(
+    override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
+        val response = api.createFile(
             path = path.toString(),
             content = content
+        )
+        CloudFile(
+            id = CloudItemId(response.id),
+            path = path,
+            name = response.name,
+            sizeInBytes = response.size ?: error("Missing size for file"),
+            modified = Instant.parse(response.lastModified),
+            revision = response.eTag ?: error("Missing eTag for file")
         )
     }
 

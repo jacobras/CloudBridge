@@ -89,13 +89,114 @@ class OneDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.updateFile(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"), "content") }
+        assertFailure {
+            service.updateFile(
+                CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
+                "content"
+            )
+        }
             .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Put)
             assertThat(it.url.toString()).isEqualTo(
                 "https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc/content"
             )
+        }
+    }
+
+    @Test
+    fun `create file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "createdDateTime": "2025-10-11T16:13:38Z",
+                      "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"",
+                      "id": "33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc",
+                      "lastModifiedDateTime": "2025-10-11T16:13:38Z",
+                      "name": "asdf.txt",
+                      "size": 1,
+                      "parentReference": {
+                        "driveType": "personal",
+                        "id": "33488461260C4A76!s917d5fe70450423e896e4f9ab0023434",
+                        "name": "CloudBridge Demo",
+                        "path": "/drive/root:/Apps/CloudBridge Demo"
+                      },
+                      "file": {
+                        "mimeType": "text/plain"
+                      }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile("asdf.txt".asFilePath(), "a")
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
+                path = "asdf.txt".asFilePath(),
+                name = "asdf.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:13:38Z"),
+                revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\""
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Put)
+        }
+    }
+
+    @Test
+    fun `create folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "createdDateTime": "2025-10-11T15:22:39Z",
+                      "eTag": "\"{C4581CC0-F018-449D-9F07-FB9CF832ADAB},1\"",
+                      "id": "33488461260C4A76!sc4581cc0f018449d9f07fb9cf832adab",
+                      "lastModifiedDateTime": "2025-10-11T15:22:39Z",
+                      "name": "Work",
+                      "size": 0,
+                      "parentReference": {
+                        "driveType": "personal",
+                        "id": "33488461260C4A76!s917d5fe70450423e896e4f9ab0023434",
+                        "name": "CloudBridge Demo",
+                        "path": "/drive/root:/Apps/CloudBridge Demo"
+                      },
+                      "folder": {
+                        "childCount": 0
+                      }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.createFolder("Work".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("33488461260C4A76!sc4581cc0f018449d9f07fb9cf832adab"),
+                path = "Work".asFolderPath(),
+                name = "Work"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot/children")
         }
     }
 
@@ -126,6 +227,7 @@ class OneDriveServiceTest {
                           "createdDateTime": "2025-10-11T16:13:38Z",
                           "id": "33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc",
                           "lastModifiedDateTime": "2025-10-11T16:32:05Z",
+                          "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\"",
                           "name": "asdf.txt",
                           "size": 1,
                           "parentReference": {
@@ -163,7 +265,8 @@ class OneDriveServiceTest {
                 path = "asdf.txt".asFilePath(),
                 name = "asdf.txt",
                 sizeInBytes = 1,
-                modified = Instant.parse("2025-10-11T16:32:05Z")
+                modified = Instant.parse("2025-10-11T16:32:05Z"),
+                revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\""
             )
         )
         assertThat(engine.requestHistory).single().given {

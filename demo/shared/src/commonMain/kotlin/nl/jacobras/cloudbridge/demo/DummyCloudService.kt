@@ -34,7 +34,8 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             path = "/Welcome.txt".asFilePath(),
             name = "Welcome.txt",
             sizeInBytes = 123L,
-            modified = Clock.System.now()
+            modified = Clock.System.now(),
+            revision = "rev-0"
         )
     )
     private var cloudItemContents = mutableMapOf(
@@ -70,7 +71,7 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         return cloudItems.filter { it.path.startsWith(path) }
     }
 
-    override suspend fun createFolder(path: FolderPath) {
+    override suspend fun createFolder(path: FolderPath): CloudFolder {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -83,12 +84,13 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         cloudItems += folder
         folderModified[folder.id] = Clock.System.now()
         recordUpdate(folder)
+        return folder
     }
 
     override suspend fun createFile(
         path: FilePath,
         content: String
-    ) {
+    ): CloudFile {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -99,11 +101,13 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             path = path,
             name = path.name,
             sizeInBytes = content.length * 8L,
-            modified = Clock.System.now()
+            modified = Clock.System.now(),
+            revision = nextRevision(id)
         )
         cloudItems += file
         cloudItemContents[id] = content
         recordUpdate(file)
+        return file
     }
 
     override suspend fun updateFile(
@@ -118,7 +122,8 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
         val updated = existing.copy(
             sizeInBytes = content.length * 8L,
-            modified = Clock.System.now()
+            modified = Clock.System.now(),
+            revision = nextRevision(id)
         )
         cloudItems -= existing
         cloudItems += updated
@@ -172,6 +177,11 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         revisions[item.id] = (revisions[item.id] ?: 0) + 1
         changeLog += item.toUpdatedChange()
     }
+
+    /**
+     * The revision [id] will have after the next [recordUpdate].
+     */
+    private fun nextRevision(id: CloudItemId): String = "rev-${(revisions[id] ?: 0) + 1}"
 
     private fun CloudItem.toUpdatedChange(): UpdatedDeltaChange {
         return UpdatedDeltaChange(

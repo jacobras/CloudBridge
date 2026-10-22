@@ -1,5 +1,7 @@
 package nl.jacobras.cloudbridge
 
+import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
@@ -30,16 +32,18 @@ public interface CloudService {
     /**
      * Creates a folder at [path].
      *
+     * @return The created folder.
      * @throws CloudServiceException
      */
-    public suspend fun createFolder(path: FolderPath)
+    public suspend fun createFolder(path: FolderPath): CloudFolder
 
     /**
      * Creates a file at path [path] with text content [content].
      *
+     * @return The created file.
      * @throws CloudServiceException
      */
-    public suspend fun createFile(path: FilePath, content: String)
+    public suspend fun createFile(path: FilePath, content: String): CloudFile
 
     /**
      * Updates the file with id [id] to text content [content].

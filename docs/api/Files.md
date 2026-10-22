@@ -50,7 +50,8 @@ try {
 
 ```kotlin
 try {
-    service.createFile("/Projects/Welcome.txt".asFilePath(), "Hello world!")
+    val file: CloudFile = service.createFile("/Projects/Welcome.txt".asFilePath(), "Hello world!")
+    println("Created ${file.id} at revision ${file.revision}")
 } catch (e: CloudServiceException) {
     // Handle...
 }

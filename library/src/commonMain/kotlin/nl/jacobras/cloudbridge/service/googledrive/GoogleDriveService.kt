@@ -70,14 +70,15 @@ public class GoogleDriveService internal constructor(
                     name = it.name,
                     path = it.toFilePath(isRoot = path.isRoot),
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
-                    modified = Instant.parse(it.modified)
+                    modified = Instant.parse(it.modified),
+                    revision = it.version ?: error("Missing version for file")
                 )
             }
         }
     }
 
-    override suspend fun createFolder(path: FolderPath): Unit = tryCall {
-        api.createFolder(
+    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
+        val response = api.createFolder(
             json.encodeToString(
                 CreateFolderRequest(
                     name = path.name,
@@ -85,9 +86,14 @@ public class GoogleDriveService internal constructor(
                 )
             )
         )
+        CloudFolder(
+            id = CloudItemId(response.id),
+            path = response.toFolderPath(isRoot = true),
+            name = response.name
+        )
     }
 
-    override suspend fun createFile(path: FilePath, content: String): Unit = tryCall {
+    override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
         val folderPath = path.toFolderPath()
         val parent = if (folderPath.isRoot) {
             "appDataFolder"
@@ -102,7 +108,7 @@ public class GoogleDriveService internal constructor(
 
         val boundary = "cloud-bridge-boundary"
 
-        api.createFile(
+        val response = api.createFile(
             map = MultiPartFormDataContent(
                 boundary = boundary,
                 contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
@@ -115,6 +121,14 @@ public class GoogleDriveService internal constructor(
                     })
                 }
             )
+        )
+        CloudFile(
+            id = CloudItemId(response.id),
+            name = response.name,
+            path = response.toFilePath(isRoot = folderPath.isRoot),
+            sizeInBytes = response.size?.toLongOrNull() ?: 0L,
+            modified = Instant.parse(response.modified),
+            revision = response.version ?: error("Missing version for file")
         )
     }
 
