@@ -54,6 +54,8 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.humanReadable)
             implementation(libs.kermit)
+            implementation(libs.kermit.ktor)
+            implementation(libs.ktor.client.logging)
             implementation(libs.multiplatform.settings)
         }
         webMain.dependencies {

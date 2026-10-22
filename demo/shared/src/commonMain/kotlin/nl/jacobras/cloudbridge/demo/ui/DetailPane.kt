@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.UserInfo
@@ -52,6 +53,10 @@ internal fun DetailPane(
     val content by viewModel.content.collectAsState()
 
     var pendingCreate by remember { mutableStateOf<CreateType?>(null) }
+
+    val deltaCursor by viewModel.deltaCursor.collectAsState()
+    val deltaResult by viewModel.deltaResult.collectAsState()
+    var showDelta by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -113,6 +118,11 @@ internal fun DetailPane(
                     Button(onClick = { pendingCreate = CreateType.FILE }) {
                         Text("Create file")
                     }
+                    if (service is DeltaCloudService) {
+                        Button(onClick = { showDelta = true }) {
+                            Text("Delta")
+                        }
+                    }
                 }
             }
         },
@@ -162,6 +172,18 @@ internal fun DetailPane(
         )
 
         null -> Unit
+    }
+
+    if (showDelta) {
+        DeltaDialog(
+            cursor = deltaCursor,
+            result = deltaResult,
+            error = error,
+            onFetch = viewModel::fetchDelta,
+            onAdvance = viewModel::advanceDeltaCursor,
+            onReset = viewModel::resetDeltaCursor,
+            onDismiss = { showDelta = false }
+        )
     }
 
     val editingFile = selectedItem

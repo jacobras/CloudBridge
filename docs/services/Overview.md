@@ -3,12 +3,12 @@
 These subpages show how to authenticate on each platform, and any remarks/limitations of specific
 services.
 
-| Service                        | Data in app folder          | Support              |
-|--------------------------------|-----------------------------|----------------------|
-| [Dropbox](Dropbox.md)          | 👁️ Visible to users        | ✔️ All platforms     |
-| [Google Drive](GoogleDrive.md) | 📦 Not visible to users[^1] | ✔️ All platforms     |
-| [OneDrive](OneDrive.md)        | 👁️ Visible to users        | ✔️ All platforms     | 
-| [WebDAV](WebDAV.md)            | 👁️ Visible to users        | ✔️ All platforms[^2] |
+| Service                        | Data in app folder          | Support              | Delta support |
+|--------------------------------|-----------------------------|----------------------|---------------|
+| [Dropbox](Dropbox.md)          | 👁️ Visible to users         | ✔️ All platforms     | ✅ Yes        |
+| [Google Drive](GoogleDrive.md) | 📦 Not visible to users[^1] | ✔️ All platforms     | ✅ Yes        |
+| [OneDrive](OneDrive.md)        | 👁️ Visible to users         | ✔️ All platforms     | ✅ Yes        | 
+| [WebDAV](WebDAV.md)            | 👁️ Visible to users         | ✔️ All platforms[^2] | ❌ No[^3]     |
 
 ✔️ _All platforms_ means Android, iOS, desktop (JVM) and web (JS/WASM).
 
@@ -18,3 +18,5 @@ Drive). [More details](GoogleDrive.md#compatibility).
 [^2]: WebDAV on web requires dealing
 with [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Some providers, like
 Fastmail, block requests from all domains.
+[^3]: You could keep the last result of a call and compare a new result manually to get delta
+support with WebDAV.

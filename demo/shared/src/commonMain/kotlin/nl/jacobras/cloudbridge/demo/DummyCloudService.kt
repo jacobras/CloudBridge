@@ -3,6 +3,12 @@ package nl.jacobras.cloudbridge.demo
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
+import nl.jacobras.cloudbridge.delta.DeltaChange
+import nl.jacobras.cloudbridge.delta.DeltaCloudService
+import nl.jacobras.cloudbridge.delta.DeltaCursor
+import nl.jacobras.cloudbridge.delta.DeltaResult
+import nl.jacobras.cloudbridge.delta.UpdatedDeltaChange
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -13,8 +19,9 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Clock
+import kotlin.time.Instant
 
-class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken) {
+class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken), DeltaCloudService {
 
     override val baseUrl: String = ""
 
@@ -33,6 +40,19 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
     private var cloudItemContents = mutableMapOf(
         CloudItemId("456") to "Hello world!"
     )
+
+    /**
+     * All file/folder changes in chronological order. A cursor is an index into this list.
+     */
+    private val changeLog = mutableListOf<DeltaChange>()
+    private val revisions = mutableMapOf<CloudItemId, Int>()
+
+    /**
+     * [CloudFolder] has no modified date, so track it here. Folders that existed
+     * from the start fall back to [startTime].
+     */
+    private val folderModified = mutableMapOf<CloudItemId, Instant>()
+    private val startTime = Clock.System.now()
 
     override suspend fun getUserInfo(): UserInfo {
         if (!isAuthenticated()) {
@@ -55,11 +75,14 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             throw CloudServiceException.NotAuthenticatedException()
         }
 
-        cloudItems += CloudFolder(
+        val folder = CloudFolder(
             id = CloudItemId(path.hashCode().toString()),
             path = path,
             name = path.name
         )
+        cloudItems += folder
+        folderModified[folder.id] = Clock.System.now()
+        recordUpdate(folder)
     }
 
     override suspend fun createFile(
@@ -71,14 +94,16 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         }
 
         val id = CloudItemId(path.hashCode().toString())
-        cloudItems += CloudFile(
+        val file = CloudFile(
             id = id,
             path = path,
             name = path.name,
             sizeInBytes = content.length * 8L,
             modified = Clock.System.now()
         )
+        cloudItems += file
         cloudItemContents[id] = content
+        recordUpdate(file)
     }
 
     override suspend fun updateFile(
@@ -91,12 +116,14 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
 
         val existing = cloudItems.firstOrNull { it.id == id }
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
-        cloudItems -= existing
-        cloudItems += existing.copy(
+        val updated = existing.copy(
             sizeInBytes = content.length * 8L,
             modified = Clock.System.now()
         )
+        cloudItems -= existing
+        cloudItems += updated
         cloudItemContents[id] = content
+        recordUpdate(updated)
     }
 
     override suspend fun downloadFile(id: CloudItemId): String {
@@ -116,5 +143,46 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
         cloudItems -= existing
         cloudItemContents.remove(id)
+        changeLog += DeletedDeltaChange(itemId = id, path = existing.path)
+    }
+
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        val changes = if (previousCursor == DeltaCursor.INITIAL) {
+            cloudItems.map { it.toUpdatedChange() }
+        } else {
+            val index = previousCursor.value.toIntOrNull()
+                ?.takeIf { it in 0..changeLog.size }
+                ?: throw CloudServiceException.NotFoundException(previousCursor.value)
+
+            // Only report the latest change per item, like real services do.
+            changeLog.drop(index).associateBy { it.itemId }.values.toList()
+        }
+
+        return DeltaResult(
+            newCursor = DeltaCursor(changeLog.size.toString()),
+            changes = changes
+        )
+    }
+
+    private fun recordUpdate(item: CloudItem) {
+        revisions[item.id] = (revisions[item.id] ?: 0) + 1
+        changeLog += item.toUpdatedChange()
+    }
+
+    private fun CloudItem.toUpdatedChange(): UpdatedDeltaChange {
+        return UpdatedDeltaChange(
+            itemId = id,
+            path = path,
+            name = name,
+            revision = "rev-${revisions[id] ?: 0}",
+            modified = when (this) {
+                is CloudFile -> modified
+                is CloudFolder -> folderModified[id] ?: startTime
+            }
+        )
     }
 }

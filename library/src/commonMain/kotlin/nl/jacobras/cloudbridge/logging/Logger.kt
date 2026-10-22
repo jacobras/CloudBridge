@@ -5,5 +5,5 @@ public interface Logger {
 }
 
 internal object EmptyLogger : Logger {
-    override fun log(message: String) {}
+    override fun log(message: String) = Unit
 }

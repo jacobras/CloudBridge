@@ -12,6 +12,7 @@ import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.DummyCloudService
+import nl.jacobras.cloudbridge.demo.setUpLogging
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
@@ -33,6 +34,7 @@ class DemoViewModel : ViewModel() {
     private var loadServiceDetailsJob: Job? = null
 
     init {
+        setUpLogging()
         refresh()
     }
 

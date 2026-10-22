@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.kover)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktorfit)
     alias(libs.plugins.kotlin.serialization)
@@ -40,10 +41,17 @@ kotlin {
     iosSimulatorArm64()
 
     explicitApi()
-    abiValidation()
+    abiValidation {
+        filters {
+            exclude {
+                annotatedWith.add("nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi")
+            }
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
+            api(libs.ktor.client.core)
             implementation(libs.kotlin.coroutines.core)
             implementation(libs.kotlin.crypto.sha2)
             implementation(libs.kotlinx.datetime)
@@ -57,6 +65,7 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.assertK)
             implementation(libs.kotlin.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
         named("desktopMain") {
             dependencies {
@@ -96,8 +105,8 @@ mavenPublishing {
 
         licenses {
             license {
-                name.set("MIT")
-                url.set("https://opensource.org/licenses/MIT")
+                name.set("Apache 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0")
             }
         }
         developers {

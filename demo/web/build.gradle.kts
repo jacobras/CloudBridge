@@ -32,7 +32,6 @@ kotlin {
     sourceSets {
         webMain.dependencies {
             implementation(projects.demo.shared)
-            implementation(libs.kermit)
             implementation(libs.kotlinx.browser)
         }
     }

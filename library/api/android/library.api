@@ -29,6 +29,10 @@ public final class nl/jacobras/cloudbridge/CloudServiceException$ConnectionExcep
 	public fun <init> (Ljava/io/IOException;)V
 }
 
+public final class nl/jacobras/cloudbridge/CloudServiceException$InsufficientSpaceException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> ()V
+}
+
 public final class nl/jacobras/cloudbridge/CloudServiceException$NotAuthenticatedException : nl/jacobras/cloudbridge/CloudServiceException {
 	public fun <init> ()V
 }
@@ -64,6 +68,83 @@ public final class nl/jacobras/cloudbridge/auth/CloudAccessToken {
 	public final fun getRefreshToken ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/delta/DeletedDeltaChange : nl/jacobras/cloudbridge/delta/DeltaChange {
+	public synthetic fun <init> (Ljava/lang/String;Lnl/jacobras/cloudbridge/model/Path;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-01EWMaA ()Ljava/lang/String;
+	public final fun component2 ()Lnl/jacobras/cloudbridge/model/Path;
+	public final fun copy-3-JmV3o (Ljava/lang/String;Lnl/jacobras/cloudbridge/model/Path;)Lnl/jacobras/cloudbridge/delta/DeletedDeltaChange;
+	public static synthetic fun copy-3-JmV3o$default (Lnl/jacobras/cloudbridge/delta/DeletedDeltaChange;Ljava/lang/String;Lnl/jacobras/cloudbridge/model/Path;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/delta/DeletedDeltaChange;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getItemId-01EWMaA ()Ljava/lang/String;
+	public fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class nl/jacobras/cloudbridge/delta/DeltaChange {
+	public abstract fun getItemId-01EWMaA ()Ljava/lang/String;
+	public abstract fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
+}
+
+public abstract interface class nl/jacobras/cloudbridge/delta/DeltaCloudService {
+	public abstract fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class nl/jacobras/cloudbridge/delta/DeltaCursor {
+	public static final field Companion Lnl/jacobras/cloudbridge/delta/DeltaCursor$Companion;
+	public static final synthetic fun box-impl (Ljava/lang/String;)Lnl/jacobras/cloudbridge/delta/DeltaCursor;
+	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/String;)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/delta/DeltaCursor$Companion {
+	public final fun getINITIAL-W81KCxc ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/delta/DeltaResult {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-W81KCxc ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy-BwCfqzU (Ljava/lang/String;Ljava/util/List;)Lnl/jacobras/cloudbridge/delta/DeltaResult;
+	public static synthetic fun copy-BwCfqzU$default (Lnl/jacobras/cloudbridge/delta/DeltaResult;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/delta/DeltaResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChanges ()Ljava/util/List;
+	public final fun getNewCursor-W81KCxc ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/jacobras/cloudbridge/delta/UpdatedDeltaChange : nl/jacobras/cloudbridge/delta/DeltaChange {
+	public synthetic fun <init> (Ljava/lang/String;Lnl/jacobras/cloudbridge/model/Path;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-BApJcr0 ()Ljava/lang/String;
+	public final fun component2 ()Lnl/jacobras/cloudbridge/model/Path;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Lkotlin/time/Instant;
+	public final fun copy-SuhL75Y (Ljava/lang/String;Lnl/jacobras/cloudbridge/model/Path;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)Lnl/jacobras/cloudbridge/delta/UpdatedDeltaChange;
+	public static synthetic fun copy-SuhL75Y$default (Lnl/jacobras/cloudbridge/delta/UpdatedDeltaChange;Ljava/lang/String;Lnl/jacobras/cloudbridge/model/Path;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/delta/UpdatedDeltaChange;
+	public fun equals (Ljava/lang/Object;)Z
+	public synthetic fun getItemId-01EWMaA ()Ljava/lang/String;
+	public fun getItemId-BApJcr0 ()Ljava/lang/String;
+	public final fun getModified ()Lkotlin/time/Instant;
+	public final fun getName ()Ljava/lang/String;
+	public fun getPath ()Lnl/jacobras/cloudbridge/model/Path;
+	public final fun getRevision ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface annotation class nl/jacobras/cloudbridge/internal/InternalCloudBridgeApi : java/lang/annotation/Annotation {
 }
 
 public abstract interface class nl/jacobras/cloudbridge/logging/Logger {
@@ -198,12 +279,13 @@ public final class nl/jacobras/cloudbridge/service/dropbox/CompleteAuthenticatio
 	public static final fun completeAuthentication (Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;Ljava/lang/String;Ljava/lang/String;Landroid/net/Uri;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/jacobras/cloudbridge/OAuthCloudService {
+public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -214,12 +296,13 @@ public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveAuthen
 	public final fun authenticate ()V
 }
 
-public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/OAuthCloudService {
+public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -233,12 +316,13 @@ public final class nl/jacobras/cloudbridge/service/onedrive/CompleteAuthenticati
 	public static final fun completeAuthentication (Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;Ljava/lang/String;Ljava/lang/String;Landroid/net/Uri;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl/jacobras/cloudbridge/OAuthCloudService {
+public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

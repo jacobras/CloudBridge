@@ -31,7 +31,9 @@ internal object WebDavListParser {
                     isCollection = props
                         .requireChild(PROP_RESOURCE_TYPE)
                         .child(RESOURCE_TYPE_COLLECTION) != null,
-                    displayName = props.requireChild(PROP_DISPLAY_NAME).value,
+                    // Optional; SabreDAV for example doesn't provide it
+                    displayName = props.child(PROP_DISPLAY_NAME)?.value?.takeIf { it.isNotEmpty() }
+                        ?: href.trimEnd('/').substringAfterLast('/'),
                     // Only available for files
                     contentLength = props.child(PROP_CONTENT_LENGTH)?.value?.toLongOrNull(),
                     lastModified = Instant.parse(

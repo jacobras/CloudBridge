@@ -4,10 +4,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
-import co.touchlab.kermit.Logger
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.demo.BuildConfig
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
@@ -21,18 +19,9 @@ import nl.jacobras.cloudbridge.service.googledrive.completeAuthentication
 import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
-import kotlin.js.ExperimentalWasmJsInterop
-
-private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
-    override fun log(message: String) {
-        Logger.d(message)
-    }
-}
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    CloudBridge.logger = KermitLogger()
-
     ComposeViewport {
         val viewModel = remember { DemoViewModel() }
         val scope = rememberCoroutineScope()

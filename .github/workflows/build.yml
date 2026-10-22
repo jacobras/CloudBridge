@@ -18,6 +18,7 @@ jobs:
       contents: read
       checks: write
       id-token: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,3 +45,18 @@ jobs:
           check_name: Unit test report
           require_tests: true
           report_paths: "**/build/test-results/**/TEST-*.xml"
+
+      - name: Generate coverage report
+        if: github.event_name == 'pull_request'
+        run: ./gradlew :library:koverXmlReport
+
+      - name: Publish coverage report
+        if: github.event_name == 'pull_request'
+        uses: mi-kas/kover-report@v2
+        with:
+          path: library/build/reports/kover/report.xml
+          title: Code coverage
+          update-comment: true
+          coverage-counter-type: LINE
+          min-coverage-overall: 30
+          min-coverage-changed-files: 50

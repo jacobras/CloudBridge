@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -13,6 +14,11 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
+import nl.jacobras.cloudbridge.delta.DeltaCloudService
+import nl.jacobras.cloudbridge.delta.DeltaCursor
+import nl.jacobras.cloudbridge.delta.DeltaResult
+import nl.jacobras.cloudbridge.delta.UpdatedDeltaChange
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -24,7 +30,12 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Instant
 
-public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(token) {
+public class GoogleDriveService internal constructor(
+    token: CloudAccessToken?,
+    httpClient: HttpClient?
+) : OAuthCloudService(token, httpClient), DeltaCloudService {
+
+    public constructor(token: CloudAccessToken?) : this(token, null)
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
@@ -47,27 +58,17 @@ public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(to
             "'${path.name}' in parents"
         }
         api.listFiles(query = query).files.map {
-            if (it.mimeType == "application/vnd.google-apps.folder") {
-                val folderPath = if (path.isRoot) {
-                    it.id.asFolderPath()
-                } else {
-                    "${it.parents.first()}/${it.id}".asFolderPath()
-                }
+            if (it.isFolder) {
                 CloudFolder(
                     id = CloudItemId(it.id),
-                    path = folderPath,
+                    path = it.toFolderPath(isRoot = path.isRoot),
                     name = it.name
                 )
             } else {
-                val filePath = if (path.isRoot) {
-                    it.name.asFilePath()
-                } else {
-                    "${it.parents.first()}/${it.name}".asFilePath()
-                }
                 CloudFile(
                     id = CloudItemId(it.id),
                     name = it.name,
-                    path = filePath,
+                    path = it.toFilePath(isRoot = path.isRoot),
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
                     modified = Instant.parse(it.modified)
                 )
@@ -132,6 +133,79 @@ public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(to
         api.deleteById(id.value)
     }
 
+    /**
+     * Google Drive specifics: deleted items are only reported by id, so
+     * [DeletedDeltaChange.path] is `/<fileId>`. See the library documentation on paths.
+     */
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult = tryCall {
+        val rootId = api.getAppDataFolder().id
+
+        if (previousCursor == DeltaCursor.INITIAL) {
+
+            // Initial call does not return token that can be used for changes, so we'll fetch
+            // it manually here. It's done before actual listing, because from this moment we
+            // don't want to miss any changes.
+            val startPageToken = api.getStartPageToken().startPageToken
+
+            val files = mutableListOf<DriveFile>()
+            var pageToken: String? = null
+            do {
+                val response = api.listFiles(query = null, pageToken = pageToken)
+                files += response.files
+                pageToken = response.nextPageToken
+            } while (pageToken != null)
+
+            DeltaResult(
+                newCursor = DeltaCursor(startPageToken),
+                changes = files.map { it.toUpdatedChange(rootId) }
+            )
+        } else {
+            val changes = mutableListOf<DriveChange>()
+            var pageToken = previousCursor.value
+            var newStartPageToken: String? = null
+            while (newStartPageToken == null) {
+                val response = api.listChanges(pageToken = pageToken)
+                changes += response.changes
+                newStartPageToken = response.newStartPageToken
+                pageToken = response.nextPageToken ?: newStartPageToken ?: error("Missing page token")
+            }
+
+            DeltaResult(
+                newCursor = DeltaCursor(newStartPageToken),
+                changes = changes.map { change ->
+                    val file = change.file
+                    if (change.removed || file == null || file.trashed) {
+                        DeletedDeltaChange(
+                            itemId = CloudItemId(change.fileId),
+                            path = "/${change.fileId}".asFilePath()
+                        )
+                    } else {
+                        file.toUpdatedChange(rootId)
+                    }
+                }
+            )
+        }
+    }
+
+    private fun DriveFile.toUpdatedChange(rootId: String): UpdatedDeltaChange {
+        val isRoot = parents.firstOrNull()?.let { it == rootId } ?: true
+        return UpdatedDeltaChange(
+            itemId = CloudItemId(id),
+            path = if (isFolder) toFolderPath(isRoot) else toFilePath(isRoot),
+            name = name,
+            revision = version,
+            modified = Instant.parse(modified)
+        )
+    }
+
+    private fun DriveFile.toFolderPath(isRoot: Boolean): FolderPath {
+        return if (isRoot) id.asFolderPath() else "${parents.first()}/$id".asFolderPath()
+    }
+
+    private fun DriveFile.toFilePath(isRoot: Boolean): FilePath {
+        return if (isRoot) name.asFilePath() else "${parents.first()}/$name".asFilePath()
+    }
+
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
         requireAuthenticated()
 
@@ -145,6 +219,9 @@ public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(to
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
                 }
+                HttpStatusCode.Forbidden if e.message?.contains("storageQuotaExceeded") == true -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
                 else -> {
                     CloudServiceException.Unknown(e)
                 }
@@ -156,3 +233,6 @@ public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(to
         }
     }
 }
+
+private val DriveFile.isFolder: Boolean
+    get() = mimeType == "application/vnd.google-apps.folder"

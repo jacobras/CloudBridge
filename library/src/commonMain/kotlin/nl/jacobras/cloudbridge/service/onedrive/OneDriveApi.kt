@@ -9,6 +9,7 @@ import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.PUT
 import de.jensklingenberg.ktorfit.http.Path
+import de.jensklingenberg.ktorfit.http.Url
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -79,6 +80,21 @@ internal interface OneDriveApi {
     suspend fun deleteById(
         @Path("itemId") id: String
     )
+
+    @GET("v1.0/me/drive/special/approot")
+    suspend fun getAppRoot(): DriveItemId
+
+    /**
+     * Docs: https://learn.microsoft.com/en-us/graph/api/driveitem-delta
+     */
+    @GET("v1.0/me/drive/special/approot/delta")
+    suspend fun getDelta(): DeltaResponse
+
+    /**
+     * Follows an `@odata.nextLink` or `@odata.deltaLink` from a previous [getDelta] call.
+     */
+    @GET("")
+    suspend fun getDeltaByUrl(@Url url: String): DeltaResponse
 }
 
 @Serializable
@@ -145,3 +161,68 @@ internal data class Folder(
     @SerialName("childCount")
     val childCount: Int
 )
+
+@Serializable
+internal data class DriveItemId(
+
+    @SerialName("id")
+    val id: String
+)
+
+@Serializable
+internal data class DeltaResponse(
+
+    @SerialName("value")
+    val items: List<DeltaDriveItem>,
+
+    /**
+     * Present if there are more pages.
+     */
+    @SerialName("@odata.nextLink")
+    val nextLink: String? = null,
+
+    /**
+     * Present on the last page, instead of [nextLink].
+     */
+    @SerialName("@odata.deltaLink")
+    val deltaLink: String? = null
+)
+
+/**
+ * Like [DriveItem], but delta responses omit some fields: `parentReference.path` is never
+ * returned and deleted items lack most fields.
+ */
+@Serializable
+internal data class DeltaDriveItem(
+
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String? = null,
+
+    @SerialName("parentReference")
+    val parent: DeltaParentReference? = null,
+
+    @SerialName("eTag")
+    val eTag: String? = null,
+
+    @SerialName("lastModifiedDateTime")
+    val lastModified: String? = null,
+
+    @SerialName("folder")
+    val folder: Folder? = null,
+
+    @SerialName("deleted")
+    val deleted: Deleted? = null
+)
+
+@Serializable
+internal data class DeltaParentReference(
+
+    @SerialName("id")
+    val id: String? = null
+)
+
+@Serializable
+internal class Deleted

@@ -40,6 +40,10 @@ the [shared API](../api/Overview.md) is available.
     Passing in a deeper path on a file (for example `/id1/id2/file.txt`) has no effect, as
     only the last part (`id2`) is set as a parent to the file/folder.
 
+    When retrieving changes with `getDelta()`, Google Drive only reports the ID of deleted
+    items. The path of a `DeletedDeltaChange` is therefore `/<fileId>`, so match deletions
+    on `itemId`.
+
 ## Registration in Cloud Console
 
 !!! info
