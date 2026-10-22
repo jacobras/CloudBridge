@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.webdav
 
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
@@ -11,8 +12,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
+import io.ktor.http.decodeURLPart
 import io.ktor.http.withCharset
 import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.Dispatchers
@@ -37,12 +40,15 @@ import nl.jacobras.cloudbridge.util.ensureSuffix
  * Instance of a WebDAV server.
  */
 public class WebDavService internal constructor(
-    private var credentials: WebDavCredentials
+    private var credentials: WebDavCredentials,
+    private val httpClient: HttpClient? = null
 ) : CloudService {
 
-    private val client = defaultHttpClient.config {
-        defaultRequest {
-            header(HttpHeaders.Authorization, credentials.toAuthHeaderValue())
+    private val client by lazy {
+        (httpClient ?: defaultHttpClient).config {
+            defaultRequest {
+                header(HttpHeaders.Authorization, credentials.toAuthHeaderValue())
+            }
         }
     }
 
@@ -74,19 +80,22 @@ public class WebDavService internal constructor(
         val resources = withContext(Dispatchers.Default) {
             WebDavListParser.parse(response.bodyAsText())
         }
+        val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
         resources
             .drop(1) // Skip the self-entity
             .map {
+                // Hrefs include the server's own path, which buildUrl() adds again
+                val relativePath = it.href.removePrefix(serverPath)
                 if (it.isCollection) {
                     CloudFolder(
-                        id = CloudItemId(it.href),
-                        path = it.href.asFolderPath(),
+                        id = CloudItemId(relativePath),
+                        path = relativePath.asFolderPath(),
                         name = it.displayName
                     )
                 } else {
                     CloudFile(
-                        id = CloudItemId(it.href),
-                        path = it.href.asFilePath(),
+                        id = CloudItemId(relativePath),
+                        path = relativePath.asFilePath(),
                         name = it.displayName,
                         sizeInBytes = it.contentLength ?: -1L,
                         modified = it.lastModified
