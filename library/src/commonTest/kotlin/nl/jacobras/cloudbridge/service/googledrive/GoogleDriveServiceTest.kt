@@ -108,6 +108,44 @@ class GoogleDriveServiceTest {
     }
 
     @Test
+    fun `uploading without space left throws InsufficientSpaceException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "error": {
+                        "code": 403,
+                        "message": "The user's Drive storage quota has been exceeded.",
+                        "errors": [
+                          {
+                            "message": "The user's Drive storage quota has been exceeded.",
+                            "domain": "usageLimits",
+                            "reason": "storageQuotaExceeded"
+                          }
+                        ]
+                      }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.Forbidden,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.updateFile(CloudItemId("1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"), "content") }
+            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Patch)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://www.googleapis.com/upload/drive/v3/files/1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg?uploadType=media"
+            )
+        }
+    }
+
+    @Test
     fun `list files in root`() = runTest {
         val engine = MockEngine {
             respond(

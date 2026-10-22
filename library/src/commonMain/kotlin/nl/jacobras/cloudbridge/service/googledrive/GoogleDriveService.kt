@@ -219,6 +219,9 @@ public class GoogleDriveService internal constructor(
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
                 }
+                HttpStatusCode.Forbidden if e.message?.contains("storageQuotaExceeded") == true -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
                 else -> {
                     CloudServiceException.Unknown(e)
                 }
