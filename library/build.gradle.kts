@@ -40,10 +40,17 @@ kotlin {
     iosSimulatorArm64()
 
     explicitApi()
-    abiValidation()
+    abiValidation {
+        filters {
+            exclude {
+                annotatedWith.add("nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi")
+            }
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
+            api(libs.ktor.client.core)
             implementation(libs.kotlin.coroutines.core)
             implementation(libs.kotlin.crypto.sha2)
             implementation(libs.kotlinx.datetime)

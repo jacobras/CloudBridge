@@ -2,6 +2,8 @@ package nl.jacobras.cloudbridge
 
 import io.ktor.client.HttpClient
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.logging.EmptyLogger
 import nl.jacobras.cloudbridge.logging.Logger
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
@@ -16,8 +18,13 @@ import nl.jacobras.cloudbridge.service.webdav.WebDavService
  */
 public object CloudBridge {
     public var logger: Logger = EmptyLogger
-    internal val defaultHttpClient = HttpClient {
-        expectSuccess = true
+
+    @OptIn(InternalCloudBridgeApi::class)
+    internal val defaultHttpClient by lazy {
+        HttpClient {
+            expectSuccess = true
+            CloudBridgeInternals.extraHttpClientConfig(this)
+        }
     }
 
     /**

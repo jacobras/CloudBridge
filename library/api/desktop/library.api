@@ -140,6 +140,9 @@ public final class nl/jacobras/cloudbridge/delta/UpdatedDeltaChange : nl/jacobra
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface annotation class nl/jacobras/cloudbridge/internal/InternalCloudBridgeApi : java/lang/annotation/Annotation {
+}
+
 public abstract interface class nl/jacobras/cloudbridge/logging/Logger {
 	public abstract fun log (Ljava/lang/String;)V
 }

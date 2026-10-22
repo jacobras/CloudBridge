@@ -7,6 +7,10 @@
 // - Show declarations: true
 
 // Library unique name: <nl.jacobras:library>
+open annotation class nl.jacobras.cloudbridge.internal/InternalCloudBridgeApi : kotlin/Annotation { // nl.jacobras.cloudbridge.internal/InternalCloudBridgeApi|null[0]
+    constructor <init>() // nl.jacobras.cloudbridge.internal/InternalCloudBridgeApi.<init>|<init>(){}[0]
+}
+
 abstract interface nl.jacobras.cloudbridge.delta/DeltaCloudService { // nl.jacobras.cloudbridge.delta/DeltaCloudService|null[0]
     abstract suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.delta/DeltaCloudService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
 }
