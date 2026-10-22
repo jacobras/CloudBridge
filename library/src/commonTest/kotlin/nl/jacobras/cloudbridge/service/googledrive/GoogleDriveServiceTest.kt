@@ -174,4 +174,27 @@ class GoogleDriveServiceTest {
             )
         }
     }
+
+    @Test
+    fun `delete file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "",
+                status = HttpStatusCode.NoContent
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        service.delete(CloudItemId("1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"))
+
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Delete)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://www.googleapis.com/drive/v3/files/1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"
+            )
+        }
+    }
 }

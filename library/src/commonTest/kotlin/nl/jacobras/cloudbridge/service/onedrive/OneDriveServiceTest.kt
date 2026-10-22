@@ -147,4 +147,27 @@ class OneDriveServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot/children")
         }
     }
+
+    @Test
+    fun `delete file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "",
+                status = HttpStatusCode.NoContent
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        service.delete(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
+
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Delete)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"
+            )
+        }
+    }
 }

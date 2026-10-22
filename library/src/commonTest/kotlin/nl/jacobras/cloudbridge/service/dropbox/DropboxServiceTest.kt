@@ -140,4 +140,28 @@ class DropboxServiceTest {
         assertThat(request.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/list_folder")
         assertThat(request.body.toByteArray().decodeToString()).isEqualTo("""{"path":""}""")
     }
+
+    @Test
+    fun `delete file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"metadata":{".tag":"file","client_modified":"2025-10-11T16:30:47Z","content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac","id":"id:uwStUuhj4qYAAAAAAAAAIQ","is_downloadable":true,"name":"asdf.txt","path_display":"/asdf.txt","path_lower":"/asdf.txt","property_groups":[],"rev":"01640e48e7e6a010000000301ae1691","server_modified":"2025-10-11T16:30:47Z","size":1}}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        service.delete(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"))
+
+        val request = engine.requestHistory.single()
+        assertThat(request.method).isEqualTo(HttpMethod.Post)
+        assertThat(request.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/delete_v2")
+        assertThat(
+            request.body.toByteArray().decodeToString()
+        ).isEqualTo("""{"path":"id:uwStUuhj4qYAAAAAAAAAIQ"}""")
+    }
 }
