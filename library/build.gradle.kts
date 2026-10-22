@@ -128,6 +128,6 @@ signing {
     }
 }
 
-tasks.named("sourcesJar") {
+tasks.matching { it.name.endsWith("sourcesJar", ignoreCase = true) }.configureEach {
     dependsOn("kspCommonMainKotlinMetadata")
 }
