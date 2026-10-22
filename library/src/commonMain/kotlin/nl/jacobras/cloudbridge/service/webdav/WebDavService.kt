@@ -1,6 +1,5 @@
 package nl.jacobras.cloudbridge.service.webdav
 
-import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
@@ -19,6 +18,7 @@ import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.io.IOException
+import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
@@ -40,8 +40,7 @@ public class WebDavService internal constructor(
     private var credentials: WebDavCredentials
 ) : CloudService {
 
-    private val client = HttpClient {
-        expectSuccess = true
+    private val client = defaultHttpClient.config {
         defaultRequest {
             header(HttpHeaders.Authorization, credentials.toAuthHeaderValue())
         }
@@ -155,9 +154,11 @@ public class WebDavService internal constructor(
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
                 }
+
                 HttpStatusCode.NotFound -> {
                     CloudServiceException.NotFoundException(itemId)
                 }
+
                 else -> {
                     CloudServiceException.Unknown(e)
                 }

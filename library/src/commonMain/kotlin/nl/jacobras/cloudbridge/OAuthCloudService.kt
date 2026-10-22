@@ -9,6 +9,7 @@ import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
 public abstract class OAuthCloudService(startToken: CloudAccessToken?) : CloudService {
@@ -20,8 +21,7 @@ public abstract class OAuthCloudService(startToken: CloudAccessToken?) : CloudSe
         ktorfit {
             baseUrl(baseUrl)
             httpClient(
-                HttpClient {
-                    expectSuccess = true
+                defaultHttpClient.config {
                     install(ContentNegotiation) {
                         json(
                             Json {
