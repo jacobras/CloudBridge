@@ -337,6 +337,10 @@ open class nl.jacobras.cloudbridge/CloudServiceException : kotlin/Exception { //
         constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudServiceException.ConnectionException.<init>|<init>(kotlinx.io.IOException){}[0]
     }
 
+    final class InsufficientSpaceException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.InsufficientSpaceException|null[0]
+        constructor <init>() // nl.jacobras.cloudbridge/CloudServiceException.InsufficientSpaceException.<init>|<init>(){}[0]
+    }
+
     final class NotAuthenticatedException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.NotAuthenticatedException|null[0]
         constructor <init>() // nl.jacobras.cloudbridge/CloudServiceException.NotAuthenticatedException.<init>|<init>(){}[0]
     }

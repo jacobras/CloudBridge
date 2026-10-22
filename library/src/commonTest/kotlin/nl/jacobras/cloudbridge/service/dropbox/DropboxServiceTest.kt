@@ -77,6 +77,28 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `uploading without space left throws InsufficientSpaceException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error_summary":"path/insufficient_space/","error":{".tag":"path","reason":{".tag":"insufficient_space"},"upload_session_id":"AAAAAAAAAAAAAAAAAAAAAA"}}""",
+                status = HttpStatusCode.Conflict,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFile("/big.txt".asFilePath(), "content") }
+            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/upload")
+        }
+    }
+
+    @Test
     fun `list files in root`() = runTest {
         val engine = MockEngine {
             respond(

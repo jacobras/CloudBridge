@@ -20,6 +20,10 @@ public open class CloudServiceException : Exception {
         "The requested item '$itemId' could not be found"
     )
 
+    public class InsufficientSpaceException : CloudServiceException(
+        "The cloud account doesn't have enough available storage space left"
+    )
+
     public class ConnectionException(cause: IOException) : CloudServiceException(
         cause = cause
     )

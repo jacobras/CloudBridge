@@ -181,6 +181,9 @@ public class DropboxService internal constructor(
                 HttpStatusCode.Conflict if e.message?.contains("not_found") == true -> {
                     CloudServiceException.NotFoundException(itemId)
                 }
+                HttpStatusCode.Conflict if e.message?.contains("insufficient_space") == true -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
                 }
