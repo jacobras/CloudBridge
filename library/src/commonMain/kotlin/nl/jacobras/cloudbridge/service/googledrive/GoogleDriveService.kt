@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -29,7 +30,12 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Instant
 
-public class GoogleDriveService(token: CloudAccessToken?) : OAuthCloudService(token), DeltaCloudService {
+public class GoogleDriveService internal constructor(
+    token: CloudAccessToken?,
+    httpClient: HttpClient?
+) : OAuthCloudService(token, httpClient), DeltaCloudService {
+
+    public constructor(token: CloudAccessToken?) : this(token, null)
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
