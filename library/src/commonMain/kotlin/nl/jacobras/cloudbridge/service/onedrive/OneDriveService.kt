@@ -8,6 +8,11 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
+import nl.jacobras.cloudbridge.delta.DeltaCloudService
+import nl.jacobras.cloudbridge.delta.DeltaCursor
+import nl.jacobras.cloudbridge.delta.DeltaResult
+import nl.jacobras.cloudbridge.delta.UpdatedDeltaChange
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -22,7 +27,7 @@ import kotlin.time.Instant
 public class OneDriveService internal constructor(
     token: CloudAccessToken?,
     httpClient: HttpClient?
-) : OAuthCloudService(token, httpClient) {
+) : OAuthCloudService(token, httpClient), DeltaCloudService {
 
     public constructor(token: CloudAccessToken?) : this(token, null)
 
@@ -103,6 +108,53 @@ public class OneDriveService internal constructor(
 
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         api.deleteById(id.value)
+    }
+
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult = tryCall {
+        val rootId = api.getAppRoot().id
+
+        var response = if (previousCursor == DeltaCursor.INITIAL) {
+            api.getDelta()
+        } else {
+            api.getDeltaByUrl(previousCursor.value)
+        }
+        val items = response.items.toMutableList()
+        while (response.deltaLink == null) {
+            response = api.getDeltaByUrl(response.nextLink ?: error("Missing next link"))
+            items += response.items
+        }
+
+        // The same item can appear more than once; the last occurrence is the latest.
+        val itemsById = items.associateBy { it.id }
+        val paths = mutableMapOf(rootId to "/")
+        fun resolvePath(id: String): String? = paths.getOrPut(id) {
+            val item = itemsById[id] ?: return null
+            val name = item.name ?: return null
+            val parentPath = resolvePath(item.parent?.id ?: return null) ?: return null
+            if (parentPath == "/") "/$name" else "$parentPath/$name"
+        }
+
+        DeltaResult(
+            newCursor = DeltaCursor(response.deltaLink),
+            changes = itemsById.values.filter { it.id != rootId }.map {
+                val path = resolvePath(it.id) ?: it.name?.let { name -> "/$name" } ?: "/${it.id}"
+                val isFolder = it.folder != null
+                if (it.deleted != null) {
+                    DeletedDeltaChange(
+                        itemId = CloudItemId(it.id),
+                        path = if (isFolder) path.asFolderPath() else path.asFilePath()
+                    )
+                } else {
+                    UpdatedDeltaChange(
+                        itemId = CloudItemId(it.id),
+                        path = if (isFolder) path.asFolderPath() else path.asFilePath(),
+                        name = it.name ?: error("Missing name"),
+                        revision = it.eTag,
+                        modified = it.lastModified?.let(Instant::parse)
+                    )
+                }
+            }
+        )
     }
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
