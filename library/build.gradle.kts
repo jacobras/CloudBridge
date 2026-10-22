@@ -64,6 +64,7 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.assertK)
             implementation(libs.kotlin.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
         named("desktopMain") {
             dependencies {

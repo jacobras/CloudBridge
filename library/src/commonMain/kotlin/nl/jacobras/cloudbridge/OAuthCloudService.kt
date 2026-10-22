@@ -12,7 +12,15 @@ import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
-public abstract class OAuthCloudService(startToken: CloudAccessToken?) : CloudService {
+/**
+ * @param httpClient Client override for tests.
+ */
+public abstract class OAuthCloudService internal constructor(
+    startToken: CloudAccessToken?,
+    private val httpClient: HttpClient?
+) : CloudService {
+    public constructor(startToken: CloudAccessToken?) : this(startToken, null)
+
     private var token: CloudAccessToken? = startToken
 
     protected abstract val baseUrl: String
@@ -21,7 +29,7 @@ public abstract class OAuthCloudService(startToken: CloudAccessToken?) : CloudSe
         ktorfit {
             baseUrl(baseUrl)
             httpClient(
-                defaultHttpClient.config {
+                (httpClient ?: defaultHttpClient).config {
                     install(ContentNegotiation) {
                         json(
                             Json {

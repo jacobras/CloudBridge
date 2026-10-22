@@ -1,6 +1,7 @@
 package nl.jacobras.cloudbridge
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -22,9 +23,13 @@ public object CloudBridge {
     @OptIn(InternalCloudBridgeApi::class)
     internal val defaultHttpClient by lazy {
         HttpClient {
-            expectSuccess = true
+            applyDefaults()
             CloudBridgeInternals.extraHttpClientConfig(this)
         }
+    }
+
+    internal fun HttpClientConfig<*>.applyDefaults() {
+        expectSuccess = true
     }
 
     /**

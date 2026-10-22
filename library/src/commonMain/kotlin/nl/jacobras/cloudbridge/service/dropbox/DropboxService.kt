@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
@@ -27,7 +28,12 @@ import kotlin.time.Instant
 /**
  * Instance of the Dropbox API.
  */
-public class DropboxService(token: CloudAccessToken?) : OAuthCloudService(token), DeltaCloudService {
+public class DropboxService internal constructor(
+    token: CloudAccessToken?,
+    httpClient: HttpClient?
+) : OAuthCloudService(token, httpClient), DeltaCloudService {
+
+    public constructor(token: CloudAccessToken?) : this(token, null)
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
