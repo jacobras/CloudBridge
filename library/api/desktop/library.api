@@ -13,13 +13,22 @@ public final class nl/jacobras/cloudbridge/CloudBridge {
 
 public abstract interface class nl/jacobras/cloudbridge/CloudService {
 	public abstract fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun createFile-c1-3Pb4$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public abstract fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun isAuthenticated ()Z
 	public abstract fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun updateFile-SuhL75Y (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun updateFile-SuhL75Y$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public abstract fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class nl/jacobras/cloudbridge/CloudService$DefaultImpls {
+	public static synthetic fun createFile-c1-3Pb4$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun updateFile-SuhL75Y$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public class nl/jacobras/cloudbridge/CloudServiceException : java/lang/Exception {
@@ -288,12 +297,14 @@ public final class nl/jacobras/cloudbridge/service/dropbox/AuthenticateKt {
 public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-SuhL75Y (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -304,12 +315,14 @@ public final class nl/jacobras/cloudbridge/service/googledrive/AuthenticateKt {
 public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-SuhL75Y (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -320,12 +333,14 @@ public final class nl/jacobras/cloudbridge/service/onedrive/AuthenticateKt {
 public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl/jacobras/cloudbridge/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun <init> (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getUserInfo (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateFile-SuhL75Y (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -346,6 +361,7 @@ public final class nl/jacobras/cloudbridge/service/webdav/WebDavCredentials {
 
 public final class nl/jacobras/cloudbridge/service/webdav/WebDavService : nl/jacobras/cloudbridge/CloudService {
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -353,6 +369,7 @@ public final class nl/jacobras/cloudbridge/service/webdav/WebDavService : nl/jac
 	public fun isAuthenticated ()Z
 	public fun listFiles-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setCredentials (Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;)V
+	public fun updateFile-SuhL75Y (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun updateFile-iTb6-uM (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
