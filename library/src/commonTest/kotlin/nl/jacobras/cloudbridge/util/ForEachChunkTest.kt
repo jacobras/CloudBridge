@@ -4,7 +4,6 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.Buffer
-import nl.jacobras.cloudbridge.bufferOf
 import kotlin.test.Test
 
 class ForEachChunkTest {
