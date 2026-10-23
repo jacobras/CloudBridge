@@ -113,9 +113,14 @@ public class WebDavService internal constructor(
         propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String) {
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
         val bytes = content.encodeToByteArray()
-        updateFile(id, Buffer().apply { write(bytes) }, bytes.size.toLong(), TEXT_MIME_TYPE)
+        return updateFile(
+            id = id,
+            source = Buffer().apply { write(bytes) },
+            sizeInBytes = bytes.size.toLong(),
+            mimeType = TEXT_MIME_TYPE
+        )
     }
 
     override suspend fun updateFile(
@@ -123,8 +128,11 @@ public class WebDavService internal constructor(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ): Unit = tryCall(id.value) {
+    ): CloudFile = tryCall(id.value) {
         put(id.value, source, sizeInBytes, mimeType)
+
+        // PUT doesn't return any metadata, so fetch it separately
+        propfind(id.value, depth = 0).single().toCloudItem() as CloudFile
     }
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
@@ -250,7 +258,7 @@ private class SourceContent(
     }
 }
 
-private const val TEXT_MIME_TYPE = "text/plain; charset=UTF"
+private const val TEXT_MIME_TYPE = "text/plain; charset=UTF-8"
 private const val STREAM_CHUNK_SIZE = 64 * 1024
 private const val PROPFIND_BODY = """<?xml version="1.0" encoding="utf-8"?>
 <d:propfind xmlns:d="DAV:">

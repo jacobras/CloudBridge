@@ -55,6 +55,7 @@ public class GoogleDriveService internal constructor(
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
+    private var appDataFolderId: String? = null
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
@@ -117,12 +118,15 @@ public class GoogleDriveService internal constructor(
         ).toCloudFile(isRoot = path.toFolderPath().isRoot)
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
-        api.updateFile(
-            id = id.value,
-            content = content.toByteArray()
-        )
-    }
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
+        tryCall(id.value) {
+            val response = api.updateFile(
+                id = id.value,
+                contentType = "text/plain",
+                content = content.toByteArray()
+            )
+            response.toCloudFile(isRoot = response.isInRoot())
+        }
 
     override suspend fun createFile(
         path: FilePath,
@@ -156,19 +160,28 @@ public class GoogleDriveService internal constructor(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ) {
-        upload(
+    ): CloudFile {
+        val response = upload(
             itemId = id.value,
             source = source,
             sizeInBytes = sizeInBytes,
             mimeType = mimeType,
-            uploadSingle = { api.updateBinaryFile(id.value, mimeType, it) },
+            uploadSingle = { api.updateFile(id.value, mimeType, it) },
             startSession = {
                 clientWithAuth.patch("${baseUrl}upload/drive/v3/files/${id.value}") {
                     resumableUploadParams(mimeType, sizeInBytes)
                 }
             }
         )
+        return tryCall(id.value) { response.toCloudFile(isRoot = response.isInRoot()) }
+    }
+
+    /**
+     * Whether this file is directly in the appDataFolder (of which the ID is fetched once and cached).
+     */
+    private suspend fun DriveFile.isInRoot(): Boolean {
+        val rootId = appDataFolderId ?: api.getAppDataFolder().id.also { appDataFolderId = it }
+        return parents.firstOrNull()?.let { it == rootId } ?: true
     }
 
     private fun FilePath.toMetadata(mimeType: String): DriveFileMetadata {

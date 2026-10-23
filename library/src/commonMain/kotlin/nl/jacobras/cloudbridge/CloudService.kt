@@ -49,9 +49,10 @@ public interface CloudService {
     /**
      * Updates the file with id [id] to the text [content].
      *
+     * @return The updated file.
      * @throws CloudServiceException
      */
-    public suspend fun updateFile(id: CloudItemId, content: String)
+    public suspend fun updateFile(id: CloudItemId, content: String): CloudFile
 
     /**
      * Creates a file at path [path] with the binary content of [source]. The source is read
@@ -76,6 +77,7 @@ public interface CloudService {
      *
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
+     * @return The updated file.
      * @throws IllegalArgumentException when uploading >10 MB to OneDrive and [sizeInBytes] is missing.
      * @throws CloudServiceException
      */
@@ -84,7 +86,7 @@ public interface CloudService {
         source: Source,
         sizeInBytes: Long? = null,
         mimeType: String = "application/octet-stream"
-    )
+    ): CloudFile
 
     /**
      * Retrieves the file with [id].

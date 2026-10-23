@@ -211,7 +211,13 @@ internal data class UploadSession(
 internal data class DriveItemId(
 
     @SerialName("id")
-    val id: String
+    val id: String,
+
+    @SerialName("name")
+    val name: String? = null,
+
+    @SerialName("parentReference")
+    val parent: ParentReference? = null
 )
 
 @Serializable

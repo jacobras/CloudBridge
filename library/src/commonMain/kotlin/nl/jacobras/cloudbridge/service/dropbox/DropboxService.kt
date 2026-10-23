@@ -105,8 +105,8 @@ public class DropboxService internal constructor(
         response.toCloudFile()
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
-        api.uploadFile(
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile = tryCall(id.value) {
+        val response = api.uploadFile(
             arguments = Json.encodeToString(
                 DropboxUploadArg(
                     path = id.value,
@@ -115,6 +115,7 @@ public class DropboxService internal constructor(
             ),
             content = content.toByteArray()
         )
+        response.toCloudFile()
     }
 
     override suspend fun createFile(
@@ -134,11 +135,11 @@ public class DropboxService internal constructor(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ) {
-        upload(
+    ): CloudFile {
+        return upload(
             arg = DropboxUploadArg(path = id.value, mode = Mode.Overwrite),
             source = source
-        )
+        ).toCloudFile()
     }
 
     /**

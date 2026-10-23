@@ -132,6 +132,39 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `update file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"name":"asdf.txt","path_lower":"/notes/asdf.txt","path_display":"/Notes/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-12T10:00:00Z","server_modified":"2025-10-12T10:00:00Z","rev":"01640e48e7e6a010000000301ae1692","size":2,"is_downloadable":true,"content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.updateFile(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"), "ab")
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
+                path = "/notes/asdf.txt".asFilePath(),
+                name = "asdf.txt",
+                sizeInBytes = 2,
+                modified = Instant.parse("2025-10-12T10:00:00Z"),
+                revision = "01640e48e7e6a010000000301ae1692"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/upload")
+            assertThat(it.headers["Dropbox-API-Arg"])
+                .isEqualTo("""{"path":"id:uwStUuhj4qYAAAAAAAAAIQ","mode":"overwrite"}""")
+        }
+    }
+
+    @Test
     fun `create folder`() = runTest {
         val engine = MockEngine {
             respond(

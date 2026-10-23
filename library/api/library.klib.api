@@ -28,8 +28,8 @@ abstract interface nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbr
     abstract suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge/CloudService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     abstract suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge/CloudService.getUserInfo|getUserInfo(){}[0]
     abstract suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge/CloudService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
-    abstract suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge/CloudService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
-    abstract suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long? = ..., kotlin/String = ...) // nl.jacobras.cloudbridge/CloudService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
+    abstract suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge/CloudService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+    abstract suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long? = ..., kotlin/String = ...): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge/CloudService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
 }
 
 sealed interface nl.jacobras.cloudbridge.delta/DeltaChange { // nl.jacobras.cloudbridge.delta/DeltaChange|null[0]
@@ -216,8 +216,8 @@ final class nl.jacobras.cloudbridge.service.dropbox/DropboxService : nl.jacobras
     final suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.service.dropbox/DropboxService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
     final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.dropbox/DropboxService.getUserInfo|getUserInfo(){}[0]
     final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.dropbox/DropboxService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String) // nl.jacobras.cloudbridge.service.dropbox/DropboxService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.dropbox/DropboxService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.dropbox/DropboxService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
 }
 
 final class nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService : nl.jacobras.cloudbridge.delta/DeltaCloudService, nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService|null[0]
@@ -231,8 +231,8 @@ final class nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService : nl.
     final suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
     final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.getUserInfo|getUserInfo(){}[0]
     final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String) // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.googledrive/GoogleDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
 }
 
 final class nl.jacobras.cloudbridge.service.onedrive/OneDriveService : nl.jacobras.cloudbridge.delta/DeltaCloudService, nl.jacobras.cloudbridge/OAuthCloudService { // nl.jacobras.cloudbridge.service.onedrive/OneDriveService|null[0]
@@ -246,8 +246,8 @@ final class nl.jacobras.cloudbridge.service.onedrive/OneDriveService : nl.jacobr
     final suspend fun getDelta(nl.jacobras.cloudbridge.delta/DeltaCursor): nl.jacobras.cloudbridge.delta/DeltaResult // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.getDelta|getDelta(nl.jacobras.cloudbridge.delta.DeltaCursor){}[0]
     final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.getUserInfo|getUserInfo(){}[0]
     final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String) // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.onedrive/OneDriveService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
 }
 
 final class nl.jacobras.cloudbridge.service.webdav/WebDavCredentials { // nl.jacobras.cloudbridge.service.webdav/WebDavCredentials|null[0]
@@ -279,8 +279,8 @@ final class nl.jacobras.cloudbridge.service.webdav/WebDavService : nl.jacobras.c
     final suspend fun downloadFile(nl.jacobras.cloudbridge.model/CloudItemId): kotlin/String // nl.jacobras.cloudbridge.service.webdav/WebDavService.downloadFile|downloadFile(nl.jacobras.cloudbridge.model.CloudItemId){}[0]
     final suspend fun getUserInfo(): nl.jacobras.cloudbridge.model/UserInfo // nl.jacobras.cloudbridge.service.webdav/WebDavService.getUserInfo|getUserInfo(){}[0]
     final suspend fun listFiles(nl.jacobras.cloudbridge.model/FolderPath): kotlin.collections/List<nl.jacobras.cloudbridge.model/CloudItem> // nl.jacobras.cloudbridge.service.webdav/WebDavService.listFiles|listFiles(nl.jacobras.cloudbridge.model.FolderPath){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String) // nl.jacobras.cloudbridge.service.webdav/WebDavService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
-    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String) // nl.jacobras.cloudbridge.service.webdav/WebDavService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.webdav/WebDavService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlin.String){}[0]
+    final suspend fun updateFile(nl.jacobras.cloudbridge.model/CloudItemId, kotlinx.io/Source, kotlin/Long?, kotlin/String): nl.jacobras.cloudbridge.model/CloudFile // nl.jacobras.cloudbridge.service.webdav/WebDavService.updateFile|updateFile(nl.jacobras.cloudbridge.model.CloudItemId;kotlinx.io.Source;kotlin.Long?;kotlin.String){}[0]
 }
 
 final value class nl.jacobras.cloudbridge.delta/DeltaCursor { // nl.jacobras.cloudbridge.delta/DeltaCursor|null[0]

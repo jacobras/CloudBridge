@@ -72,14 +72,7 @@ internal interface GoogleDriveApi {
     ): DriveFile
 
     @PATCH("upload/drive/v3/files/{fileId}?uploadType=media")
-    @Multipart
     suspend fun updateFile(
-        @Path("fileId") id: String,
-        @Body content: ByteArray
-    )
-
-    @PATCH("upload/drive/v3/files/{fileId}?uploadType=media")
-    suspend fun updateBinaryFile(
         @Path("fileId") id: String,
         @Header("Content-Type") contentType: String,
         @Body content: ByteArray,

@@ -10,6 +10,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.ByteArrayContent
+import io.ktor.http.decodeURLPart
 import kotlinx.io.IOException
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
@@ -43,6 +44,7 @@ public class OneDriveService internal constructor(
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
+    private var appRootPath: String? = null
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
@@ -114,13 +116,15 @@ public class OneDriveService internal constructor(
         response.toCloudFile(path)
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
-        api.updateFile(
-            id = id.value,
-            contentType = "text/plain",
-            content = content.encodeToByteArray()
-        )
-    }
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
+        tryCall(id.value) {
+            val response = api.updateFile(
+                id = id.value,
+                contentType = "text/plain",
+                content = content.encodeToByteArray()
+            )
+            response.toCloudFile(response.resolvePath())
+        }
 
     override suspend fun createFile(
         path: FilePath,
@@ -147,8 +151,8 @@ public class OneDriveService internal constructor(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ) {
-        upload(
+    ): CloudFile {
+        val response = upload(
             itemId = id.value,
             source = source,
             sizeInBytes = sizeInBytes,
@@ -157,6 +161,23 @@ public class OneDriveService internal constructor(
                 api.createUploadSessionById(id.value, json.encodeToString(CreateUploadSessionArg()))
             }
         )
+        return tryCall(id.value) { response.toCloudFile(response.resolvePath()) }
+    }
+
+    /**
+     * Resolves the path of this item relative to the app root (of which the path is fetched once
+     * and then cached).
+     */
+    private suspend fun DriveItem.resolvePath(): FilePath {
+        val rootPath = appRootPath ?: api.getAppRoot().let { root ->
+            val parentPath = root.parent?.path ?: error("Missing parent path for app root")
+            "${parentPath.decodeURLPart()}/${root.name ?: error("Missing name for app root")}"
+        }.also { appRootPath = it }
+
+        // Graph returns e.g. "/drive/root:/Apps/My%20App/folder" for an item in "/folder".
+        // Paths are percent-encoded, names aren't, so compare decoded.
+        val relativeFolder = parent.path.decodeURLPart().removePrefix(rootPath)
+        return "$relativeFolder/$name".asFilePath()
     }
 
     /**

@@ -157,6 +157,70 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `update file`() = runTest {
+        val engine = MockEngine { request ->
+            val content = if (request.method == HttpMethod.Put) {
+                """
+                    {
+                      "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\"",
+                      "id": "33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc",
+                      "lastModifiedDateTime": "2025-10-12T10:00:00Z",
+                      "name": "asdf.txt",
+                      "size": 2,
+                      "parentReference": {
+                        "id": "33488461260C4A76!s1234",
+                        "path": "/drive/root:/Apps/CloudBridge%20Demo/My%20Notes"
+                      }
+                    }
+                """.trimIndent()
+            } else {
+                """
+                    {
+                      "id": "33488461260C4A76!s917d5fe70450423e896e4f9ab0023434",
+                      "name": "CloudBridge Demo",
+                      "lastModifiedDateTime": "2025-10-11T16:13:38Z",
+                      "parentReference": {
+                        "id": "33488461260C4A76!sroot",
+                        "path": "/drive/root:/Apps"
+                      }
+                    }
+                """.trimIndent()
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.updateFile(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"), "ab")
+        service.updateFile(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"), "ab")
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
+                path = "/My Notes/asdf.txt".asFilePath(),
+                name = "asdf.txt",
+                sizeInBytes = 2,
+                modified = Instant.parse("2025-10-12T10:00:00Z"),
+                revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\""
+            )
+        )
+        // The app root is fetched once, then cached
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Put,
+            HttpMethod.Get,
+            HttpMethod.Put
+        )
+        assertThat(engine.requestHistory[1].url.toString())
+            .isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot")
+    }
+
+    @Test
     fun `create folder`() = runTest {
         val engine = MockEngine {
             respond(

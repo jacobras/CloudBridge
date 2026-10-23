@@ -61,7 +61,8 @@ try {
 
 ```kotlin
 try {
-    service.updateFile(fileId, "Updated content")
+    val file: CloudFile = service.updateFile(fileId, "Updated content")
+    println("Updated ${file.id} to revision ${file.revision}")
 } catch (e: CloudServiceException) {
     // Handle...
 }

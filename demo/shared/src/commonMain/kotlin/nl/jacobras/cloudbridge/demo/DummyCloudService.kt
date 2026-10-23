@@ -117,7 +117,7 @@ class DummyCloudService(
     override suspend fun updateFile(
         id: CloudItemId,
         content: String
-    ) {
+    ): CloudFile {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -133,6 +133,7 @@ class DummyCloudService(
         cloudItems += updated
         cloudItemContents[id] = content
         recordUpdate(updated)
+        return updated
     }
 
     override suspend fun createFile(
@@ -147,7 +148,7 @@ class DummyCloudService(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ) = updateFile(id, source.readString())
+    ): CloudFile = updateFile(id, source.readString())
 
     override suspend fun downloadFile(id: CloudItemId): String {
         if (!isAuthenticated()) {

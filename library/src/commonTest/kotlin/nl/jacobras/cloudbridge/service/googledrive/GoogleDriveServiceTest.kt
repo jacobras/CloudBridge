@@ -19,13 +19,13 @@ import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.bufferOf
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -147,9 +147,70 @@ class GoogleDriveServiceTest {
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Patch)
             assertThat(it.url.toString()).isEqualTo(
-                "https://www.googleapis.com/upload/drive/v3/files/1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg?uploadType=media"
+                "https://www.googleapis.com/upload/drive/v3/files/1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg?uploadType=media" +
+                        "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
             )
         }
+    }
+
+    @Test
+    fun `update file`() = runTest {
+        val engine = MockEngine { request ->
+            val content = if (request.method == HttpMethod.Patch) {
+                """
+                    {
+                      "mimeType": "text/plain",
+                      "parents": ["1THG-A2vXis2oKtcHO7fK6u_1VLRN"],
+                      "size": "8",
+                      "id": "1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg",
+                      "name": "hello.txt",
+                      "trashed": false,
+                      "modifiedTime": "2025-10-12T10:00:00.000Z",
+                      "version": "2"
+                    }
+                """.trimIndent()
+            } else {
+                """{"id": "1THG-A2vXis2oKtcHO7fK6u_1VLRN"}"""
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.updateFile(
+            CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+            "Updated!"
+        )
+        service.updateFile(
+            CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+            "Updated!"
+        )
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+                path = "/hello.txt".asFilePath(),
+                name = "hello.txt",
+                sizeInBytes = 8,
+                modified = Instant.parse("2025-10-12T10:00:00.000Z"),
+                revision = "2"
+            )
+        )
+        // The appDataFolder id is fetched once, then cached
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Patch,
+            HttpMethod.Get,
+            HttpMethod.Patch
+        )
+        assertThat(engine.requestHistory[0].body.contentType.toString()).isEqualTo("text/plain")
+        assertThat(engine.requestHistory[1].url.toString())
+            .isEqualTo("https://www.googleapis.com/drive/v3/files/appDataFolder?fields=id")
     }
 
     @Test
