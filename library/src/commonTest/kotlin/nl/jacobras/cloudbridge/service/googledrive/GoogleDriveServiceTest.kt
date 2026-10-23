@@ -258,7 +258,10 @@ class GoogleDriveServiceTest {
                 revision = "1"
             )
         )
-        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Get, HttpMethod.Post)
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Get,
+            HttpMethod.Post
+        )
         assertThat(engine.requestHistory.first().url.parameters["q"])
             .isEqualTo("name = 'hello.txt' and 'appDataFolder' in parents and trashed = false")
         engine.requestHistory.last().let {
@@ -305,7 +308,10 @@ class GoogleDriveServiceTest {
                 name = "Work"
             )
         )
-        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Get, HttpMethod.Post)
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Get,
+            HttpMethod.Post
+        )
         engine.requestHistory.last().let {
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/drive/v3/files" +
@@ -391,7 +397,12 @@ class GoogleDriveServiceTest {
                 request.method == HttpMethod.Get && request.url.encodedPath.endsWith("/appDataFolder") ->
                     respondJson("""{"id": "1THG-A2vXis2oKtcHO7fK6u_1VLRN"}""")
                 request.method == HttpMethod.Get -> respondJson(EXISTING_FILE_JSON)
-                else -> respondJson(EXISTING_FILE_JSON.replace("1THG-A2vXis2oKtcHO7fK6u_1VLRN", "folderX"))
+                else -> respondJson(
+                    EXISTING_FILE_JSON.replace(
+                        "1THG-A2vXis2oKtcHO7fK6u_1VLRN",
+                        "folderX"
+                    )
+                )
             }
         }
         val service = GoogleDriveService(
@@ -473,9 +484,15 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure {
-            service.moveFile(CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"), "/hello.txt".asFilePath())
+            service.moveFile(
+                CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+                "/hello.txt".asFilePath()
+            )
         }.isInstanceOf<CloudServiceException.ConflictException>()
-        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Get, HttpMethod.Get)
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Get,
+            HttpMethod.Get
+        )
     }
 
     @Test
@@ -493,7 +510,10 @@ class GoogleDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        service.moveFile(CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"), "/hello.txt".asFilePath())
+        service.moveFile(
+            CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+            "/hello.txt".asFilePath()
+        )
 
         assertThat(engine.requestHistory.map { it.method }).contains(HttpMethod.Patch)
     }
@@ -568,7 +588,9 @@ class GoogleDriveServiceTest {
                 revision = "1"
             )
         )
-        val (nameCheck, uploadRequests) = engine.requestHistory.first() to engine.requestHistory.drop(1)
+        val (nameCheck, uploadRequests) = engine.requestHistory.first() to engine.requestHistory.drop(
+            1
+        )
         assertThat(nameCheck.method).isEqualTo(HttpMethod.Get)
         val (start, chunks) = uploadRequests.first() to uploadRequests.drop(1)
         assertThat(start.url.toString()).isEqualTo(
@@ -687,6 +709,109 @@ class GoogleDriveServiceTest {
                         "&pageSize=100"
             )
         }
+    }
+
+    @Test
+    fun `get file info`() = runTest {
+        val engine = MockEngine {
+            // A folder with the same name is skipped
+            respondFiles(
+                EXISTING_FILE_JSON.replace("text/plain", "application/vnd.google-apps.folder")
+                    .replace("1BZWMYkXl", "folder"),
+                EXISTING_FILE_JSON
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.getFileInfo("/1THG-A2vXis2oKtcHO7fK6u_1VLRN/hello.txt".asFilePath())
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+                path = "/1THG-A2vXis2oKtcHO7fK6u_1VLRN/hello.txt".asFilePath(),
+                name = "hello.txt",
+                sizeInBytes = 10,
+                modified = Instant.parse("2025-10-11T16:31:27.438Z"),
+                revision = "1"
+            )
+        )
+        assertThat(engine.requestHistory.single().url.parameters["q"])
+            .isEqualTo("name = 'hello.txt' and '1THG-A2vXis2oKtcHO7fK6u_1VLRN' in parents and trashed = false")
+    }
+
+    @Test
+    fun `get file info throws NotFoundException when missing`() = runTest {
+        val engine = MockEngine { respondFiles() }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFileInfo("/it's.txt".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+        assertThat(engine.requestHistory.single().url.parameters["q"])
+            .isEqualTo("name = 'it\\'s.txt' and 'appDataFolder' in parents and trashed = false")
+    }
+
+    @Test
+    fun `get folder info`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath.endsWith("/appDataFolder")) {
+                respondJson("""{"id": "1THG-A2vXis2oKtcHO7fK6u_1VLRN"}""")
+            } else {
+                respondJson(
+                    EXISTING_FILE_JSON.replace("text/plain", "application/vnd.google-apps.folder")
+                        .replace("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg", "folder1")
+                        .replace("hello.txt", "Work")
+                )
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.getFolderInfo("/folder1".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("folder1"),
+                path = "/folder1".asFolderPath(),
+                name = "Work"
+            )
+        )
+        assertThat(engine.requestHistory.map { it.url.encodedPath }).containsExactly(
+            "/drive/v3/files/folder1",
+            "/drive/v3/files/appDataFolder"
+        )
+    }
+
+    @Test
+    fun `get folder info for root throws IllegalArgumentException`() = runTest {
+        val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFolderInfo("/".asFolderPath()) }
+            .isInstanceOf<IllegalArgumentException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
+    fun `get folder info throws NotFoundException for a file`() = runTest {
+        val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFolderInfo("/1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg".asFolderPath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 
     @Test

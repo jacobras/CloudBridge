@@ -56,6 +56,20 @@ public class DropboxService internal constructor(
         api.listFiles(arg).entries.map { it.toCloudItem() }
     }
 
+    override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
+        api.getMetadata(Json.encodeToString(GetMetadataArg(path.toString()))).toCloudItem()
+                as? CloudFile ?: throw CloudServiceException.NotFoundException(path.toString())
+    }
+
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        require(!path.isRoot) { "Can't get info for the root folder" }
+
+        return tryCall(path.toString()) {
+            api.getMetadata(Json.encodeToString(GetMetadataArg(path.toString()))).toCloudItem()
+                    as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+        }
+    }
+
     override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
         return move(id, newPath.toString()) as CloudFile
     }
@@ -289,6 +303,8 @@ public class DropboxService internal constructor(
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
+        } catch (e: CloudServiceException) {
+            throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }

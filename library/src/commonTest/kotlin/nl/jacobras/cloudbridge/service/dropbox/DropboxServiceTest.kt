@@ -19,13 +19,13 @@ import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.bufferOf
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -178,7 +178,10 @@ class DropboxServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.moveFile(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"), "/Notes/new.txt".asFilePath())
+        val file = service.moveFile(
+            CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
+            "/Notes/new.txt".asFilePath()
+        )
 
         assertThat(file).isEqualTo(
             CloudFile(
@@ -298,7 +301,8 @@ class DropboxServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.createFile("/image.png".asFilePath(), bufferOf(3), mimeType = "image/png")
+        val file =
+            service.createFile("/image.png".asFilePath(), bufferOf(3), mimeType = "image/png")
 
         assertThat(file.id).isEqualTo(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"))
         assertThat(engine.requestHistory).single().given {
@@ -340,7 +344,11 @@ class DropboxServiceTest {
             """{"cursor":{"session_id":"session1","offset":4}}""",
             """{"cursor":{"session_id":"session1","offset":8},"commit":{"path":"/archive.zip","mode":"add"}}"""
         )
-        assertThat(engine.requestHistory.map { it.body.toByteArray().size }).containsExactly(4, 4, 2)
+        assertThat(engine.requestHistory.map { it.body.toByteArray().size }).containsExactly(
+            4,
+            4,
+            2
+        )
     }
 
     @Test
@@ -410,6 +418,136 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `get file info`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{".tag":"file","name":"asdf.txt","path_lower":"/notes/asdf.txt","path_display":"/Notes/asdf.txt","id":"id:file1","client_modified":"2025-10-11T16:30:47Z","rev":"0164","size":1}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.getFileInfo("/Notes/asdf.txt".asFilePath())
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("id:file1"),
+                path = "/notes/asdf.txt".asFilePath(),
+                name = "asdf.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:30:47Z"),
+                revision = "0164"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/get_metadata")
+            assertThat(
+                it.body.toByteArray().decodeToString()
+            ).isEqualTo("""{"path":"/Notes/asdf.txt"}""")
+        }
+    }
+
+    @Test
+    fun `get file info throws NotFoundException when missing`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error_summary":"path/not_found/..","error":{".tag":"path","path":{".tag":"not_found"}}}""",
+                status = HttpStatusCode.Conflict,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get file info throws NotFoundException for a folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{".tag":"folder","name":"Notes","path_lower":"/notes","path_display":"/Notes","id":"id:folder1"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFileInfo("/Notes".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get folder info`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{".tag":"folder","name":"Notes","path_lower":"/notes","path_display":"/Notes","id":"id:folder1"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.getFolderInfo("/Notes".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("id:folder1"),
+                path = "/notes".asFolderPath(),
+                name = "Notes"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/get_metadata")
+            assertThat(it.body.toByteArray().decodeToString()).isEqualTo("""{"path":"/Notes"}""")
+        }
+    }
+
+    @Test
+    fun `get folder info throws NotFoundException for a file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{".tag":"file","name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:file1","client_modified":"2025-10-11T16:30:47Z","rev":"0164","size":1}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFolderInfo("/asdf.txt".asFolderPath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get folder info for root throws IllegalArgumentException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFolderInfo("/".asFolderPath()) }
+            .isInstanceOf<IllegalArgumentException>()
+        assertThat(engine.requestHistory.size).isEqualTo(0)
+    }
+
+    @Test
     fun `delete file`() = runTest {
         val engine = MockEngine {
             respond(
@@ -434,4 +572,5 @@ class DropboxServiceTest {
     }
 }
 
-private const val UPLOAD_RESPONSE = """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1}"""
+private const val UPLOAD_RESPONSE =
+    """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1}"""

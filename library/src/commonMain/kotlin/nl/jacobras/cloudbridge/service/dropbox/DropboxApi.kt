@@ -76,6 +76,10 @@ internal interface DropboxApi {
         @Body content: ByteArray
     ): UploadResponse
 
+    @POST("2/files/get_metadata")
+    @Headers("Content-Type: application/json")
+    suspend fun getMetadata(@Body arg: String): FileEntry
+
     @POST("2/files/move_v2")
     @Headers("Content-Type: application/json")
     suspend fun move(@Body arg: String): MoveResponse
@@ -280,6 +284,12 @@ internal data class UploadResponse(
 
     @SerialName("rev")
     val rev: String
+)
+
+@Serializable
+internal data class GetMetadataArg(
+    @SerialName("path")
+    val path: String
 )
 
 @Serializable

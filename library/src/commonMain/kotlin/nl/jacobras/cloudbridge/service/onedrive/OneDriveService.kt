@@ -58,6 +58,26 @@ public class OneDriveService internal constructor(
         )
     }
 
+    override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
+        val item = api.getItemByPath(path.toString())
+        if (item.folder != null) {
+            throw CloudServiceException.NotFoundException(path.toString())
+        }
+        item.toCloudFile(path)
+    }
+
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        require(!path.isRoot) { "Can't get info for the root folder" }
+
+        return tryCall(path.toString()) {
+            val item = api.getItemByPath(path.toString())
+            if (item.folder == null) {
+                throw CloudServiceException.NotFoundException(path.toString())
+            }
+            CloudFolder(id = CloudItemId(item.id), path = path, name = item.name)
+        }
+    }
+
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
         val response = if (path.isRoot) {
             api.listFiles()
@@ -355,6 +375,8 @@ public class OneDriveService internal constructor(
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
+        } catch (e: CloudServiceException) {
+            throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }

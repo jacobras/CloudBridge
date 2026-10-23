@@ -3,11 +3,13 @@ package nl.jacobras.cloudbridge.service.webdav
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
@@ -167,7 +169,10 @@ class WebDavServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.moveFile(CloudItemId("/Notes for Android/note.txt"), "/Archive/new name.txt".asFilePath())
+        val file = service.moveFile(
+            CloudItemId("/Notes for Android/note.txt"),
+            "/Archive/new name.txt".asFilePath()
+        )
 
         assertThat(file).isEqualTo(
             CloudFile(
@@ -216,7 +221,8 @@ class WebDavServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val folder = service.moveFolder(CloudItemId("/Notes for Android/"), "/Archive".asFolderPath())
+        val folder =
+            service.moveFolder(CloudItemId("/Notes for Android/"), "/Archive".asFolderPath())
 
         assertThat(folder).isEqualTo(
             CloudFolder(
@@ -360,6 +366,87 @@ class WebDavServiceTest {
     }
 
     @Test
+    fun `get file info`() = runTest {
+        val engine = MockEngine { respondMultiStatus(WEBDAV_FILE_RESPONSE) }
+        val service = webDavService(engine)
+
+        val file = service.getFileInfo("/Notes for Android/note.txt".asFilePath())
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("/Notes for Android/note.txt"),
+                path = "/Notes for Android/note.txt".asFilePath(),
+                name = "note.txt",
+                sizeInBytes = 5,
+                modified = Instant.parse("2024-04-02T18:27:06Z"),
+                revision = "\"abc123\""
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString())
+                .isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/note.txt")
+            assertThat(it.headers["Depth"]).isEqualTo("0")
+        }
+    }
+
+    @Test
+    fun `get file info throws NotFoundException when missing`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.NotFound) }
+        val service = webDavService(engine)
+
+        assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get file info throws NotFoundException for a folder`() = runTest {
+        val engine = MockEngine { respondMultiStatus(WEBDAV_FOLDER_RESPONSE) }
+        val service = webDavService(engine)
+
+        assertFailure { service.getFileInfo("/Notes for Android".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get folder info`() = runTest {
+        val engine = MockEngine { respondMultiStatus(WEBDAV_FOLDER_RESPONSE) }
+        val service = webDavService(engine)
+
+        val folder = service.getFolderInfo("/Notes for Android".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("/Notes for Android/"),
+                path = "/Notes for Android".asFolderPath(),
+                name = "Notes for Android"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/")
+            assertThat(it.headers["Depth"]).isEqualTo("0")
+        }
+    }
+
+    @Test
+    fun `get folder info throws NotFoundException for a file`() = runTest {
+        val engine = MockEngine { respondMultiStatus(WEBDAV_FILE_RESPONSE) }
+        val service = webDavService(engine)
+
+        assertFailure { service.getFolderInfo("/Notes for Android/note.txt".asFolderPath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get folder info for root throws IllegalArgumentException`() = runTest {
+        val engine = MockEngine { respondMultiStatus(WEBDAV_FOLDER_RESPONSE) }
+        val service = webDavService(engine)
+
+        assertFailure { service.getFolderInfo("/".asFolderPath()) }
+            .isInstanceOf<IllegalArgumentException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
     fun `delete file`() = runTest {
         val engine = MockEngine {
             respond(
@@ -384,3 +471,24 @@ class WebDavServiceTest {
         }
     }
 }
+
+private const val WEBDAV_FILE_RESPONSE =
+    """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/server.php/Notes%20for%20Android/note.txt</d:href><d:propstat><d:prop><d:resourcetype/><d:getcontentlength>5</d:getcontentlength><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified><d:displayname>note.txt</d:displayname><d:getetag>"abc123"</d:getetag></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"""
+
+private const val WEBDAV_FOLDER_RESPONSE =
+    """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/server.php/Notes%20for%20Android/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"""
+
+private fun webDavService(engine: MockEngine) = WebDavService(
+    credentials = WebDavCredentials(
+        serverUrl = "https://webdav.example.com/server.php",
+        username = "user",
+        password = "pass"
+    ),
+    httpClient = HttpClient(engine) { applyDefaults() }
+)
+
+private fun MockRequestHandleScope.respondMultiStatus(content: String) = respond(
+    content = content,
+    status = HttpStatusCode.MultiStatus,
+    headers = headersOf(HttpHeaders.ContentType, "application/xml; charset=utf-8")
+)

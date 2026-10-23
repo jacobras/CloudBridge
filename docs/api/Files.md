@@ -36,6 +36,23 @@ try {
 }
 ```
 
+## Getting file or folder info
+
+Fetches the metadata of a single file or folder. If nothing exists at the path, or the item has the
+other type (a folder when asking for a file or the other way round), a `NotFoundException` is
+thrown.
+
+```kotlin
+try {
+    val file: CloudFile = service.getFileInfo("/Projects/Welcome.txt".asFilePath())
+    val folder: CloudFolder = service.getFolderInfo("/Projects".asFolderPath())
+} catch (e: CloudServiceException) {
+    // Handle...
+}
+```
+
+Calling `getFolderInfo()` for the root folder (`/`) throws an `IllegalArgumentException`.
+
 ## Creating a folder
 
 ```kotlin
@@ -136,7 +153,7 @@ To rename an item, move it within the same folder. If an item already exists at 
 try {
     // Rename/move a file
     service.moveFile(fileId, "/Projects/New name.txt".asFilePath())
-  
+
     // Or a folder
     service.moveFolder(folderId, "/Projects2".asFolderPath())
 } catch (e: CloudServiceException) {

@@ -75,6 +75,25 @@ class DummyCloudService(
         return cloudItems.filter { it.path.startsWith(path) }
     }
 
+    override suspend fun getFileInfo(path: FilePath): CloudFile {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        return cloudItems.firstOrNull { it is CloudFile && it.path.toString() == path.toString() }
+                as? CloudFile ?: throw CloudServiceException.NotFoundException(path.toString())
+    }
+
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        require(!path.isRoot) { "Can't get info for the root folder" }
+        return cloudItems.firstOrNull { it is CloudFolder && it.path.toString() == path.toString() }
+                as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+    }
+
     override suspend fun createFolder(path: FolderPath): CloudFolder {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()

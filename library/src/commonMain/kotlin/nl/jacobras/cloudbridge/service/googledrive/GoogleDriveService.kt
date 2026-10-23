@@ -69,6 +69,33 @@ public class GoogleDriveService internal constructor(
         )
     }
 
+    override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
+        val folderPath = path.toFolderPath()
+        val file = findByName(parent = folderPath.toParentId(), name = path.name)
+            .firstOrNull { !it.isFolder }
+            ?: throw CloudServiceException.NotFoundException(path.toString())
+        file.toCloudFile(isRoot = folderPath.isRoot)
+    }
+
+    /**
+     * The last part of a Drive folder path is the folder id, so the folder is fetched by id.
+     */
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        require(!path.isRoot) { "Can't get info for the root folder" }
+
+        return tryCall(path.toString()) {
+            val folder = api.getFile(path.name)
+            if (!folder.isFolder || folder.trashed) {
+                throw CloudServiceException.NotFoundException(path.toString())
+            }
+            CloudFolder(
+                id = CloudItemId(folder.id),
+                path = folder.toFolderPath(isRoot = folder.isInRoot()),
+                name = folder.name
+            )
+        }
+    }
+
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
         val query = if (path.isRoot) {
             "'appDataFolder' in parents"
@@ -228,13 +255,19 @@ public class GoogleDriveService internal constructor(
      * @throws CloudServiceException.ConflictException
      */
     private suspend fun ensureNameAvailable(parent: String, name: String, ownId: String? = null) {
-        val escapedName = name.replace("\\", "\\\\").replace("'", "\\'")
-        val existing = api.listFiles(
-            query = "name = '$escapedName' and '$parent' in parents and trashed = false"
-        ).files
-        if (existing.any { it.id != ownId }) {
+        if (findByName(parent, name).any { it.id != ownId }) {
             throw CloudServiceException.ConflictException(name)
         }
+    }
+
+    /**
+     * Lists the (non-trashed) items named [name] in [parent].
+     */
+    private suspend fun findByName(parent: String, name: String): List<DriveFile> {
+        val escapedName = name.replace("\\", "\\\\").replace("'", "\\'")
+        return api.listFiles(
+            query = "name = '$escapedName' and '$parent' in parents and trashed = false"
+        ).files
     }
 
     /**

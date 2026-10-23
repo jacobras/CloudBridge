@@ -20,13 +20,13 @@ import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.bufferOf
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -197,7 +197,10 @@ class OneDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.updateFile(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"), "ab")
+        val file = service.updateFile(
+            CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
+            "ab"
+        )
         service.updateFile(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"), "ab")
 
         assertThat(file).isEqualTo(
@@ -225,7 +228,7 @@ class OneDriveServiceTest {
         val engine = MockEngine { request ->
             val content = when {
                 request.method == HttpMethod.Get && !request.url.encodedPath.endsWith("approot") ->
-                    """{"id": "notesFolderId"}"""
+                    """{"id": "notesFolderId", "name": "Notes", "lastModifiedDateTime": "2025-10-11T16:13:38Z", "parentReference": {"path": "/drive/root:/Apps/CloudBridge%20Demo"}, "folder": {"childCount": 1}}"""
                 request.method == HttpMethod.Get -> """
                     {
                       "id": "33488461260C4A76!s917d5fe70450423e896e4f9ab0023434",
@@ -557,6 +560,139 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `get file info`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"",
+                      "id": "file1",
+                      "lastModifiedDateTime": "2025-10-11T16:13:38Z",
+                      "name": "asdf.txt",
+                      "size": 1,
+                      "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo/Notes" }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.getFileInfo("/Notes/asdf.txt".asFilePath())
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("file1"),
+                path = "/Notes/asdf.txt".asFilePath(),
+                name = "asdf.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:13:38Z"),
+                revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\""
+            )
+        )
+        assertThat(engine.requestHistory.single().url.encodedPath)
+            .isEqualTo("/v1.0/me/drive/special/approot://Notes/asdf.txt")
+    }
+
+    @Test
+    fun `get file info throws NotFoundException when missing`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":"itemNotFound","message":"Item not found"}}""",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get file info throws NotFoundException for a folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = ONEDRIVE_FOLDER_JSON,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFileInfo("/Notes".asFilePath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get folder info`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = ONEDRIVE_FOLDER_JSON,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.getFolderInfo("/Notes".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("folder1"),
+                path = "/Notes".asFolderPath(),
+                name = "Notes"
+            )
+        )
+        assertThat(engine.requestHistory.single().url.encodedPath)
+            .isEqualTo("/v1.0/me/drive/special/approot://Notes")
+    }
+
+    @Test
+    fun `get folder info throws NotFoundException for a file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"id": "file1", "name": "asdf.txt", "size": 1, "eTag": "1", "lastModifiedDateTime": "2025-10-11T16:13:38Z", "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo" }}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFolderInfo("/asdf.txt".asFolderPath()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
+    }
+
+    @Test
+    fun `get folder info for root throws IllegalArgumentException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFolderInfo("/".asFolderPath()) }
+            .isInstanceOf<IllegalArgumentException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
     fun `delete file`() = runTest {
         val engine = MockEngine {
             respond(
@@ -579,6 +715,9 @@ class OneDriveServiceTest {
         }
     }
 }
+
+private const val ONEDRIVE_FOLDER_JSON =
+    """{"id":"folder1","name":"Notes","lastModifiedDateTime":"2025-10-11T16:13:38Z","parentReference":{"path":"/drive/root:/Apps/CloudBridge%20Demo"},"folder":{"childCount":1}}"""
 
 private const val DRIVE_ITEM_RESPONSE =
     """{"id":"33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc","eTag":"\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"","lastModifiedDateTime":"2025-10-11T16:13:38Z","name":"archive.zip","size":10,"parentReference":{"id":"33488461260C4A76!s917d5fe70450423e896e4f9ab0023434","path":"/drive/root:/Apps/CloudBridge Demo"},"file":{"mimeType":"application/zip"}}"""

@@ -93,7 +93,7 @@ internal interface OneDriveApi {
     @GET("v1.0/me/drive/special/approot:/{path}")
     suspend fun getItemByPath(
         @Path("path", encoded = true) path: String
-    ): DriveItemId
+    ): DriveItem
 
     @PATCH("v1.0/me/drive/items/{itemId}")
     @Headers("Content-Type: application/json")

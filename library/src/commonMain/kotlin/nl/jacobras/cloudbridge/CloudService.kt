@@ -31,6 +31,25 @@ public interface CloudService {
     public suspend fun listFiles(path: FolderPath): List<CloudItem>
 
     /**
+     * Fetches the metadata of the file at [path].
+     *
+     * @throws CloudServiceException.NotFoundException when there's no file at [path], or when
+     * there's actually a folder at [path].
+     * @throws CloudServiceException
+     */
+    public suspend fun getFileInfo(path: FilePath): CloudFile
+
+    /**
+     * Fetches the metadata of the folder at [path].
+     *
+     * @throws IllegalArgumentException when [path] is the root folder.
+     * @throws CloudServiceException.NotFoundException when there's no folder at [path], or when
+     * there's actually a file at [path].
+     * @throws CloudServiceException
+     */
+    public suspend fun getFolderInfo(path: FolderPath): CloudFolder
+
+    /**
      * Creates a folder at [path].
      *
      * @return The created folder.

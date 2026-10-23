@@ -75,6 +75,20 @@ public class WebDavService internal constructor(
         )
     }
 
+    override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
+        propfind(path.toString(), depth = 0).single().toCloudItem() as? CloudFile
+            ?: throw CloudServiceException.NotFoundException(path.toString())
+    }
+
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        require(!path.isRoot) { "Can't get info for the root folder" }
+
+        return tryCall(path.toString()) {
+            propfind(path.toString(), depth = 0, suffixSlash = true).single().toCloudItem()
+                    as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+        }
+    }
+
     override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
         propfind(path.toString(), depth = 1)
             .drop(1) // Skip the self-entity
@@ -266,6 +280,8 @@ public class WebDavService internal constructor(
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
+        } catch (e: CloudServiceException) {
+            throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }
