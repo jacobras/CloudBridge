@@ -5,6 +5,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.IOException
+import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
@@ -23,6 +24,7 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.forEachChunk
 import kotlin.time.Instant
 
 /**
@@ -37,6 +39,7 @@ public class DropboxService internal constructor(
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
+    internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()
@@ -99,14 +102,7 @@ public class DropboxService internal constructor(
             ),
             content = content.toByteArray()
         )
-        CloudFile(
-            id = CloudItemId(response.id),
-            path = response.pathLower.asFilePath(),
-            name = response.name,
-            sizeInBytes = response.size,
-            modified = Instant.parse(response.clientModified),
-            revision = response.rev
-        )
+        response.toCloudFile()
     }
 
     override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
@@ -118,6 +114,92 @@ public class DropboxService internal constructor(
                 )
             ),
             content = content.toByteArray()
+        )
+    }
+
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile {
+        return upload(
+            arg = DropboxUploadArg(path = path.toString(), mode = Mode.Add),
+            source = source
+        ).toCloudFile()
+    }
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ) {
+        upload(
+            arg = DropboxUploadArg(path = id.value, mode = Mode.Overwrite),
+            source = source
+        )
+    }
+
+    /**
+     * Uploads [source] in a single request if it fits in one chunk, otherwise in an upload session.
+     */
+    private suspend fun upload(arg: DropboxUploadArg, source: Source): UploadResponse {
+        var sessionId: String? = null
+        var response: UploadResponse? = null
+        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+            tryCall(arg.path) {
+                when {
+                    isLast && offset == 0L -> {
+                        // Just one chunk: immediate upload.
+                        response = api.uploadFile(
+                            arguments = Json.encodeToString(arg),
+                            content = chunk
+                        )
+                    }
+                    offset == 0L -> {
+                        // First chunk: start upload session.
+                        sessionId = api.uploadSessionStart(
+                            arguments = Json.encodeToString(UploadSessionStartArg()),
+                            content = chunk
+                        ).sessionId
+                    }
+                    isLast -> {
+                        // Last chunk: finish upload session.
+                        val cursor = UploadSessionCursor(
+                            sessionId = checkNotNull(sessionId),
+                            offset = offset
+                        )
+                        response = api.uploadSessionFinish(
+                            arguments = Json.encodeToString(UploadSessionFinishArg(cursor, arg)),
+                            content = chunk
+                        )
+                    }
+                    else -> {
+                        // Upload part within upload session...
+                        val cursor = UploadSessionCursor(
+                            sessionId = checkNotNull(sessionId),
+                            offset = offset
+                        )
+                        api.uploadSessionAppend(
+                            arguments = Json.encodeToString(UploadSessionAppendArg(cursor)),
+                            content = chunk
+                        )
+                    }
+                }
+            }
+        }
+        return checkNotNull(response)
+    }
+
+    private fun UploadResponse.toCloudFile(): CloudFile {
+        return CloudFile(
+            id = CloudItemId(id),
+            path = pathLower.asFilePath(),
+            name = name,
+            sizeInBytes = size,
+            modified = Instant.parse(clientModified),
+            revision = rev
         )
     }
 
@@ -147,7 +229,9 @@ public class DropboxService internal constructor(
         }
         val entries = response.entries.toMutableList()
         while (response.hasMore) {
-            response = api.listFilesContinue(Json.encodeToString(ListFolderContinueArg(response.cursor)))
+            response = api.listFilesContinue(
+                Json.encodeToString(ListFolderContinueArg(response.cursor))
+            )
             entries += response.entries
         }
 
@@ -212,3 +296,5 @@ public class DropboxService internal constructor(
         }
     }
 }
+
+private const val DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024

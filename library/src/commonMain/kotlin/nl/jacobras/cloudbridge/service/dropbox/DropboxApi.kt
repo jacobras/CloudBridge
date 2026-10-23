@@ -55,6 +55,27 @@ internal interface DropboxApi {
         @Body content: ByteArray
     ): UploadResponse
 
+    @POST("https://content.dropboxapi.com/2/files/upload_session/start")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadSessionStart(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    ): UploadSessionStartResponse
+
+    @POST("https://content.dropboxapi.com/2/files/upload_session/append_v2")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadSessionAppend(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    )
+
+    @POST("https://content.dropboxapi.com/2/files/upload_session/finish")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadSessionFinish(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    ): UploadResponse
+
     @POST("2/files/delete_v2")
     @Headers("Content-Type: application/json")
     suspend fun deleteByPath(@Body body: DeleteRequest)
@@ -153,6 +174,45 @@ internal data class DropboxUploadArg(
 
     @SerialName("mute")
     val mute: Boolean = false
+)
+
+@Serializable
+internal data class UploadSessionStartArg(
+    @SerialName("close")
+    val close: Boolean = false
+)
+
+@Serializable
+internal data class UploadSessionStartResponse(
+    @SerialName("session_id")
+    val sessionId: String
+)
+
+@Serializable
+internal data class UploadSessionCursor(
+    @SerialName("session_id")
+    val sessionId: String,
+
+    /**
+     * Amount of bytes uploaded so far.
+     */
+    @SerialName("offset")
+    val offset: Long
+)
+
+@Serializable
+internal data class UploadSessionAppendArg(
+    @SerialName("cursor")
+    val cursor: UploadSessionCursor
+)
+
+@Serializable
+internal data class UploadSessionFinishArg(
+    @SerialName("cursor")
+    val cursor: UploadSessionCursor,
+
+    @SerialName("commit")
+    val commit: DropboxUploadArg
 )
 
 @Serializable

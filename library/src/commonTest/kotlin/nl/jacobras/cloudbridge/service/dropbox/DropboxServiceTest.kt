@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -160,6 +161,65 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `small binary file uploads in a single request`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = UPLOAD_RESPONSE,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile("/image.png".asFilePath(), bufferOf(3), mimeType = "image/png")
+
+        assertThat(file.id).isEqualTo(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"))
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/upload")
+            assertThat(it.headers["Dropbox-API-Arg"]).isEqualTo("""{"path":"/image.png","mode":"add"}""")
+            assertThat(it.body.toByteArray().toList()).isEqualTo(listOf<Byte>(0, 1, 2))
+        }
+    }
+
+    @Test
+    fun `large binary file uploads in a session`() = runTest {
+        val engine = MockEngine { request ->
+            respond(
+                content = when {
+                    request.url.encodedPath.endsWith("/start") -> """{"session_id":"session1"}"""
+                    request.url.encodedPath.endsWith("/finish") -> UPLOAD_RESPONSE
+                    else -> "null"
+                },
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        val file = service.createFile("/archive.zip".asFilePath(), bufferOf(10))
+
+        assertThat(file.revision).isEqualTo("01640e48e7e6a010000000301ae1691")
+        assertThat(engine.requestHistory.map { it.url.toString() }).containsExactly(
+            "https://content.dropboxapi.com/2/files/upload_session/start",
+            "https://content.dropboxapi.com/2/files/upload_session/append_v2",
+            "https://content.dropboxapi.com/2/files/upload_session/finish"
+        )
+        assertThat(engine.requestHistory.map { it.headers["Dropbox-API-Arg"] }).containsExactly(
+            """{}""",
+            """{"cursor":{"session_id":"session1","offset":4}}""",
+            """{"cursor":{"session_id":"session1","offset":8},"commit":{"path":"/archive.zip","mode":"add"}}"""
+        )
+        assertThat(engine.requestHistory.map { it.body.toByteArray().size }).containsExactly(4, 4, 2)
+    }
+
+    @Test
     fun `list files in root`() = runTest {
         val engine = MockEngine {
             respond(
@@ -249,3 +309,5 @@ class DropboxServiceTest {
         ).isEqualTo("""{"path":"id:uwStUuhj4qYAAAAAAAAAIQ"}""")
     }
 }
+
+private const val UPLOAD_RESPONSE = """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1}"""
