@@ -21,7 +21,7 @@ try {
 }
 ```
 
-## Listing changes (delta)
+## Listing delta changes
 
 Lists all file/folder changes since the last time this was called. Not supported by all services,
 see [Cloud services](../services/Overview.md) for the support matrix.
@@ -46,7 +46,7 @@ try {
 }
 ```
 
-## Creating a file
+## Creating a text file
 
 ```kotlin
 try {
@@ -57,7 +57,7 @@ try {
 }
 ```
 
-## Updating a file
+## Updating a text file
 
 ```kotlin
 try {
@@ -66,6 +66,58 @@ try {
     // Handle...
 }
 ```
+
+## Uploading binary or large files
+
+For images, archives and other binary content, pass a `kotlinx.io.Source`. The content is read until
+its end, but the stream isn't closed. Files larger than 10 MB[^1] are automatically uploaded in
+chunks.
+
+```kotlin
+try {
+    val localPath = Path("photo.jpg")
+    SystemFileSystem.source(localPath).buffered().use { source ->
+        service.createFile(
+            path = localPath.name.asFilePath(),
+            source = source,
+            sizeInBytes = SystemFileSystem.metadataOrNull(localPath)?.size,
+            mimeType = "image/jpeg"
+        )
+    }
+} catch (e: CloudServiceException) {
+    // Handle...
+}
+```
+
+### Android/JVM overload with `InputStream`
+
+On Android and desktop, a `java.io.InputStream` overloaded method is available:
+
+```kotlin
+try {
+    val file = File("photo.jpg")
+    file.inputStream().use { stream ->
+        service.createFile(
+            path = "photo.jpg".asFilePath(),
+            inputStream = stream,
+            sizeInBytes = file.length(),
+            mimeType = "image/jpeg"
+        )
+    }
+} catch (e: CloudServiceException) {
+    // Handle...
+}
+```
+
+### Updating
+
+`updateFile` has as similar signature.
+
+* `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws an
+  `IllegalArgumentException` if missing in that case).
+* `mimeType` defaults to `application/octet-stream`. Dropbox doesn't store MIME types and ignores
+  it.
+* WebDAV has no chunked uploads, so the content is streamed in a single request.
 
 ## Downloading a file
 
@@ -86,3 +138,6 @@ try {
     // Handle...
 }
 ```
+
+[^1]: 10 MB is "optimal for stable high speed connections" and supported by all services.
+(<https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0#best-practices)>.

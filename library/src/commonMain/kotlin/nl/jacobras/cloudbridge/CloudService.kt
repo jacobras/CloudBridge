@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge
 
+import kotlinx.io.Source
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -38,7 +39,7 @@ public interface CloudService {
     public suspend fun createFolder(path: FolderPath): CloudFolder
 
     /**
-     * Creates a file at path [path] with text content [content].
+     * Creates a file at path [path] with the text [content].
      *
      * @return The created file.
      * @throws CloudServiceException
@@ -46,11 +47,44 @@ public interface CloudService {
     public suspend fun createFile(path: FilePath, content: String): CloudFile
 
     /**
-     * Updates the file with id [id] to text content [content].
+     * Updates the file with id [id] to the text [content].
      *
      * @throws CloudServiceException
      */
     public suspend fun updateFile(id: CloudItemId, content: String)
+
+    /**
+     * Creates a file at path [path] with the binary content of [source]. The source is read
+     * until its end, but not closed. Large files are automatically uploaded in chunks.
+     *
+     * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
+     * @param mimeType MIME type of the content. Not used by Dropbox.
+     * @return The created file.
+     * @throws IllegalArgumentException when uploading >10 MB to OneDrive and [sizeInBytes] is missing.
+     * @throws CloudServiceException
+     */
+    public suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long? = null,
+        mimeType: String = "application/octet-stream"
+    ): CloudFile
+
+    /**
+     * Updates the file with id [id] to the binary content of [source]. The source is read
+     * until its end, but not closed. Large files are automatically uploaded in chunks.
+     *
+     * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
+     * @param mimeType MIME type of the content. Not used by Dropbox.
+     * @throws IllegalArgumentException when uploading >10 MB to OneDrive and [sizeInBytes] is missing.
+     * @throws CloudServiceException
+     */
+    public suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long? = null,
+        mimeType: String = "application/octet-stream"
+    )
 
     /**
      * Retrieves the file with [id].
