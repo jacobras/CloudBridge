@@ -41,15 +41,6 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
-    applyDefaultHierarchyTemplate {
-        common {
-            group("jvmCommon") {
-                withJvm()
-                withCompilations { it.target.platformType == KotlinPlatformType.androidJvm }
-            }
-        }
-    }
-
     explicitApi()
     abiValidation {
         filters {
