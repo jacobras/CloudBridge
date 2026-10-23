@@ -1,5 +1,7 @@
 package nl.jacobras.cloudbridge.demo
 
+import kotlinx.io.Source
+import kotlinx.io.readString
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -21,7 +23,9 @@ import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken), DeltaCloudService {
+class DummyCloudService(
+    startToken: CloudAccessToken?
+) : OAuthCloudService(startToken), DeltaCloudService {
 
     override val baseUrl: String = ""
 
@@ -130,6 +134,20 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         cloudItemContents[id] = content
         recordUpdate(updated)
     }
+
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile = createFile(path, source.readString())
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ) = updateFile(id, source.readString())
 
     override suspend fun downloadFile(id: CloudItemId): String {
         if (!isAuthenticated()) {
