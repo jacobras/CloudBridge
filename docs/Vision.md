@@ -18,7 +18,8 @@ The library prefers to work with IDs over paths.
 ## Unified error handling
 
 Dropbox will throw `409` when it can't find a path. Other services throw `404`. CloudBridge turns
-them both into `CloudServiceException.NotFoundException`.
+them both into `CloudServiceException.NotFoundException`. The same for all other errors,
+see [Errors](api/Errors.md) for an overview.
 
 ---
 
