@@ -4,12 +4,14 @@ import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasMessage
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -18,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -201,6 +204,95 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `small binary file uploads in a single request`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = DRIVE_ITEM_RESPONSE,
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile("image.png".asFilePath(), bufferOf(3), mimeType = "image/png")
+
+        assertThat(file.id).isEqualTo(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Put)
+            assertThat(it.url.toString())
+                .isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot://image.png:/content")
+            assertThat(it.body.contentType.toString()).isEqualTo("image/png")
+            assertThat(it.body.toByteArray().toList()).isEqualTo(listOf<Byte>(0, 1, 2))
+        }
+    }
+
+    @Test
+    fun `large binary file without size throws IllegalArgumentException`() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure { service.createFile("archive.zip".asFilePath(), bufferOf(10)) }
+            .isInstanceOf<IllegalArgumentException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
+    fun `large binary file uploads in a session`() = runTest {
+        val engine = MockEngine { request ->
+            when {
+                request.url.encodedPath.endsWith("createUploadSession") -> respond(
+                    content = """{"uploadUrl":"https://my.microsoftpersonalcontent.com/up/session1"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+                request.headers[HttpHeaders.ContentRange]?.endsWith("9/10") == true -> respond(
+                    content = DRIVE_ITEM_RESPONSE,
+                    status = HttpStatusCode.Created,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+                else -> respond(
+                    content = """{"nextExpectedRanges":["4-"]}""",
+                    status = HttpStatusCode.Accepted,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        val file = service.createFile("archive.zip".asFilePath(), bufferOf(10), sizeInBytes = 10)
+
+        assertThat(file.id).isEqualTo(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
+        assertThat(engine.requestHistory.map { "${it.method.value} ${it.url}" }).containsExactly(
+            "POST https://graph.microsoft.com/v1.0/me/drive/special/approot://archive.zip:/createUploadSession",
+            "PUT https://my.microsoftpersonalcontent.com/up/session1",
+            "PUT https://my.microsoftpersonalcontent.com/up/session1",
+            "PUT https://my.microsoftpersonalcontent.com/up/session1"
+        )
+        val chunkRequests = engine.requestHistory.drop(1)
+        assertThat(chunkRequests.map { it.headers[HttpHeaders.ContentRange] }).containsExactly(
+            "bytes 0-3/10",
+            "bytes 4-7/10",
+            "bytes 8-9/10"
+        )
+        assertThat(chunkRequests.map { it.headers[HttpHeaders.Authorization] }).containsExactly(
+            null,
+            null,
+            null
+        )
+    }
+
+    @Test
     fun `list files in root`() = runTest {
         val engine = MockEngine {
             respond(
@@ -298,3 +390,6 @@ class OneDriveServiceTest {
         }
     }
 }
+
+private const val DRIVE_ITEM_RESPONSE =
+    """{"id":"33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc","eTag":"\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"","lastModifiedDateTime":"2025-10-11T16:13:38Z","name":"archive.zip","size":10,"parentReference":{"id":"33488461260C4A76!s917d5fe70450423e896e4f9ab0023434","path":"/drive/root:/Apps/CloudBridge Demo"},"file":{"mimeType":"application/zip"}}"""

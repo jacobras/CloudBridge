@@ -2,8 +2,16 @@ package nl.jacobras.cloudbridge.service.onedrive
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.header
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.ByteArrayContent
 import kotlinx.io.IOException
+import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
@@ -22,6 +30,7 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.forEachChunk
 import kotlin.time.Instant
 
 public class OneDriveService internal constructor(
@@ -33,8 +42,10 @@ public class OneDriveService internal constructor(
 
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
+    internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
     private val json = Json {
         encodeDefaults = true
+        ignoreUnknownKeys = true
     }
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
@@ -97,22 +108,108 @@ public class OneDriveService internal constructor(
     override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
         val response = api.createFile(
             path = path.toString(),
-            content = content
+            contentType = "text/plain",
+            content = content.encodeToByteArray()
         )
-        CloudFile(
-            id = CloudItemId(response.id),
-            path = path,
-            name = response.name,
-            sizeInBytes = response.size ?: error("Missing size for file"),
-            modified = Instant.parse(response.lastModified),
-            revision = response.eTag ?: error("Missing eTag for file")
-        )
+        response.toCloudFile(path)
     }
 
     override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
         api.updateFile(
             id = id.value,
-            content = content
+            contentType = "text/plain",
+            content = content.encodeToByteArray()
+        )
+    }
+
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile {
+        return upload(
+            itemId = path.toString(),
+            source = source,
+            sizeInBytes = sizeInBytes,
+            uploadSingle = { api.createFile(path.toString(), mimeType, it) },
+            createSession = {
+                api.createUploadSession(
+                    path.toString(),
+                    json.encodeToString(CreateUploadSessionArg())
+                )
+            }
+        ).toCloudFile(path)
+    }
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ) {
+        upload(
+            itemId = id.value,
+            source = source,
+            sizeInBytes = sizeInBytes,
+            uploadSingle = { api.updateFile(id.value, mimeType, it) },
+            createSession = {
+                api.createUploadSessionById(id.value, json.encodeToString(CreateUploadSessionArg()))
+            }
+        )
+    }
+
+    /**
+     * Uploads [source] with [uploadSingle] if it fits in one chunk, otherwise in an upload session
+     * created by [createSession]. Upload sessions require [sizeInBytes].
+     */
+    private suspend fun upload(
+        itemId: String,
+        source: Source,
+        sizeInBytes: Long?,
+        uploadSingle: suspend (ByteArray) -> DriveItem,
+        createSession: suspend () -> UploadSession
+    ): DriveItem {
+        var uploadUrl: String? = null
+        var response: DriveItem? = null
+        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+            if (offset == 0L && isLast) {
+                response = tryCall(itemId) { uploadSingle(chunk) }
+                return@forEachChunk
+            }
+
+            val total = requireNotNull(sizeInBytes) {
+                "sizeInBytes is required for OneDrive uploads larger than $uploadChunkSize bytes"
+            }
+            val end = offset + chunk.size - 1
+            check(if (isLast) end + 1 == total else end < total) {
+                "Content size doesn't match sizeInBytes ($total)"
+            }
+            val url =
+                uploadUrl ?: tryCall(itemId) { createSession() }.uploadUrl.also { uploadUrl = it }
+
+            // The upload URL is pre-authenticated, so it needs to be sent without an Authorization header
+            tryCall(itemId) {
+                val chunkResponse = clientWithoutAuth.put(url) {
+                    header(HttpHeaders.ContentRange, "bytes $offset-$end/$total")
+                    setBody(ByteArrayContent(chunk, ContentType.Application.OctetStream))
+                }
+                if (isLast) {
+                    response = json.decodeFromString<DriveItem>(chunkResponse.bodyAsText())
+                }
+            }
+        }
+        return checkNotNull(response)
+    }
+
+    private fun DriveItem.toCloudFile(path: FilePath): CloudFile {
+        return CloudFile(
+            id = CloudItemId(id),
+            path = path,
+            name = name,
+            sizeInBytes = size ?: error("Missing size for file"),
+            modified = Instant.parse(lastModified),
+            revision = eTag ?: error("Missing eTag for file")
         )
     }
 
@@ -198,3 +295,5 @@ public class OneDriveService internal constructor(
         }
     }
 }
+
+private const val DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024
