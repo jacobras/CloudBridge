@@ -14,13 +14,16 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.decodeURLPart
-import io.ktor.http.withCharset
-import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.io.Buffer
 import kotlinx.io.IOException
+import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -36,6 +39,7 @@ import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.ensureSuffix
+import nl.jacobras.cloudbridge.util.forEachChunk
 
 /**
  * Instance of a WebDAV server.
@@ -83,27 +87,44 @@ public class WebDavService internal constructor(
         }
 
         // MKCOL doesn't return any metadata, so fetch it separately
-        propfind(path.toString(), depth = 0, suffixSlash = true).single().toCloudItem() as CloudFolder
+        propfind(path.toString(), depth = 0, suffixSlash = true).single()
+            .toCloudItem() as CloudFolder
     }
 
-    override suspend fun createFile(path: FilePath, content: String): CloudFile =
-        tryCall(path.toString()) {
-            client.request(buildUrl(path.toString())) {
-                method = HttpMethod.Put
-                contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
-                setBody(content)
-            }
+    override suspend fun createFile(path: FilePath, content: String): CloudFile {
+        val bytes = content.encodeToByteArray()
+        return createFile(
+            path = path,
+            source = Buffer().apply { write(bytes) },
+            sizeInBytes = bytes.size.toLong(),
+            mimeType = TEXT_MIME_TYPE
+        )
+    }
 
-            // PUT doesn't return any metadata, so fetch it separately
-            propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
-        }
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile = tryCall(path.toString()) {
+        put(path.toString(), source, sizeInBytes, mimeType)
 
-    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
-        client.request(buildUrl(id.value)) {
-            method = HttpMethod.Put
-            contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
-            setBody(content)
-        }
+        // PUT doesn't return any metadata, so fetch it separately
+        propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
+    }
+
+    override suspend fun updateFile(id: CloudItemId, content: String) {
+        val bytes = content.encodeToByteArray()
+        updateFile(id, Buffer().apply { write(bytes) }, bytes.size.toLong(), TEXT_MIME_TYPE)
+    }
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): Unit = tryCall(id.value) {
+        put(id.value, source, sizeInBytes, mimeType)
     }
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
@@ -115,6 +136,13 @@ public class WebDavService internal constructor(
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Delete
+        }
+    }
+
+    private suspend fun put(path: String, source: Source, sizeInBytes: Long?, mimeType: String) {
+        client.request(buildUrl(path)) {
+            method = HttpMethod.Put
+            setBody(SourceContent(source, sizeInBytes, ContentType.parse(mimeType)))
         }
     }
 
@@ -206,6 +234,24 @@ public class WebDavService internal constructor(
     }
 }
 
+/**
+ * Streams [source] as request body. WebDAV has no chunked upload, so large files are sent in
+ * a single request, without holding the whole file in memory.
+ */
+private class SourceContent(
+    private val source: Source,
+    override val contentLength: Long?,
+    override val contentType: ContentType
+) : OutgoingContent.WriteChannelContent() {
+    override suspend fun writeTo(channel: ByteWriteChannel) {
+        source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
+            channel.writeFully(chunk)
+        }
+    }
+}
+
+private const val TEXT_MIME_TYPE = "text/plain; charset=UTF"
+private const val STREAM_CHUNK_SIZE = 64 * 1024
 private const val PROPFIND_BODY = """<?xml version="1.0" encoding="utf-8"?>
 <d:propfind xmlns:d="DAV:">
   <d:prop>

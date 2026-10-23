@@ -9,6 +9,7 @@ import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -16,6 +17,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -89,8 +91,56 @@ class WebDavServiceTest {
                 revision = "\"abc123\""
             )
         )
-        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put, HttpMethod("PROPFIND"))
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Put,
+            HttpMethod("PROPFIND")
+        )
         assertThat(engine.requestHistory.last().headers["Depth"]).isEqualTo("0")
+    }
+
+    @Test
+    fun `create binary file streams content`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Put) {
+                respond(content = "", status = HttpStatusCode.Created)
+            } else {
+                respond(
+                    content = """
+                        <?xml version="1.0"?>
+                        <d:multistatus xmlns:d="DAV:"><d:response><d:href>/server.php/image.png</d:href><d:propstat><d:prop><d:resourcetype/><d:getcontentlength>3</d:getcontentlength><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified><d:displayname>image.png</d:displayname><d:getetag>"abc123"</d:getetag></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>
+                    """.trimIndent(),
+                    status = HttpStatusCode.MultiStatus,
+                    headers = headersOf(HttpHeaders.ContentType, "application/xml; charset=utf-8")
+                )
+            }
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.createFile(
+            "/image.png".asFilePath(),
+            bufferOf(3),
+            sizeInBytes = 3,
+            mimeType = "image/png"
+        )
+
+        assertThat(file.sizeInBytes).isEqualTo(3)
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Put,
+            HttpMethod("PROPFIND")
+        )
+        engine.requestHistory.first().let {
+            assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/image.png")
+            assertThat(it.body.contentType.toString()).isEqualTo("image/png")
+            assertThat(it.body.contentLength).isEqualTo(3)
+            assertThat(it.body.toByteArray().toList()).isEqualTo(listOf<Byte>(0, 1, 2))
+        }
     }
 
     @Test
