@@ -70,8 +70,8 @@ try {
 ## Uploading binary or large files
 
 For images, archives and other binary content, pass a `kotlinx.io.Source`. The content is read until
-its end, but the stream isn't closed. Files larger than 10 MB[^1] are automatically uploaded in
-chunks.
+its end, but the stream isn't closed. Files larger than 10 MB are automatically uploaded in
+chunks[^1].
 
 ```kotlin
 try {
@@ -112,7 +112,7 @@ try {
         )
     }
 } catch (e: CloudServiceException) {
-  // Handle...
+    // Handle...
 }
 ```
 
@@ -136,5 +136,6 @@ try {
 }
 ```
 
-[^1]: 10 MB is "optimal for stable high speed connections" and supported by all services.
+[^1]: Chunk size is around 10 MB, which is "optimal for stable high speed connections"
 (<https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0#best-practices)>.
+See the [support matrix](../services/Overview.md) for details.
