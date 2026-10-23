@@ -10,6 +10,7 @@ import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.bufferOf
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -240,6 +242,112 @@ class GoogleDriveServiceTest {
                         "?fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
             )
         }
+    }
+
+    @Test
+    fun `large binary file uploads in a resumable session`() = runTest {
+        val sessionUri =
+            "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=session1"
+        val engine = MockEngine { request ->
+            when {
+                request.method == HttpMethod.Post -> respond(
+                    content = "",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.Location, sessionUri)
+                )
+                request.headers[HttpHeaders.ContentRange]?.endsWith("/10") == true -> respond(
+                    content = """
+                        {
+                          "mimeType": "application/zip",
+                          "parents": ["1THG-A2vXis2oKtcHO7fK6u_1VLRN"],
+                          "size": "10",
+                          "id": "1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg",
+                          "name": "archive.zip",
+                          "trashed": false,
+                          "modifiedTime": "2025-10-11T16:31:27.438Z",
+                          "version": "1"
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+                else -> respond(
+                    content = "",
+                    status = HttpStatusCode.PermanentRedirect, // 308 Resume Incomplete
+                    headers = headersOf(HttpHeaders.Range, "bytes=0-3")
+                )
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        val file = service.createFile(
+            "/archive.zip".asFilePath(),
+            bufferOf(10),
+            mimeType = "application/zip"
+        )
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+                path = "/archive.zip".asFilePath(),
+                name = "archive.zip",
+                sizeInBytes = 10,
+                modified = Instant.parse("2025-10-11T16:31:27.438Z"),
+                revision = "1"
+            )
+        )
+        val (start, chunks) = engine.requestHistory.first() to engine.requestHistory.drop(1)
+        assertThat(start.url.toString()).isEqualTo(
+            "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable" +
+                    "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
+        )
+        assertThat(start.headers["X-Upload-Content-Type"]).isEqualTo("application/zip")
+        assertThat(start.body.toByteArray().decodeToString())
+            .isEqualTo("""{"name":"archive.zip","mimeType":"application/zip","parents":["appDataFolder"]}""")
+        assertThat(chunks.map { "${it.method.value} ${it.url}" }).containsExactly(
+            "PUT $sessionUri",
+            "PUT $sessionUri",
+            "PUT $sessionUri"
+        )
+        assertThat(chunks.map { it.headers[HttpHeaders.ContentRange] }).containsExactly(
+            "bytes 0-3/*",
+            "bytes 4-7/*",
+            "bytes 8-9/10"
+        )
+    }
+
+    @Test
+    fun `failed chunk upload throws CloudServiceException`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Post) {
+                respond(
+                    content = "",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.Location,
+                        "https://www.googleapis.com/upload/session1"
+                    )
+                )
+            } else {
+                respond(
+                    content = """{"error":{"code":403,"errors":[{"reason":"storageQuotaExceeded"}]}}""",
+                    status = HttpStatusCode.Forbidden,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure { service.createFile("/archive.zip".asFilePath(), bufferOf(10)) }
+            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
     }
 
     @Test

@@ -2,14 +2,28 @@ package nl.jacobras.cloudbridge.service.googledrive
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.ByteArrayContent
+import io.ktor.http.content.TextContent
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.IOException
+import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
@@ -28,6 +42,7 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.forEachChunk
 import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
@@ -39,8 +54,10 @@ public class GoogleDriveService internal constructor(
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
+    internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
     private val json = Json {
         encodeDefaults = true
+        ignoreUnknownKeys = true
     }
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
@@ -94,21 +111,83 @@ public class GoogleDriveService internal constructor(
     }
 
     override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
-        val folderPath = path.toFolderPath()
+        createSingle(
+            metadata = path.toMetadata(mimeType = "text/plain"),
+            content = content.toByteArray()
+        ).toCloudFile(isRoot = path.toFolderPath().isRoot)
+    }
+
+    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
+        api.updateFile(
+            id = id.value,
+            content = content.toByteArray()
+        )
+    }
+
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile {
+        val metadata = path.toMetadata(mimeType)
+        return upload(
+            itemId = path.toString(),
+            source = source,
+            sizeInBytes = sizeInBytes,
+            mimeType = mimeType,
+            uploadSingle = { createSingle(metadata, it) },
+            startSession = {
+                clientWithAuth.post("${baseUrl}upload/drive/v3/files") {
+                    resumableUploadParams(mimeType, sizeInBytes)
+                    setBody(
+                        TextContent(
+                            Json.encodeToString(metadata),
+                            ContentType.Application.Json
+                        )
+                    )
+                }
+            }
+        ).toCloudFile(isRoot = path.toFolderPath().isRoot)
+    }
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ) {
+        upload(
+            itemId = id.value,
+            source = source,
+            sizeInBytes = sizeInBytes,
+            mimeType = mimeType,
+            uploadSingle = { api.updateBinaryFile(id.value, mimeType, it) },
+            startSession = {
+                clientWithAuth.patch("${baseUrl}upload/drive/v3/files/${id.value}") {
+                    resumableUploadParams(mimeType, sizeInBytes)
+                }
+            }
+        )
+    }
+
+    private fun FilePath.toMetadata(mimeType: String): DriveFileMetadata {
+        val folderPath = toFolderPath()
         val parent = if (folderPath.isRoot) {
             "appDataFolder"
         } else {
             folderPath.name
         }
-        val metadata = DriveFileMetadata(
-            name = path.name,
-            mimeType = "text/plain",
+        return DriveFileMetadata(
+            name = name,
+            mimeType = mimeType,
             parents = listOf(parent)
         )
+    }
 
+    private suspend fun createSingle(metadata: DriveFileMetadata, content: ByteArray): DriveFile {
         val boundary = "cloud-bridge-boundary"
-
-        val response = api.createFile(
+        return api.createFile(
             map = MultiPartFormDataContent(
                 boundary = boundary,
                 contentType = ContentType.MultiPart.Related.withParameter("boundary", boundary),
@@ -117,25 +196,78 @@ public class GoogleDriveService internal constructor(
                         append(HttpHeaders.ContentType, "application/json")
                     })
                     append("file", content, Headers.build {
-                        append(HttpHeaders.ContentType, "text/plain")
+                        append(HttpHeaders.ContentType, metadata.mimeType)
                     })
                 }
             )
         )
-        CloudFile(
-            id = CloudItemId(response.id),
-            name = response.name,
-            path = response.toFilePath(isRoot = folderPath.isRoot),
-            sizeInBytes = response.size?.toLongOrNull() ?: 0L,
-            modified = Instant.parse(response.modified),
-            revision = response.version ?: error("Missing version for file")
-        )
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
-        api.updateFile(
-            id = id.value,
-            content = content.toByteArray()
+    private fun HttpRequestBuilder.resumableUploadParams(mimeType: String, sizeInBytes: Long?) {
+        parameter("uploadType", "resumable")
+        parameter("fields", FILE_FIELDS)
+        header("X-Upload-Content-Type", mimeType)
+        if (sizeInBytes != null) {
+            header("X-Upload-Content-Length", sizeInBytes)
+        }
+    }
+
+    /**
+     * Uploads [source] with [uploadSingle] if it fits in one chunk, otherwise in a resumable
+     * upload session started by [startSession].
+     *
+     * Docs: https://developers.google.com/workspace/drive/api/guides/manage-uploads#resumable
+     */
+    private suspend fun upload(
+        itemId: String,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String,
+        uploadSingle: suspend (ByteArray) -> DriveFile,
+        startSession: suspend () -> HttpResponse
+    ): DriveFile {
+        var sessionUri: String? = null
+        var response: DriveFile? = null
+        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+            tryCall(itemId) {
+                if (offset == 0L && isLast) {
+                    response = uploadSingle(chunk)
+                    return@tryCall
+                }
+
+                val uri = sessionUri
+                    ?: startSession().headers[HttpHeaders.Location]?.also { sessionUri = it }
+                    ?: error("Missing upload session URI")
+                val end = offset + chunk.size - 1
+                val total = if (isLast) (end + 1).toString() else sizeInBytes?.toString() ?: "*"
+                val chunkResponse = clientWithAuth.put(uri) {
+                    expectSuccess = false
+                    header(HttpHeaders.ContentRange, "bytes $offset-$end/$total")
+                    setBody(ByteArrayContent(chunk, ContentType.parse(mimeType)))
+                }
+
+                // 308 "Resume Incomplete" means the chunk was received and more are expected
+                val status = chunkResponse.status
+                when {
+                    status.value == HttpStatusCode.PermanentRedirect.value && !isLast -> Unit
+                    status.isSuccess() && isLast -> {
+                        response = json.decodeFromString<DriveFile>(chunkResponse.bodyAsText())
+                    }
+                    else -> throw ResponseException(chunkResponse, chunkResponse.bodyAsText())
+                }
+            }
+        }
+        return checkNotNull(response)
+    }
+
+    private fun DriveFile.toCloudFile(isRoot: Boolean): CloudFile {
+        return CloudFile(
+            id = CloudItemId(id),
+            name = name,
+            path = toFilePath(isRoot = isRoot),
+            sizeInBytes = size?.toLongOrNull() ?: 0L,
+            modified = Instant.parse(modified),
+            revision = version ?: error("Missing version for file $name")
         )
     }
 
@@ -181,7 +313,8 @@ public class GoogleDriveService internal constructor(
                 val response = api.listChanges(pageToken = pageToken)
                 changes += response.changes
                 newStartPageToken = response.newStartPageToken
-                pageToken = response.nextPageToken ?: newStartPageToken ?: error("Missing page token")
+                pageToken =
+                    response.nextPageToken ?: newStartPageToken ?: error("Missing page token")
             }
 
             DeltaResult(
@@ -250,3 +383,5 @@ public class GoogleDriveService internal constructor(
 
 private val DriveFile.isFolder: Boolean
     get() = mimeType == "application/vnd.google-apps.folder"
+
+private const val DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024

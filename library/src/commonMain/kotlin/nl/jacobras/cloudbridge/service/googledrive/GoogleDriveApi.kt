@@ -5,6 +5,7 @@ import de.jensklingenberg.ktorfit.http.DELETE
 import de.jensklingenberg.ktorfit.http.Field
 import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Header
 import de.jensklingenberg.ktorfit.http.Multipart
 import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
@@ -76,6 +77,14 @@ internal interface GoogleDriveApi {
         @Path("fileId") id: String,
         @Body content: ByteArray
     )
+
+    @PATCH("upload/drive/v3/files/{fileId}?uploadType=media")
+    suspend fun updateBinaryFile(
+        @Path("fileId") id: String,
+        @Header("Content-Type") contentType: String,
+        @Body content: ByteArray,
+        @Query("fields") fields: String = FILE_FIELDS
+    ): DriveFile
 
     @GET("drive/v3/files/{fileId}?alt=media")
     suspend fun downloadFile(@Path("fileId") id: String): ByteArray
@@ -204,4 +213,4 @@ internal data class CreateFolderRequest(
     val parents: List<String>
 )
 
-private const val FILE_FIELDS = "id,name,mimeType,size,modifiedTime,parents,version,trashed"
+internal const val FILE_FIELDS = "id,name,mimeType,size,modifiedTime,parents,version,trashed"

@@ -50,6 +50,12 @@ public abstract class OAuthCloudService internal constructor(
     }
 
     /**
+     * Authenticated client, for requests that are not convenient to use Ktorfit for.
+     */
+    internal val clientWithAuth: HttpClient
+        get() = ktorfit.httpClient
+
+    /**
      * Sets [token] to this service.
      *
      * @param token The access token to use for authentication, or `null` to authenticate a new
