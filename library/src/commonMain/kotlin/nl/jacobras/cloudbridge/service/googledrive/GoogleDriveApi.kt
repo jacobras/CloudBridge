@@ -6,6 +6,7 @@ import de.jensklingenberg.ktorfit.http.Field
 import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
 import de.jensklingenberg.ktorfit.http.Header
+import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.Multipart
 import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
@@ -76,6 +77,22 @@ internal interface GoogleDriveApi {
         @Path("fileId") id: String,
         @Header("Content-Type") contentType: String,
         @Body content: ByteArray,
+        @Query("fields") fields: String = FILE_FIELDS
+    ): DriveFile
+
+    @GET("drive/v3/files/{fileId}")
+    suspend fun getFile(
+        @Path("fileId") id: String,
+        @Query("fields") fields: String = FILE_FIELDS
+    ): DriveFile
+
+    @PATCH("drive/v3/files/{fileId}")
+    @Headers("Content-Type: application/json")
+    suspend fun move(
+        @Path("fileId") id: String,
+        @Body content: String,
+        @Query("addParents") addParents: String? = null,
+        @Query("removeParents") removeParents: String? = null,
         @Query("fields") fields: String = FILE_FIELDS
     ): DriveFile
 
@@ -192,6 +209,12 @@ internal data class DriveFileMetadata(
 
     @SerialName("parents")
     val parents: List<String>
+)
+
+@Serializable
+internal data class RenameRequest(
+    @SerialName("name")
+    val name: String
 )
 
 @Serializable

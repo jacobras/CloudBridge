@@ -44,7 +44,7 @@ public class OneDriveService internal constructor(
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
-    private var appRootPath: String? = null
+    private var appRoot: DriveItemId? = null
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
@@ -168,16 +168,57 @@ public class OneDriveService internal constructor(
      * Resolves the path of this item relative to the app root (of which the path is fetched once
      * and then cached).
      */
-    private suspend fun DriveItem.resolvePath(): FilePath {
-        val rootPath = appRootPath ?: api.getAppRoot().let { root ->
-            val parentPath = root.parent?.path ?: error("Missing parent path for app root")
-            "${parentPath.decodeURLPart()}/${root.name ?: error("Missing name for app root")}"
-        }.also { appRootPath = it }
+    private suspend fun DriveItem.resolvePath(): FilePath = resolveRelativePath().asFilePath()
+
+    private suspend fun DriveItem.resolveRelativePath(): String {
+        val root = getAppRootId()
+        val parentPath = root.parent?.path ?: error("Missing parent path for app root")
+        val rootPath = "${parentPath.decodeURLPart()}/${root.name ?: error("Missing name for app root")}"
 
         // Graph returns e.g. "/drive/root:/Apps/My%20App/folder" for an item in "/folder".
         // Paths are percent-encoded, names aren't, so compare decoded.
         val relativeFolder = parent.path.decodeURLPart().removePrefix(rootPath)
-        return "$relativeFolder/$name".asFilePath()
+        return "$relativeFolder/$name"
+    }
+
+    /**
+     * The app root folder, fetched once and then cached.
+     */
+    private suspend fun getAppRootId(): DriveItemId {
+        return appRoot ?: api.getAppRoot().also { appRoot = it }
+    }
+
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile = tryCall(id.value) {
+        val response = move(id, newPath.toFolderPath(), newPath.name)
+        response.toCloudFile(response.resolvePath())
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+
+        return tryCall(id.value) {
+            val response = move(id, newPath.parent, newPath.name)
+            CloudFolder(
+                id = CloudItemId(response.id),
+                path = response.resolveRelativePath().asFolderPath(),
+                name = response.name
+            )
+        }
+    }
+
+    /**
+     * Graph moves items by parent folder id, so that's looked up first.
+     */
+    private suspend fun move(id: CloudItemId, parent: FolderPath, name: String): DriveItem {
+        val parentId = if (parent.isRoot) {
+            getAppRootId().id
+        } else {
+            api.getItemByPath(parent.toString()).id
+        }
+        return api.move(
+            id = id.value,
+            content = json.encodeToString(MoveArg(name = name, parent = MoveParentReference(parentId)))
+        )
     }
 
     /**
@@ -304,6 +345,9 @@ public class OneDriveService internal constructor(
                 }
                 HttpStatusCode.InsufficientStorage -> {
                     CloudServiceException.InsufficientSpaceException()
+                }
+                HttpStatusCode.Conflict -> {
+                    CloudServiceException.ConflictException(itemId)
                 }
                 else -> {
                     CloudServiceException.Unknown(e)

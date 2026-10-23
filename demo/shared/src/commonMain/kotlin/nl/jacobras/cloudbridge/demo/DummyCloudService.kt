@@ -158,6 +158,48 @@ class DummyCloudService(
         return cloudItemContents[id] ?: throw CloudServiceException.NotFoundException(id.value)
     }
 
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        val existing = cloudItems.firstOrNull { it.id == id }
+                as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
+        val renamed = existing.copy(
+            name = newPath.name,
+            path = newPath,
+            revision = nextRevision(id)
+        )
+        if (cloudItems.any { it.path.toString() == newPath.toString() }) {
+            throw CloudServiceException.ConflictException(newPath.toString())
+        }
+        cloudItems -= existing
+        cloudItems += renamed
+        recordUpdate(renamed)
+        return renamed
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        val existing = cloudItems.firstOrNull { it.id == id }
+                as? CloudFolder ?: throw CloudServiceException.NotFoundException(id.value)
+        val renamed = existing.copy(
+            name = newPath.name,
+            path = newPath
+        )
+        if (cloudItems.any { it.path.toString() == newPath.toString() }) {
+            throw CloudServiceException.ConflictException(newPath.toString())
+        }
+        cloudItems -= existing
+        cloudItems += renamed
+        folderModified[id] = Clock.System.now()
+        recordUpdate(renamed)
+        return renamed
+    }
+
     override suspend fun delete(id: CloudItemId) {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()

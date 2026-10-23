@@ -95,7 +95,8 @@ public class GoogleDriveService internal constructor(
         }
     }
 
-    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
+    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
+        ensureNameAvailable(parent = "appDataFolder", name = path.name)
         val response = api.createFolder(
             json.encodeToString(
                 CreateFolderRequest(
@@ -111,12 +112,15 @@ public class GoogleDriveService internal constructor(
         )
     }
 
-    override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
-        createSingle(
-            metadata = path.toMetadata(mimeType = "text/plain"),
-            content = content.toByteArray()
-        ).toCloudFile(isRoot = path.toFolderPath().isRoot)
-    }
+    override suspend fun createFile(path: FilePath, content: String): CloudFile =
+        tryCall(path.toString()) {
+            val metadata = path.toMetadata(mimeType = "text/plain")
+            ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
+            createSingle(
+                metadata = metadata,
+                content = content.toByteArray()
+            ).toCloudFile(isRoot = path.toFolderPath().isRoot)
+        }
 
     override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
         tryCall(id.value) {
@@ -135,6 +139,9 @@ public class GoogleDriveService internal constructor(
         mimeType: String
     ): CloudFile {
         val metadata = path.toMetadata(mimeType)
+        tryCall(path.toString()) {
+            ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
+        }
         return upload(
             itemId = path.toString(),
             source = source,
@@ -176,26 +183,85 @@ public class GoogleDriveService internal constructor(
         return tryCall(id.value) { response.toCloudFile(isRoot = response.isInRoot()) }
     }
 
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile = tryCall(id.value) {
+        val response = move(id, newPath.toFolderPath(), newPath.name)
+        response.toCloudFile(isRoot = response.isInRoot())
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+
+        return tryCall(id.value) {
+            val response = move(id, newPath.parent, newPath.name)
+            CloudFolder(
+                id = CloudItemId(response.id),
+                path = response.toFolderPath(isRoot = response.isInRoot()),
+                name = response.name
+            )
+        }
+    }
+
+    /**
+     * Renames the item and, if [parent] differs from its current parent, moves it there.
+     */
+    private suspend fun move(id: CloudItemId, parent: FolderPath, name: String): DriveFile {
+        val currentParent = api.getFile(id.value).parents.firstOrNull()
+        val newParent = parent.toParentId()
+        ensureNameAvailable(parent = newParent, name = name, ownId = id.value)
+
+        // "appDataFolder" is an alias, so resolve it to compare with the actual parent id
+        val resolvedNewParent = if (parent.isRoot) getAppDataFolderId() else newParent
+        val parentChanged = currentParent != resolvedNewParent
+        return api.move(
+            id = id.value,
+            content = json.encodeToString(RenameRequest(name)),
+            addParents = newParent.takeIf { parentChanged },
+            removeParents = currentParent.takeIf { parentChanged }
+        )
+    }
+
+    /**
+     * Google Drive allows multiple items with the same name in a folder, which is confusing.
+     * To prevent that, this throws if [parent] already contains an item named [name] (other
+     * than [ownId]). This is a best effort: a concurrent request can still create a duplicate.
+     *
+     * @throws CloudServiceException.ConflictException
+     */
+    private suspend fun ensureNameAvailable(parent: String, name: String, ownId: String? = null) {
+        val escapedName = name.replace("\\", "\\\\").replace("'", "\\'")
+        val existing = api.listFiles(
+            query = "name = '$escapedName' and '$parent' in parents and trashed = false"
+        ).files
+        if (existing.any { it.id != ownId }) {
+            throw CloudServiceException.ConflictException(name)
+        }
+    }
+
     /**
      * Whether this file is directly in the appDataFolder (of which the ID is fetched once and cached).
      */
     private suspend fun DriveFile.isInRoot(): Boolean {
-        val rootId = appDataFolderId ?: api.getAppDataFolder().id.also { appDataFolderId = it }
+        val rootId = getAppDataFolderId()
         return parents.firstOrNull()?.let { it == rootId } ?: true
     }
 
+    private suspend fun getAppDataFolderId(): String {
+        return appDataFolderId ?: api.getAppDataFolder().id.also { appDataFolderId = it }
+    }
+
     private fun FilePath.toMetadata(mimeType: String): DriveFileMetadata {
-        val folderPath = toFolderPath()
-        val parent = if (folderPath.isRoot) {
-            "appDataFolder"
-        } else {
-            folderPath.name
-        }
         return DriveFileMetadata(
             name = name,
             mimeType = mimeType,
-            parents = listOf(parent)
+            parents = listOf(toFolderPath().toParentId())
         )
+    }
+
+    /**
+     * The id of this folder, to use as parent. The last part of a Drive folder path is the folder id.
+     */
+    private fun FolderPath.toParentId(): String {
+        return if (isRoot) "appDataFolder" else name
     }
 
     private suspend fun createSingle(metadata: DriveFileMetadata, content: ByteArray): DriveFile {
@@ -388,6 +454,8 @@ public class GoogleDriveService internal constructor(
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
+        } catch (e: CloudServiceException) {
+            throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }

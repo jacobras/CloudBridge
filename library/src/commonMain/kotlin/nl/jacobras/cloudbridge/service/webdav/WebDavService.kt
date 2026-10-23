@@ -141,6 +141,32 @@ public class WebDavService internal constructor(
         }.bodyAsText()
     }
 
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        return move(id, newPath.toString(), isFolder = false) as CloudFile
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+        return move(id, newPath.toString(), isFolder = true) as CloudFolder
+    }
+
+    /**
+     * Moves [id] to [newPath]. `Overwrite: F` makes the server respond with 412 Precondition
+     * Failed if the target already exists.
+     */
+    private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
+        return tryCall(id.value) {
+            client.request(buildUrl(id.value, suffixSlash = isFolder)) {
+                method = HttpMethod("MOVE")
+                header("Destination", buildUrl(newPath, suffixSlash = isFolder))
+                header("Overwrite", "F")
+            }
+
+            // MOVE doesn't return any metadata, so fetch it separately
+            propfind(newPath, depth = 0, suffixSlash = isFolder).single().toCloudItem()
+        }
+    }
+
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Delete
@@ -228,6 +254,10 @@ public class WebDavService internal constructor(
 
                 HttpStatusCode.InsufficientStorage -> {
                     CloudServiceException.InsufficientSpaceException()
+                }
+
+                HttpStatusCode.PreconditionFailed -> {
+                    CloudServiceException.ConflictException(itemId)
                 }
 
                 else -> {

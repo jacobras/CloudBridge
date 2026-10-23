@@ -165,6 +165,97 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `move file`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"metadata":{".tag":"file","name":"new.txt","path_lower":"/notes/new.txt","path_display":"/Notes/new.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1692","size":1}}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.moveFile(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"), "/Notes/new.txt".asFilePath())
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
+                path = "/notes/new.txt".asFilePath(),
+                name = "new.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:30:47Z"),
+                revision = "01640e48e7e6a010000000301ae1692"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/move_v2")
+            assertThat(it.body.toByteArray().decodeToString())
+                .isEqualTo("""{"from_path":"id:uwStUuhj4qYAAAAAAAAAIQ","to_path":"/Notes/new.txt"}""")
+        }
+    }
+
+    @Test
+    fun `move folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"metadata":{".tag":"folder","name":"New","path_lower":"/new","path_display":"/New","id":"id:folder1"}}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.moveFolder(CloudItemId("id:folder1"), "/New".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("id:folder1"),
+                path = "/new".asFolderPath(),
+                name = "New"
+            )
+        )
+        assertThat(engine.requestHistory.single().body.toByteArray().decodeToString())
+            .isEqualTo("""{"from_path":"id:folder1","to_path":"/New"}""")
+    }
+
+    @Test
+    fun `moving to an existing path throws ConflictException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error_summary":"to/conflict/file/..","error":{".tag":"to","to":{".tag":"conflict","conflict":{".tag":"file"}}}}""",
+                status = HttpStatusCode.Conflict,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.moveFile(CloudItemId("id:abc"), "/taken.txt".asFilePath()) }
+            .isInstanceOf<CloudServiceException.ConflictException>()
+    }
+
+    @Test
+    fun `moving a folder to the root throws IllegalArgumentException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.moveFolder(CloudItemId("id:abc"), "/".asFolderPath()) }
+            .isInstanceOf<IllegalArgumentException>()
+        assertThat(engine.requestHistory.size).isEqualTo(0)
+    }
+
+    @Test
     fun `create folder`() = runTest {
         val engine = MockEngine {
             respond(

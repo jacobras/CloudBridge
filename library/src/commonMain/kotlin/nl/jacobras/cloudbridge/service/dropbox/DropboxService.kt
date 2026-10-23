@@ -53,30 +53,23 @@ public class DropboxService internal constructor(
         val arg = Json.encodeToString(
             ListFolderArg(path = path.toString(withLeadingSlash = !path.isRoot))
         )
-        api.listFiles(arg).entries.map {
-            when (it.tag) {
-                "file" -> {
-                    CloudFile(
-                        id = CloudItemId(it.id ?: error("Missing id for file")),
-                        path = it.pathLower.asFilePath(),
-                        name = it.name,
-                        sizeInBytes = it.size ?: error("Missing size for file"),
-                        modified = Instant.parse(
-                            it.clientModified ?: error("Missing modified time for file")
-                        ),
-                        revision = it.rev ?: error("Missing rev for file")
-                    )
-                }
-                "folder" -> {
-                    CloudFolder(
-                        id = CloudItemId(it.id ?: error("Missing id for folder")),
-                        path = it.pathLower.asFolderPath(),
-                        name = it.name
-                    )
-                }
-                else -> error("Unsupported tag: ${it.tag}")
-            }
-        }
+        api.listFiles(arg).entries.map { it.toCloudItem() }
+    }
+
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        return move(id, newPath.toString()) as CloudFile
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+        return move(id, newPath.toString()) as CloudFolder
+    }
+
+    private suspend fun move(id: CloudItemId, newPath: String): CloudItem = tryCall(id.value) {
+        val response = api.move(
+            Json.encodeToString(MoveArg(fromPath = id.value, toPath = newPath))
+        )
+        response.metadata.toCloudItem()
     }
 
     override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
@@ -105,18 +98,19 @@ public class DropboxService internal constructor(
         response.toCloudFile()
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile = tryCall(id.value) {
-        val response = api.uploadFile(
-            arguments = Json.encodeToString(
-                DropboxUploadArg(
-                    path = id.value,
-                    mode = Mode.Overwrite
-                )
-            ),
-            content = content.toByteArray()
-        )
-        response.toCloudFile()
-    }
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
+        tryCall(id.value) {
+            val response = api.uploadFile(
+                arguments = Json.encodeToString(
+                    DropboxUploadArg(
+                        path = id.value,
+                        mode = Mode.Overwrite
+                    )
+                ),
+                content = content.toByteArray()
+            )
+            response.toCloudFile()
+        }
 
     override suspend fun createFile(
         path: FilePath,
@@ -283,6 +277,9 @@ public class DropboxService internal constructor(
                 HttpStatusCode.Conflict if e.message?.contains("insufficient_space") == true -> {
                     CloudServiceException.InsufficientSpaceException()
                 }
+                HttpStatusCode.Conflict if e.message?.contains("conflict") == true -> {
+                    CloudServiceException.ConflictException(itemId)
+                }
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
                 }
@@ -295,6 +292,31 @@ public class DropboxService internal constructor(
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }
+    }
+}
+
+private fun FileEntry.toCloudItem(): CloudItem {
+    return when (tag) {
+        "file" -> {
+            CloudFile(
+                id = CloudItemId(id ?: error("Missing id for file")),
+                path = pathLower.asFilePath(),
+                name = name,
+                sizeInBytes = size ?: error("Missing size for file"),
+                modified = Instant.parse(
+                    clientModified ?: error("Missing modified time for file")
+                ),
+                revision = rev ?: error("Missing rev for file")
+            )
+        }
+        "folder" -> {
+            CloudFolder(
+                id = CloudItemId(id ?: error("Missing id for folder")),
+                path = pathLower.asFolderPath(),
+                name = name
+            )
+        }
+        else -> error("Unsupported tag: $tag")
     }
 }
 

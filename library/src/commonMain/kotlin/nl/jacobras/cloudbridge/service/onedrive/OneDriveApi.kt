@@ -7,6 +7,7 @@ import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
 import de.jensklingenberg.ktorfit.http.Header
 import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.PUT
 import de.jensklingenberg.ktorfit.http.Path
@@ -88,6 +89,18 @@ internal interface OneDriveApi {
         @Path("itemId") id: String,
         @Body content: String
     ): UploadSession
+
+    @GET("v1.0/me/drive/special/approot:/{path}")
+    suspend fun getItemByPath(
+        @Path("path", encoded = true) path: String
+    ): DriveItemId
+
+    @PATCH("v1.0/me/drive/items/{itemId}")
+    @Headers("Content-Type: application/json")
+    suspend fun move(
+        @Path("itemId") id: String,
+        @Body content: String
+    ): DriveItem
 
     @DELETE("v1.0/me/drive/special/approot:/{path}")
     suspend fun delete(
@@ -181,6 +194,23 @@ internal data class Folder(
 
     @SerialName("childCount")
     val childCount: Int
+)
+
+@Serializable
+internal data class MoveArg(
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("parentReference")
+    val parent: MoveParentReference
+)
+
+@Serializable
+internal data class MoveParentReference(
+
+    @SerialName("id")
+    val id: String
 )
 
 @Serializable

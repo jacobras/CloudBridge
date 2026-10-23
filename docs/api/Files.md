@@ -127,6 +127,25 @@ try {
 }
 ```
 
+## Moving or renaming a file or folder
+
+To rename an item, move it within the same folder. If an item already exists at the new path, a
+`CloudServiceException.ConflictException` is thrown.
+
+```kotlin
+try {
+    // Rename/move a file
+    service.moveFile(fileId, "/Projects/New name.txt".asFilePath())
+  
+    // Or a folder
+    service.moveFolder(folderId, "/Projects2".asFolderPath())
+} catch (e: CloudServiceException) {
+    // Handle...
+}
+```
+
+On WebDAV, the id of an item is its path, so the returned item has a new id.
+
 ## Deleting a file or folder
 
 ```kotlin

@@ -95,6 +95,30 @@ public interface CloudService {
      */
     public suspend fun downloadFile(id: CloudItemId): String
 
+    /**
+     * Moves the file with [id] to [newPath]. To rename a file, move it within the same folder:
+     * `moveFile(file.id, "/Notes/new name.txt".asFilePath())`.
+     *
+     * On WebDAV, the id is the path, so the returned file has a new id.
+     *
+     * @return The moved file.
+     * @throws CloudServiceException.ConflictException when an item at [newPath] already exists.
+     * @throws CloudServiceException
+     */
+    public suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile
+
+    /**
+     * Moves the folder with [id] to [newPath]. To rename a folder, move it within the same parent
+     * folder: `moveFolder(folder.id, "/Notes/New name".asFolderPath())`.
+     *
+     * On WebDAV, the id is the path, so the returned folder has a new id.
+     *
+     * @return The moved folder.
+     * @throws IllegalArgumentException when [newPath] is the root folder.
+     * @throws CloudServiceException.ConflictException when an item at [newPath] already exists.
+     * @throws CloudServiceException
+     */
+    public suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder
 
     /**
      * Deletes the file/folder with [id].

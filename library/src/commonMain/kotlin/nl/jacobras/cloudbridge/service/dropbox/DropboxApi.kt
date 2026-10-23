@@ -76,6 +76,10 @@ internal interface DropboxApi {
         @Body content: ByteArray
     ): UploadResponse
 
+    @POST("2/files/move_v2")
+    @Headers("Content-Type: application/json")
+    suspend fun move(@Body arg: String): MoveResponse
+
     @POST("2/files/delete_v2")
     @Headers("Content-Type: application/json")
     suspend fun deleteByPath(@Body body: DeleteRequest)
@@ -276,6 +280,21 @@ internal data class UploadResponse(
 
     @SerialName("rev")
     val rev: String
+)
+
+@Serializable
+internal data class MoveArg(
+    @SerialName("from_path")
+    val fromPath: String,
+
+    @SerialName("to_path")
+    val toPath: String
+)
+
+@Serializable
+internal data class MoveResponse(
+    @SerialName("metadata")
+    val metadata: FileEntry
 )
 
 @Serializable

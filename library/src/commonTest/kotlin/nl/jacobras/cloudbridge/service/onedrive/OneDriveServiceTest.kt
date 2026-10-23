@@ -221,6 +221,131 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `move file`() = runTest {
+        val engine = MockEngine { request ->
+            val content = when {
+                request.method == HttpMethod.Get && !request.url.encodedPath.endsWith("approot") ->
+                    """{"id": "notesFolderId"}"""
+                request.method == HttpMethod.Get -> """
+                    {
+                      "id": "33488461260C4A76!s917d5fe70450423e896e4f9ab0023434",
+                      "name": "CloudBridge Demo",
+                      "parentReference": { "path": "/drive/root:/Apps" }
+                    }
+                """.trimIndent()
+                else -> """
+                    {
+                      "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},3\"",
+                      "id": "file1",
+                      "lastModifiedDateTime": "2025-10-12T10:00:00Z",
+                      "name": "new.txt",
+                      "size": 2,
+                      "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo/Notes" }
+                    }
+                """.trimIndent()
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val file = service.moveFile(CloudItemId("file1"), "/Notes/new.txt".asFilePath())
+
+        assertThat(file).isEqualTo(
+            CloudFile(
+                id = CloudItemId("file1"),
+                path = "/Notes/new.txt".asFilePath(),
+                name = "new.txt",
+                sizeInBytes = 2,
+                modified = Instant.parse("2025-10-12T10:00:00Z"),
+                revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},3\""
+            )
+        )
+        // The destination folder is looked up by path, the app root is fetched to resolve the new path
+        assertThat(engine.requestHistory.map { "${it.method.value} ${it.url.encodedPath}" }).containsExactly(
+            "GET /v1.0/me/drive/special/approot://Notes",
+            "PATCH /v1.0/me/drive/items/file1",
+            "GET /v1.0/me/drive/special/approot"
+        )
+        assertThat(engine.requestHistory[1].body.toByteArray().decodeToString())
+            .isEqualTo("""{"name":"new.txt","parentReference":{"id":"notesFolderId"}}""")
+    }
+
+    @Test
+    fun `move folder`() = runTest {
+        val engine = MockEngine { request ->
+            val content = when (request.method) {
+                HttpMethod.Get -> """
+                    {
+                      "id": "33488461260C4A76!s917d5fe70450423e896e4f9ab0023434",
+                      "name": "CloudBridge Demo",
+                      "parentReference": { "path": "/drive/root:/Apps" }
+                    }
+                """.trimIndent()
+                else -> """
+                    {
+                      "id": "folder1",
+                      "name": "New folder",
+                      "lastModifiedDateTime": "2025-10-12T10:00:00Z",
+                      "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo" },
+                      "folder": { "childCount": 0 }
+                    }
+                """.trimIndent()
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.moveFolder(CloudItemId("folder1"), "/New folder".asFolderPath())
+
+        assertThat(folder).isEqualTo(
+            CloudFolder(
+                id = CloudItemId("folder1"),
+                path = "/New folder".asFolderPath(),
+                name = "New folder"
+            )
+        )
+        // Moving to the root uses the app root as the destination folder
+        assertThat(engine.requestHistory.map { "${it.method.value} ${it.url.encodedPath}" }).containsExactly(
+            "GET /v1.0/me/drive/special/approot",
+            "PATCH /v1.0/me/drive/items/folder1"
+        )
+        assertThat(engine.requestHistory[1].body.toByteArray().decodeToString())
+            .isEqualTo("""{"name":"New folder","parentReference":{"id":"33488461260C4A76!s917d5fe70450423e896e4f9ab0023434"}}""")
+    }
+
+    @Test
+    fun `moving to an existing path throws ConflictException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":"nameAlreadyExists","message":"Name already exists"}}""",
+                status = HttpStatusCode.Conflict,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.moveFile(CloudItemId("file1"), "/Notes/taken.txt".asFilePath()) }
+            .isInstanceOf<CloudServiceException.ConflictException>()
+    }
+
+    @Test
     fun `create folder`() = runTest {
         val engine = MockEngine {
             respond(
