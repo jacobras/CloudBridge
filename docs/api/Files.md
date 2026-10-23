@@ -89,35 +89,32 @@ try {
 }
 ```
 
-### Android/JVM overload with `InputStream`
+* `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws an
+  `IllegalArgumentException` if missing in that case).
+* `mimeType` defaults to `application/octet-stream`. Dropbox doesn't store MIME types and ignores
+  it.
+* WebDAV has no chunked uploads, so the content is streamed in a single request.
+* `updateFile()` has as similar signature as `createFile()`.
 
-On Android and desktop, a `java.io.InputStream` overloaded method is available:
+### Using an `InputStream`
+
+Here's an example on how to use an `InputStream` on Android and desktop:
 
 ```kotlin
 try {
     val file = File("photo.jpg")
     file.inputStream().use { stream ->
         service.createFile(
-            path = "photo.jpg".asFilePath(),
-            inputStream = stream,
+            path = file.name.asFilePath(),
+            source = stream.asSource().buffered(),
             sizeInBytes = file.length(),
             mimeType = "image/jpeg"
         )
     }
 } catch (e: CloudServiceException) {
-    // Handle...
+  // Handle...
 }
 ```
-
-### Updating
-
-`updateFile` has as similar signature.
-
-* `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws an
-  `IllegalArgumentException` if missing in that case).
-* `mimeType` defaults to `application/octet-stream`. Dropbox doesn't store MIME types and ignores
-  it.
-* WebDAV has no chunked uploads, so the content is streamed in a single request.
 
 ## Downloading a file
 
