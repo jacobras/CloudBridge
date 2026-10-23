@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.demo.ui
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,6 +37,7 @@ import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.UserInfo
+import nl.jacobras.humanreadable.HumanReadable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +56,9 @@ internal fun DetailPane(
     val content by viewModel.content.collectAsState()
 
     var pendingCreate by remember { mutableStateOf<CreateType?>(null) }
+
+    val upload by viewModel.uploadProgress.collectAsState()
+    var draggingFiles by remember { mutableStateOf(false) }
 
     val deltaCursor by viewModel.deltaCursor.collectAsState()
     val deltaResult by viewModel.deltaResult.collectAsState()
@@ -112,11 +118,19 @@ internal fun DetailPane(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(onClick = { pendingCreate = CreateType.FOLDER }) {
+                    Button(onClick = { pendingCreate = CreateType.Folder }) {
                         Text("Create folder")
                     }
-                    Button(onClick = { pendingCreate = CreateType.FILE }) {
+                    Button(onClick = { pendingCreate = CreateType.File }) {
                         Text("Create file")
+                    }
+                    if (isFilePickerSupported) {
+                        Button(
+                            onClick = { pickFiles(viewModel::uploadFiles) },
+                            enabled = upload == null
+                        ) {
+                            Text("Upload file")
+                        }
                     }
                     if (service is DeltaCloudService) {
                         Button(onClick = { showDelta = true }) {
@@ -128,7 +142,34 @@ internal fun DetailPane(
         },
         containerColor = Color.Transparent
     ) {
-        Column(modifier = Modifier.padding(it)) {
+        Column(
+            modifier = Modifier
+                .padding(it)
+                .fileDropTarget(
+                    onHoverChange = { hovering -> draggingFiles = hovering },
+                    onDrop = viewModel::uploadFiles
+                )
+                .then(
+                    if (draggingFiles) {
+                        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
+                    } else {
+                        Modifier
+                    }
+                )
+        ) {
+            val currentUpload = upload
+            if (currentUpload != null) {
+                UploadProgressRow(currentUpload)
+                Spacer(Modifier.height(16.dp))
+            } else if (isFileDropSupported) {
+                Text(
+                    text = "Drop files here to upload them to this folder",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             if (error.isNotBlank()) {
                 Text(
                     text = error,
@@ -147,7 +188,7 @@ internal fun DetailPane(
     }
 
     when (pendingCreate) {
-        CreateType.FOLDER -> EditDialog(
+        CreateType.Folder -> EditDialog(
             title = "New folder",
             confirmLabel = "Create",
             nameEditable = true,
@@ -159,7 +200,7 @@ internal fun DetailPane(
             onDismiss = { pendingCreate = null }
         )
 
-        CreateType.FILE -> EditDialog(
+        CreateType.File -> EditDialog(
             title = "New file",
             confirmLabel = "Create",
             nameEditable = true,
@@ -202,7 +243,32 @@ internal fun DetailPane(
     }
 }
 
+@Composable
+private fun UploadProgressRow(progress: UploadProgress) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = buildString {
+                append("Uploading ${progress.fileName} (${HumanReadable.fileSize(progress.bytesRead)}")
+                if (progress.totalBytes != null) {
+                    append(" of ${HumanReadable.fileSize(progress.totalBytes)}")
+                }
+                append(")")
+            },
+            style = MaterialTheme.typography.bodyMedium
+        )
+        val totalBytes = progress.totalBytes
+        if (totalBytes != null && totalBytes > 0) {
+            LinearProgressIndicator(
+                progress = { (progress.bytesRead.toFloat() / totalBytes).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
 private enum class CreateType {
-    FOLDER,
-    FILE
+    Folder,
+    File
 }

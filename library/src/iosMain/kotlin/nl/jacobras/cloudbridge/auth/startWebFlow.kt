@@ -1,8 +1,5 @@
-@file:OptIn(ExperimentalForeignApi::class)
-
 package nl.jacobras.cloudbridge.auth
 
-import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext

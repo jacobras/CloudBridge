@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.io.IOException
+import kotlinx.io.buffered
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
@@ -33,6 +35,9 @@ internal class ServiceViewModel(
         field = MutableStateFlow(null)
     val content: StateFlow<String>
         field = MutableStateFlow("")
+
+    val uploadProgress: StateFlow<UploadProgress?>
+        field = MutableStateFlow(null)
 
     val deltaCursor: StateFlow<DeltaCursor>
         field = MutableStateFlow(DeltaCursor.INITIAL)
@@ -104,6 +109,46 @@ internal class ServiceViewModel(
             refresh()
         } catch (e: CloudServiceException) {
             error.update { e.toString() }
+        }
+    }
+
+    /**
+     * Uploads [files] one by one into the current folder.
+     */
+    fun uploadFiles(files: List<LocalFile>) = viewModelScope.launch {
+        if (uploadProgress.value != null) return@launch
+
+        try {
+            for (file in files) {
+                uploadProgress.update {
+                    UploadProgress(
+                        file.name,
+                        bytesRead = 0,
+                        totalBytes = file.sizeInBytes
+                    )
+                }
+                val source = ProgressSource(file.open()) { bytesRead ->
+                    uploadProgress.update { it?.copy(bytesRead = bytesRead) }
+                }.buffered()
+                source.use {
+                    service.createFile(
+                        path = childPath(file.name).asFilePath(),
+                        source = it,
+                        sizeInBytes = file.sizeInBytes,
+                        mimeType = file.mimeType ?: "application/octet-stream"
+                    )
+                }
+            }
+            error.update { "" }
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        } catch (e: IllegalArgumentException) {
+            error.update { e.toString() }
+        } catch (e: IOException) {
+            error.update { e.toString() }
+        } finally {
+            uploadProgress.update { null }
+            refresh()
         }
     }
 
