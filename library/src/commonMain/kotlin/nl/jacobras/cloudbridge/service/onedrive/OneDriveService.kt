@@ -160,7 +160,13 @@ public class OneDriveService internal constructor(
             itemId = path.toString(),
             source = source,
             sizeInBytes = sizeInBytes,
-            uploadSingle = { api.createFile(path.toString(withLeadingSlash = false), mimeType, it) },
+            uploadSingle = {
+                api.createFile(
+                    path.toString(withLeadingSlash = false),
+                    mimeType,
+                    it
+                )
+            },
             createSession = {
                 api.createUploadSession(
                     path.toString(withLeadingSlash = false),
@@ -255,6 +261,7 @@ public class OneDriveService internal constructor(
      * Uploads [source] with [uploadSingle] if it fits in one chunk, otherwise in an upload session
      * created by [createSession]. Upload sessions require [sizeInBytes].
      */
+    @Suppress("UseRequire")
     private suspend fun upload(
         itemId: String,
         source: Source,
@@ -262,26 +269,32 @@ public class OneDriveService internal constructor(
         uploadSingle: suspend (ByteArray) -> DriveItem,
         createSession: suspend () -> UploadSession
     ): DriveItem {
-        var uploadUrl: String? = null
-        var response: DriveItem? = null
-        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
-            if (offset == 0L && isLast) {
-                response = tryCall(itemId) { uploadSingle(chunk) }
-                return@forEachChunk
-            }
+        return tryCall(itemId) {
+            var uploadUrl: String? = null
+            var response: DriveItem? = null
+            source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+                if (offset == 0L && isLast) {
+                    response = uploadSingle(chunk)
+                    return@forEachChunk
+                }
 
-            val total = requireNotNull(sizeInBytes) {
-                "sizeInBytes is required for OneDrive uploads larger than $uploadChunkSize bytes"
-            }
-            val end = offset + chunk.size - 1
-            check(if (isLast) end + 1 == total else end < total) {
-                "Content size doesn't match sizeInBytes ($total)"
-            }
-            val url =
-                uploadUrl ?: tryCall(itemId) { createSession() }.uploadUrl.also { uploadUrl = it }
+                val total = sizeInBytes ?: throw CloudServiceException.IllegalArgumentException(
+                    "sizeInBytes is required for OneDrive uploads larger than $uploadChunkSize bytes, but it was null"
+                )
+                val end = offset + chunk.size - 1
+                if (!isLast && end >= total) {
+                    throw CloudServiceException.IllegalArgumentException(
+                        "Content is larger than sizeInBytes ($total bytes)"
+                    )
+                }
+                if (isLast && end + 1 != total) {
+                    throw CloudServiceException.IllegalArgumentException(
+                        "Content size (${end + 1} bytes) doesn't match sizeInBytes ($total bytes)"
+                    )
+                }
+                val url = uploadUrl ?: createSession().uploadUrl.also { uploadUrl = it }
 
-            // The upload URL is pre-authenticated, so it needs to be sent without an Authorization header
-            tryCall(itemId) {
+                // The upload URL is pre-authenticated, so it needs to be sent without an Authorization header
                 val chunkResponse = clientWithoutAuth.put(url) {
                     header(HttpHeaders.ContentRange, "bytes $offset-$end/$total")
                     setBody(ByteArrayContent(chunk, ContentType.Application.OctetStream))
@@ -290,8 +303,8 @@ public class OneDriveService internal constructor(
                     response = json.decodeFromString<DriveItem>(chunkResponse.bodyAsText())
                 }
             }
+            checkNotNull(response)
         }
-        return checkNotNull(response)
     }
 
     private fun DriveItem.toCloudFile(path: FilePath): CloudFile {

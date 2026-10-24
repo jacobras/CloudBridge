@@ -31,6 +31,8 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
+import nl.jacobras.cloudbridge.util.failingSink
+import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -106,6 +108,24 @@ class OneDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a/content")
         }
+    }
+
+    @Test
+    fun `failing sink write throws SinkWriteException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = examplePngBytes(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
+            .isInstanceOf<CloudServiceException.SinkWriteException>()
     }
 
     @Test
@@ -381,7 +401,11 @@ class OneDriveServiceTest {
     @Test
     fun `app root is fetched again after switching accounts`() = runTest {
         val engine = MockEngine { request ->
-            val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") "rootA" else "rootB"
+            val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") {
+                "rootA"
+            } else {
+                "rootB"
+            }
             val content = when (request.method) {
                 HttpMethod.Get -> """
                     {
@@ -565,8 +589,96 @@ class OneDriveServiceTest {
         service.uploadChunkSize = 4
 
         assertFailure { service.createFile("archive.zip".asFilePath(), bufferOf(10)) }
-            .isInstanceOf<IllegalArgumentException>()
+            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .hasMessage("sizeInBytes is required for OneDrive uploads larger than 4 bytes, but it was null")
         assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
+    fun `large binary file larger than size throws IllegalArgumentException`() = runTest {
+        val engine = uploadSessionEngine()
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure {
+            service.createFile(
+                path = "archive.zip".asFilePath(),
+                source = bufferOf(10),
+                sizeInBytes = 6
+            )
+        }
+            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .hasMessage("Content is larger than sizeInBytes (6 bytes)")
+    }
+
+    @Test
+    fun `large binary file smaller than size throws IllegalArgumentException`() = runTest {
+        val engine = uploadSessionEngine()
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure {
+            service.createFile(
+                "archive.zip".asFilePath(),
+                bufferOf(10),
+                sizeInBytes = 12
+            )
+        }
+            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .hasMessage("Content size (10 bytes) doesn't match sizeInBytes (12 bytes)")
+    }
+
+    @Test
+    fun `failing source read throws SourceReadException`() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFile("image.png".asFilePath(), failingSource()) }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
+    fun `failing source read during upload session throws SourceReadException`() = runTest {
+        val engine = uploadSessionEngine()
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure {
+            service.createFile("archive.zip".asFilePath(), failingSource(5), sizeInBytes = 10)
+        }.isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Post,
+            HttpMethod.Put
+        )
+    }
+
+    private fun uploadSessionEngine() = MockEngine { request ->
+        if (request.url.encodedPath.endsWith("createUploadSession")) {
+            respond(
+                content = """{"uploadUrl":"https://my.microsoftpersonalcontent.com/up/session1"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        } else {
+            respond(
+                content = """{"nextExpectedRanges":["4-"]}""",
+                status = HttpStatusCode.Accepted,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
     }
 
     @Test

@@ -107,8 +107,9 @@ try {
 }
 ```
 
-* `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws an
-  `IllegalArgumentException` if missing in that case).
+* `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws a
+  `CloudServiceException.IllegalArgumentException` if missing or not matching the content size in
+  that case).
 * `mimeType` defaults to `application/octet-stream`. Dropbox doesn't store MIME types and ignores
   it.
 * WebDAV has no chunked uploads, so the content is streamed in a single request.

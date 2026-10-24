@@ -34,6 +34,8 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
+import nl.jacobras.cloudbridge.util.failingSink
+import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -141,6 +143,24 @@ class GoogleDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://www.googleapis.com/drive/v3/files/1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg?alt=media")
         }
+    }
+
+    @Test
+    fun `failing sink write throws SinkWriteException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = examplePngBytes(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
+            .isInstanceOf<CloudServiceException.SinkWriteException>()
     }
 
     @Test
@@ -268,7 +288,11 @@ class GoogleDriveServiceTest {
     @Test
     fun `appDataFolder id is fetched again after switching accounts`() = runTest {
         val engine = MockEngine { request ->
-            val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") "rootA" else "rootB"
+            val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") {
+                "rootA"
+            } else {
+                "rootB"
+            }
             val content = if (request.method == HttpMethod.Patch) {
                 """
                     {
@@ -767,6 +791,54 @@ class GoogleDriveServiceTest {
 
         assertFailure { service.createFile("/archive.zip".asFilePath(), bufferOf(10)) }
             .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+    }
+
+    @Test
+    fun `failing source read throws SourceReadException`() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.updateFile(CloudItemId("file1"), failingSource()) }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
+    fun `failing source read during resumable session throws SourceReadException`() = runTest {
+        val engine = MockEngine { request ->
+            when {
+                request.isNameCheck() -> respondFiles()
+                request.method == HttpMethod.Post -> respond(
+                    content = "",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(
+                        HttpHeaders.Location,
+                        "https://www.googleapis.com/upload/session1"
+                    )
+                )
+                else -> respond(
+                    content = "",
+                    status = HttpStatusCode.PermanentRedirect, // 308 Resume Incomplete
+                    headers = headersOf(HttpHeaders.Range, "bytes=0-3")
+                )
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure { service.createFile("/archive.zip".asFilePath(), failingSource(5)) }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Get,
+            HttpMethod.Post,
+            HttpMethod.Put
+        )
     }
 
     @Test

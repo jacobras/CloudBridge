@@ -81,7 +81,9 @@ public interface CloudService {
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
      * @return The created file.
-     * @throws IllegalArgumentException when uploading >10 MB to OneDrive and [sizeInBytes] is missing.
+     * @throws CloudServiceException.IllegalArgumentException when uploading >10 MB to OneDrive and
+     * [sizeInBytes] is missing or doesn't match the content size.
+     * @throws CloudServiceException.SourceReadException when reading [source] fails.
      * @throws CloudServiceException
      */
     public suspend fun createFile(
@@ -98,7 +100,9 @@ public interface CloudService {
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
      * @return The updated file.
-     * @throws IllegalArgumentException when uploading >10 MB to OneDrive and [sizeInBytes] is missing.
+     * @throws CloudServiceException.IllegalArgumentException when uploading >10 MB to OneDrive and
+     * [sizeInBytes] is missing or doesn't match the content size.
+     * @throws CloudServiceException.SourceReadException when reading [source] fails.
      * @throws CloudServiceException
      */
     public suspend fun updateFile(
@@ -121,6 +125,7 @@ public interface CloudService {
      * The content is streamed, so large files aren't held in memory. The sink is flushed,
      * but not closed.
      *
+     * @throws CloudServiceException.SinkWriteException when writing to [sink] fails.
      * @throws CloudServiceException
      */
     public suspend fun downloadFile(id: CloudItemId, sink: Sink)

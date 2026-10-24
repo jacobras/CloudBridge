@@ -157,11 +157,11 @@ public class DropboxService internal constructor(
     /**
      * Uploads [source] in a single request if it fits in one chunk, otherwise in an upload session.
      */
-    private suspend fun upload(arg: DropboxUploadArg, source: Source): UploadResponse {
-        var sessionId: String? = null
-        var response: UploadResponse? = null
-        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
-            tryCall(arg.path) {
+    private suspend fun upload(arg: DropboxUploadArg, source: Source): UploadResponse =
+        tryCall(arg.path) {
+            var sessionId: String? = null
+            var response: UploadResponse? = null
+            source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
                 when {
                     isLast && offset == 0L -> {
                         // Just one chunk: immediate upload.
@@ -201,9 +201,8 @@ public class DropboxService internal constructor(
                     }
                 }
             }
+            checkNotNull(response)
         }
-        return checkNotNull(response)
-    }
 
     private fun UploadResponse.toCloudFile(): CloudFile {
         return CloudFile(

@@ -27,8 +27,9 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
-import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.bufferOf
+import nl.jacobras.cloudbridge.util.examplePngBytes
+import nl.jacobras.cloudbridge.util.failingSink
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -395,6 +396,28 @@ class WebDavServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Photos/cat.png")
         }
+    }
+
+    @Test
+    fun `failing sink write throws SinkWriteException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = examplePngBytes(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("/Photos/cat.png"), failingSink()) }
+            .isInstanceOf<CloudServiceException.SinkWriteException>()
     }
 
     @Test

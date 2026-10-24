@@ -347,13 +347,13 @@ public class GoogleDriveService internal constructor(
         uploadSingle: suspend (ByteArray) -> DriveFile,
         startSession: suspend () -> HttpResponse
     ): DriveFile {
-        var sessionUri: String? = null
-        var response: DriveFile? = null
-        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
-            tryCall(itemId) {
+        return tryCall(itemId) {
+            var sessionUri: String? = null
+            var response: DriveFile? = null
+            source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
                 if (offset == 0L && isLast) {
                     response = uploadSingle(chunk)
-                    return@tryCall
+                    return@forEachChunk
                 }
 
                 val uri = sessionUri
@@ -377,8 +377,8 @@ public class GoogleDriveService internal constructor(
                     else -> throw ResponseException(chunkResponse, chunkResponse.bodyAsText())
                 }
             }
+            checkNotNull(response)
         }
-        return checkNotNull(response)
     }
 
     private fun DriveFile.toCloudFile(isRoot: Boolean): CloudFile {

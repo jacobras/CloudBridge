@@ -4,6 +4,7 @@ import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasMessage
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.single
@@ -29,6 +30,8 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
+import nl.jacobras.cloudbridge.util.failingSink
+import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -104,6 +107,24 @@ class DropboxServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/download")
             assertThat(it.headers["Dropbox-API-Arg"]).isEqualTo("""{"path":"id:abc"}""")
         }
+    }
+
+    @Test
+    fun `failing sink write throws SinkWriteException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = examplePngBytes(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("id:abc"), failingSink()) }
+            .isInstanceOf<CloudServiceException.SinkWriteException>()
     }
 
     @Test
@@ -417,6 +438,41 @@ class DropboxServiceTest {
             4,
             4,
             2
+        )
+    }
+
+    @Test
+    fun `failing source read throws SourceReadException`() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFile("/image.png".asFilePath(), failingSource()) }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory).isEmpty()
+    }
+
+    @Test
+    fun `failing source read during upload session throws SourceReadException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"session_id":"session1"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+        service.uploadChunkSize = 4
+
+        assertFailure { service.createFile("/archive.zip".asFilePath(), failingSource(5)) }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory.map { it.url.toString() }).containsExactly(
+            "https://content.dropboxapi.com/2/files/upload_session/start"
         )
     }
 
