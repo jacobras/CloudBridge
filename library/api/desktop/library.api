@@ -47,6 +47,10 @@ public final class nl/jacobras/cloudbridge/CloudServiceException$ConnectionExcep
 	public fun <init> (Ljava/io/IOException;)V
 }
 
+public final class nl/jacobras/cloudbridge/CloudServiceException$IllegalArgumentException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
 public final class nl/jacobras/cloudbridge/CloudServiceException$InsufficientSpaceException : nl/jacobras/cloudbridge/CloudServiceException {
 	public fun <init> ()V
 }
@@ -57,6 +61,14 @@ public final class nl/jacobras/cloudbridge/CloudServiceException$NotAuthenticate
 
 public final class nl/jacobras/cloudbridge/CloudServiceException$NotFoundException : nl/jacobras/cloudbridge/CloudServiceException {
 	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudServiceException$SinkWriteException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> (Ljava/io/IOException;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudServiceException$SourceReadException : nl/jacobras/cloudbridge/CloudServiceException {
+	public fun <init> (Ljava/io/IOException;)V
 }
 
 public final class nl/jacobras/cloudbridge/CloudServiceException$Unknown : nl/jacobras/cloudbridge/CloudServiceException {
@@ -243,6 +255,7 @@ public final class nl/jacobras/cloudbridge/model/FilePath : nl/jacobras/cloudbri
 	public static fun toFolderPath-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun toString-impl (Ljava/lang/String;Z)Ljava/lang/String;
 	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
