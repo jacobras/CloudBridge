@@ -13,6 +13,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -23,6 +24,7 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.IOException
+import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -43,6 +45,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
@@ -210,10 +213,11 @@ public class GoogleDriveService internal constructor(
         return tryCall(id.value) { response.toCloudFile(isRoot = response.isInRoot()) }
     }
 
-    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile = tryCall(id.value) {
-        val response = move(id, newPath.toFolderPath(), newPath.name)
-        response.toCloudFile(isRoot = response.isInRoot())
-    }
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile =
+        tryCall(id.value) {
+            val response = move(id, newPath.toFolderPath(), newPath.name)
+            response.toCloudFile(isRoot = response.isInRoot())
+        }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
@@ -385,6 +389,10 @@ public class GoogleDriveService internal constructor(
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
         api.downloadFile(id = id.value).decodeToString()
+    }
+
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink): Unit = tryCall(id.value) {
+        api.downloadFileStreaming(id = id.value).execute { it.bodyAsChannel().transferTo(sink) }
     }
 
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {

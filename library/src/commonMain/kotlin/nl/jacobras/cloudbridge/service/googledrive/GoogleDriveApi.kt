@@ -12,7 +12,9 @@ import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.Path
 import de.jensklingenberg.ktorfit.http.Query
+import de.jensklingenberg.ktorfit.http.Streaming
 import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -98,6 +100,10 @@ internal interface GoogleDriveApi {
 
     @GET("drive/v3/files/{fileId}?alt=media")
     suspend fun downloadFile(@Path("fileId") id: String): ByteArray
+
+    @Streaming
+    @GET("drive/v3/files/{fileId}?alt=media")
+    suspend fun downloadFileStreaming(@Path("fileId") id: String): HttpStatement
 
     @DELETE("drive/v3/files/{fileId}")
     suspend fun deleteById(@Path("fileId") fileId: String)

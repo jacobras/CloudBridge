@@ -2,9 +2,11 @@ package nl.jacobras.cloudbridge.service.dropbox
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.IOException
+import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -25,6 +27,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
 
 /**
@@ -65,8 +68,9 @@ public class DropboxService internal constructor(
         require(!path.isRoot) { "Can't get info for the root folder" }
 
         return tryCall(path.toString()) {
-            api.getMetadata(Json.encodeToString(GetMetadataArg(path.toString()))).toCloudItem()
-                    as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+            val arg = Json.encodeToString(GetMetadataArg(path.toString()))
+            api.getMetadata(arg).toCloudItem() as? CloudFolder
+                ?: throw CloudServiceException.NotFoundException(path.toString())
         }
     }
 
@@ -216,6 +220,11 @@ public class DropboxService internal constructor(
         api.downloadFile(
             arguments = Json.encodeToString(DropboxDownloadArg(path = id.value))
         )
+    }
+
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink): Unit = tryCall(id.value) {
+        val arg = Json.encodeToString(DropboxDownloadArg(path = id.value))
+        api.downloadFileStreaming(arg).execute { it.bodyAsChannel().transferTo(sink) }
     }
 
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {

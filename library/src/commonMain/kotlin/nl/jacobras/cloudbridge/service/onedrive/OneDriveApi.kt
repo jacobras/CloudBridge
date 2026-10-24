@@ -11,7 +11,9 @@ import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.PUT
 import de.jensklingenberg.ktorfit.http.Path
+import de.jensklingenberg.ktorfit.http.Streaming
 import de.jensklingenberg.ktorfit.http.Url
+import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -58,6 +60,12 @@ internal interface OneDriveApi {
     suspend fun downloadFileById(
         @Path("itemId") id: String
     ): String
+
+    @Streaming
+    @GET("v1.0/me/drive/items/{itemId}/content")
+    suspend fun downloadFileByIdStreaming(
+        @Path("itemId") id: String
+    ): HttpStatement
 
     @PUT("v1.0/me/drive/special/approot:/{path}:/content")
     suspend fun createFile(

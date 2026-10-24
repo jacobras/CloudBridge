@@ -5,6 +5,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.header
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -12,6 +13,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.decodeURLPart
 import kotlinx.io.IOException
+import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -32,6 +34,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
 
 public class OneDriveService internal constructor(
@@ -193,7 +196,8 @@ public class OneDriveService internal constructor(
     private suspend fun DriveItem.resolveRelativePath(): String {
         val root = getAppRootId()
         val parentPath = root.parent?.path ?: error("Missing parent path for app root")
-        val rootPath = "${parentPath.decodeURLPart()}/${root.name ?: error("Missing name for app root")}"
+        val rootName = root.name ?: error("Missing name for app root")
+        val rootPath = "${parentPath.decodeURLPart()}/$rootName"
 
         // Graph returns e.g. "/drive/root:/Apps/My%20App/folder" for an item in "/folder".
         // Paths are percent-encoded, names aren't, so compare decoded.
@@ -208,10 +212,11 @@ public class OneDriveService internal constructor(
         return appRoot ?: api.getAppRoot().also { appRoot = it }
     }
 
-    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile = tryCall(id.value) {
-        val response = move(id, newPath.toFolderPath(), newPath.name)
-        response.toCloudFile(response.resolvePath())
-    }
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile =
+        tryCall(id.value) {
+            val response = move(id, newPath.toFolderPath(), newPath.name)
+            response.toCloudFile(response.resolvePath())
+        }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
@@ -235,9 +240,13 @@ public class OneDriveService internal constructor(
         } else {
             api.getItemByPath(parent.toString()).id
         }
+        val arg = MoveArg(
+            name = name,
+            parent = MoveParentReference(parentId)
+        )
         return api.move(
             id = id.value,
-            content = json.encodeToString(MoveArg(name = name, parent = MoveParentReference(parentId)))
+            content = json.encodeToString(arg)
         )
     }
 
@@ -297,6 +306,10 @@ public class OneDriveService internal constructor(
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
         api.downloadFileById(id.value)
+    }
+
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink): Unit = tryCall(id.value) {
+        api.downloadFileByIdStreaming(id.value).execute { it.bodyAsChannel().transferTo(sink) }
     }
 
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {

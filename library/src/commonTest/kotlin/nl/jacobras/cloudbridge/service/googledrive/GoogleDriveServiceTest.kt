@@ -21,6 +21,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -31,6 +33,7 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.bufferOf
+import nl.jacobras.cloudbridge.util.examplePngBytes
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -112,6 +115,50 @@ class GoogleDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://www.googleapis.com/drive/v3/files/1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg?alt=media")
         }
+    }
+
+    @Test
+    fun `download binary file`() = runTest {
+        val bytes = examplePngBytes()
+        val engine = MockEngine {
+            respond(
+                content = bytes,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val sink = Buffer()
+        val id = CloudItemId("1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg")
+        service.downloadFile(id, sink)
+
+        assertThat(sink.readByteArray().toList()).isEqualTo(bytes.toList())
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.toString()).isEqualTo("https://www.googleapis.com/drive/v3/files/1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg?alt=media")
+        }
+    }
+
+    @Test
+    fun `downloading missing binary file throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":404,"message":"File not found: missing.","errors":[{"message":"File not found: missing.","domain":"global","reason":"notFound","location":"fileId","locationType":"parameter"}]}}""",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 
     @Test

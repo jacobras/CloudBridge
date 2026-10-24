@@ -138,10 +138,33 @@ try {
 
 ```kotlin
 try {
-    val content = service.downloadFile(fileId)
+    val content: String = service.downloadFile(fileId)
 } catch (e: CloudServiceException) {
     // Handle...
 }
+```
+
+### Downloading binary or large files
+
+For images, archives and other binary content, pass a `kotlinx.io.Sink`. The content is streamed
+into it, so large files aren't held in memory. The sink is flushed, but not closed.
+
+```kotlin
+try {
+    SystemFileSystem.sink(Path("photo.jpg")).buffered().use { sink ->
+        service.downloadFile(fileId, sink)
+    }
+} catch (e: CloudServiceException) {
+    // Handle...
+}
+```
+
+To get the content in memory instead, use a `Buffer`:
+
+```kotlin
+val buffer = Buffer()
+service.downloadFile(fileId, buffer)
+val bytes = buffer.readByteArray()
 ```
 
 ## Moving or renaming a file or folder

@@ -17,6 +17,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -27,6 +29,7 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.bufferOf
+import nl.jacobras.cloudbridge.util.examplePngBytes
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -76,6 +79,50 @@ class OneDriveServiceTest {
                 "https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a/content"
             )
         }
+    }
+
+    @Test
+    fun `download binary file`() = runTest {
+        val bytes = examplePngBytes()
+        val engine = MockEngine {
+            respond(
+                content = bytes,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val sink = Buffer()
+        val id = CloudItemId("33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a")
+        service.downloadFile(id, sink)
+
+        assertThat(sink.readByteArray().toList()).isEqualTo(bytes.toList())
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/items/33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a/content")
+        }
+    }
+
+    @Test
+    fun `downloading missing binary file throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = NOT_FOUND_RESPONSE,
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 
     @Test
@@ -602,7 +649,7 @@ class OneDriveServiceTest {
     fun `get file info throws NotFoundException when missing`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{"error":{"code":"itemNotFound","message":"Item not found"}}""",
+                content = NOT_FOUND_RESPONSE,
                 status = HttpStatusCode.NotFound,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -721,3 +768,6 @@ private const val ONEDRIVE_FOLDER_JSON =
 
 private const val DRIVE_ITEM_RESPONSE =
     """{"id":"33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc","eTag":"\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"","lastModifiedDateTime":"2025-10-11T16:13:38Z","name":"archive.zip","size":10,"parentReference":{"id":"33488461260C4A76!s917d5fe70450423e896e4f9ab0023434","path":"/drive/root:/Apps/CloudBridge Demo"},"file":{"mimeType":"application/zip"}}"""
+
+private const val NOT_FOUND_RESPONSE =
+    """{"error":{"code":"itemNotFound","message":"Item not found"}}"""

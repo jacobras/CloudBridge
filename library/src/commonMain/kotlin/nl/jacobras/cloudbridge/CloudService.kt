@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge
 
+import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
@@ -113,6 +114,16 @@ public interface CloudService {
      * @throws CloudServiceException
      */
     public suspend fun downloadFile(id: CloudItemId): String
+
+    /**
+     * Downloads the binary content of the file with [id] into [sink].
+     *
+     * The content is streamed, so large files aren't held in memory. The sink is flushed,
+     * but not closed.
+     *
+     * @throws CloudServiceException
+     */
+    public suspend fun downloadFile(id: CloudItemId, sink: Sink)
 
     /**
      * Moves the file with [id] to [newPath]. To rename a file, move it within the same folder:

@@ -17,6 +17,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
@@ -25,6 +27,7 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.bufferOf
 import kotlin.test.Test
 import kotlin.time.Instant
@@ -363,6 +366,57 @@ class WebDavServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/B/in%20B.txt")
         }
+    }
+
+    @Test
+    fun `download binary file`() = runTest {
+        val bytes = examplePngBytes()
+        val engine = MockEngine {
+            respond(
+                content = bytes,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val sink = Buffer()
+        service.downloadFile(CloudItemId("/Photos/cat.png"), sink)
+
+        assertThat(sink.readByteArray().toList()).isEqualTo(bytes.toList())
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Photos/cat.png")
+        }
+    }
+
+    @Test
+    fun `downloading missing binary file throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("/missing.png"), Buffer()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 
     @Test

@@ -16,6 +16,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -26,6 +28,7 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.util.bufferOf
+import nl.jacobras.cloudbridge.util.examplePngBytes
 import kotlin.test.Test
 import kotlin.time.Instant
 
@@ -57,7 +60,7 @@ class DropboxServiceTest {
     fun `downloading missing file throws NotFoundException`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{"error":{".tag":"path","path":{".tag":"not_found"}},"error_summary":"path/not_found/"}""",
+                content = NOT_FOUND_RESPONSE,
                 status = HttpStatusCode.Conflict,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -75,6 +78,50 @@ class DropboxServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/download")
             assertThat(it.headers["Dropbox-API-Arg"]).isEqualTo("""{"path":"id:missing"}""")
         }
+    }
+
+    @Test
+    fun `download binary file`() = runTest {
+        val bytes = examplePngBytes()
+        val engine = MockEngine {
+            respond(
+                content = bytes,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val sink = Buffer()
+        service.downloadFile(CloudItemId("id:abc"), sink)
+
+        assertThat(sink.readByteArray().toList()).isEqualTo(bytes.toList())
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/download")
+            assertThat(it.headers["Dropbox-API-Arg"]).isEqualTo("""{"path":"id:abc"}""")
+        }
+    }
+
+    @Test
+    fun `downloading missing binary file throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = NOT_FOUND_RESPONSE,
+                status = HttpStatusCode.Conflict,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.downloadFile(CloudItemId("id:missing"), Buffer()) }
+            .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 
     @Test
@@ -574,3 +621,6 @@ class DropboxServiceTest {
 
 private const val UPLOAD_RESPONSE =
     """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1}"""
+
+private const val NOT_FOUND_RESPONSE =
+    """{"error":{".tag":"path","path":{".tag":"not_found"}},"error_summary":"path/not_found/"}"""

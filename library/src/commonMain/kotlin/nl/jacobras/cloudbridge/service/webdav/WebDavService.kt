@@ -4,8 +4,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -23,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.io.Buffer
 import kotlinx.io.IOException
+import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.CloudService
@@ -40,6 +43,7 @@ import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.ensureSuffix
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.transferTo
 
 /**
  * Instance of a WebDAV server.
@@ -84,8 +88,9 @@ public class WebDavService internal constructor(
         require(!path.isRoot) { "Can't get info for the root folder" }
 
         return tryCall(path.toString()) {
-            propfind(path.toString(), depth = 0, suffixSlash = true).single().toCloudItem()
-                    as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+            propfind(path.toString(), depth = 0, suffixSlash = true).single()
+                .toCloudItem() as? CloudFolder
+                ?: throw CloudServiceException.NotFoundException(path.toString())
         }
     }
 
@@ -153,6 +158,10 @@ public class WebDavService internal constructor(
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Get
         }.bodyAsText()
+    }
+
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink): Unit = tryCall(id.value) {
+        client.prepareGet(buildUrl(id.value)).execute { it.bodyAsChannel().transferTo(sink) }
     }
 
     override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {

@@ -5,6 +5,8 @@ import de.jensklingenberg.ktorfit.http.Header
 import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.Query
+import de.jensklingenberg.ktorfit.http.Streaming
+import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -47,6 +49,12 @@ internal interface DropboxApi {
     suspend fun downloadFile(
         @Header("Dropbox-API-Arg") arguments: String,
     ): String
+
+    @Streaming
+    @POST("https://content.dropboxapi.com/2/files/download")
+    suspend fun downloadFileStreaming(
+        @Header("Dropbox-API-Arg") arguments: String,
+    ): HttpStatement
 
     @POST("https://content.dropboxapi.com/2/files/upload")
     @Headers("Content-Type: application/octet-stream")

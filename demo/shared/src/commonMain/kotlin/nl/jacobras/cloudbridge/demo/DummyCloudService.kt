@@ -1,7 +1,8 @@
 package nl.jacobras.cloudbridge.demo
 
+import kotlinx.io.Sink
 import kotlinx.io.Source
-import kotlinx.io.readString
+import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -37,13 +38,13 @@ class DummyCloudService(
             id = CloudItemId("456"),
             path = "/Welcome.txt".asFilePath(),
             name = "Welcome.txt",
-            sizeInBytes = 123L,
+            sizeInBytes = 12L,
             modified = Clock.System.now(),
             revision = "rev-0"
         )
     )
     private var cloudItemContents = mutableMapOf(
-        CloudItemId("456") to "Hello world!"
+        CloudItemId("456") to "Hello world!".encodeToByteArray()
     )
 
     /**
@@ -113,7 +114,9 @@ class DummyCloudService(
     override suspend fun createFile(
         path: FilePath,
         content: String
-    ): CloudFile {
+    ): CloudFile = createFile(path, content.encodeToByteArray())
+
+    private fun createFile(path: FilePath, content: ByteArray): CloudFile {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -123,7 +126,7 @@ class DummyCloudService(
             id = id,
             path = path,
             name = path.name,
-            sizeInBytes = content.length * 8L,
+            sizeInBytes = content.size.toLong(),
             modified = Clock.System.now(),
             revision = nextRevision(id)
         )
@@ -136,7 +139,9 @@ class DummyCloudService(
     override suspend fun updateFile(
         id: CloudItemId,
         content: String
-    ): CloudFile {
+    ): CloudFile = updateFile(id, content.encodeToByteArray())
+
+    private fun updateFile(id: CloudItemId, content: ByteArray): CloudFile {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -144,7 +149,7 @@ class DummyCloudService(
         val existing = cloudItems.firstOrNull { it.id == id }
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
         val updated = existing.copy(
-            sizeInBytes = content.length * 8L,
+            sizeInBytes = content.size.toLong(),
             modified = Clock.System.now(),
             revision = nextRevision(id)
         )
@@ -160,16 +165,25 @@ class DummyCloudService(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ): CloudFile = createFile(path, source.readString())
+    ): CloudFile = createFile(path, source.readByteArray())
 
     override suspend fun updateFile(
         id: CloudItemId,
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ): CloudFile = updateFile(id, source.readString())
+    ): CloudFile = updateFile(id, source.readByteArray())
 
     override suspend fun downloadFile(id: CloudItemId): String {
+        return downloadBytes(id).decodeToString()
+    }
+
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink) {
+        sink.write(downloadBytes(id))
+        sink.flush()
+    }
+
+    private fun downloadBytes(id: CloudItemId): ByteArray {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
