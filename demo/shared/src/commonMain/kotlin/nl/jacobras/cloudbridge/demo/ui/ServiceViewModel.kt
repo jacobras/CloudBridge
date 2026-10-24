@@ -169,6 +169,7 @@ internal class ServiceViewModel(
      */
     fun uploadFiles(files: List<LocalFile>) = viewModelScope.launch {
         if (uploadProgress.value != null) return@launch
+        val targetFolder = path.value
 
         try {
             for (file in files) {
@@ -184,7 +185,7 @@ internal class ServiceViewModel(
                 }.buffered()
                 source.use {
                     service.createFile(
-                        path = childPath(file.name).asFilePath(),
+                        path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
                         source = it,
                         sizeInBytes = file.sizeInBytes,
                         mimeType = file.mimeType ?: "application/octet-stream"
