@@ -232,6 +232,23 @@ class DummyCloudService(
         cloudItems += renamed
         folderModified[id] = Clock.System.now()
         recordUpdate(renamed)
+
+        // Move the folder's contents.
+        val oldPrefix = existing.path.toString()
+        val descendants = cloudItems.filter { it.path.startsWith(existing.path) }
+        for (descendant in descendants) {
+            val movedPath = newPath.toString() + descendant.path.toString().removePrefix(oldPrefix)
+            val moved = when (descendant) {
+                is CloudFile -> descendant.copy(
+                    path = movedPath.asFilePath(),
+                    revision = nextRevision(descendant.id)
+                )
+                is CloudFolder -> descendant.copy(path = movedPath.asFolderPath())
+            }
+            cloudItems -= descendant
+            cloudItems += moved
+            recordUpdate(moved)
+        }
         return renamed
     }
 
