@@ -54,6 +54,7 @@ internal fun DetailPane(
 
     val selectedItem by viewModel.selectedItem.collectAsState()
     val content by viewModel.content.collectAsState()
+    val isDownloading by viewModel.isDownloading.collectAsState()
 
     var pendingCreate by remember { mutableStateOf<CreateType?>(null) }
 
@@ -227,19 +228,30 @@ internal fun DetailPane(
         )
     }
 
-    val editingFile = selectedItem
-    if (editingFile is CloudFile) {
-        EditDialog(
-            title = "Edit file",
-            confirmLabel = "Save",
-            nameEditable = false,
-            showContent = true,
-            initialName = editingFile.name,
-            initialContent = content,
-            onConfirm = { _, newContent -> viewModel.updateFile(editingFile.id, newContent) },
-            onDismiss = { viewModel.deselectItem() },
-            onDelete = { viewModel.delete(editingFile) }
-        )
+    val selectedFile = selectedItem
+    if (selectedFile is CloudFile) {
+        if (FileType.of(selectedFile.name) == FileType.Text) {
+            EditDialog(
+                title = "Edit file",
+                confirmLabel = "Save",
+                nameEditable = false,
+                showContent = true,
+                initialName = selectedFile.name,
+                initialContent = (content as? FileContent.Text)?.text.orEmpty(),
+                onConfirm = { _, newContent -> viewModel.updateFile(selectedFile.id, newContent) },
+                onDismiss = { viewModel.deselectItem() },
+                onDelete = { viewModel.delete(selectedFile) }
+            )
+        } else {
+            FileInfoDialog(
+                file = selectedFile,
+                content = content,
+                isDownloading = isDownloading,
+                onDownload = { viewModel.downloadSelectedFile() },
+                onDelete = { viewModel.delete(selectedFile) },
+                onDismiss = { viewModel.deselectItem() }
+            )
+        }
     }
 }
 

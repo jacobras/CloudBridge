@@ -17,6 +17,7 @@ public abstract interface class nl/jacobras/cloudbridge/CloudService {
 	public static synthetic fun createFile-c1-3Pb4$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public abstract fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun downloadFile-iTb6-uM (Ljava/lang/String;Lkotlinx/io/Sink;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getFileInfo-WN-p8_Y (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getFolderInfo-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -308,6 +309,7 @@ public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/j
 	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-iTb6-uM (Ljava/lang/String;Lkotlinx/io/Sink;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getFileInfo-WN-p8_Y (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -330,6 +332,7 @@ public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveServic
 	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-iTb6-uM (Ljava/lang/String;Lkotlinx/io/Sink;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getFileInfo-WN-p8_Y (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -352,6 +355,7 @@ public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl
 	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-iTb6-uM (Ljava/lang/String;Lkotlinx/io/Sink;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getDelta-BwCfqzU (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getFileInfo-WN-p8_Y (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -384,6 +388,7 @@ public final class nl/jacobras/cloudbridge/service/webdav/WebDavService : nl/jac
 	public fun createFile-c1-3Pb4 (Ljava/lang/String;Lkotlinx/io/Source;Ljava/lang/Long;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun delete-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun downloadFile-iTb6-uM (Ljava/lang/String;Lkotlinx/io/Sink;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun downloadFile-mRGvIMc (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getFileInfo-WN-p8_Y (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getFolderInfo-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
