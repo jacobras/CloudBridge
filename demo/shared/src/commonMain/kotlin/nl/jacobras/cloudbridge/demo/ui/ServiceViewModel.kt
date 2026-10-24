@@ -53,11 +53,16 @@ internal class ServiceViewModel(
         refresh()
     }
 
-    private fun refresh() = viewModelScope.launch {
+    /**
+     * Reloads the current folder.
+     */
+    private fun refresh(clearError: Boolean = true) = viewModelScope.launch {
         try {
             val items = service.listFiles(path.value)
             files.update { items }
-            error.update { "" }
+            if (clearError) {
+                error.update { "" }
+            }
         } catch (e: CloudServiceException) {
             error.update { e.toString() }
         }
@@ -201,7 +206,8 @@ internal class ServiceViewModel(
             error.update { e.toString() }
         } finally {
             uploadProgress.update { null }
-            refresh()
+            // Files before a failed one may have been uploaded, so refresh to show them.
+            refresh(clearError = false)
         }
     }
 
