@@ -379,6 +379,53 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `app root is fetched again after switching accounts`() = runTest {
+        val engine = MockEngine { request ->
+            val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") "rootA" else "rootB"
+            val content = when (request.method) {
+                HttpMethod.Get -> """
+                    {
+                      "id": "$rootId",
+                      "name": "CloudBridge Demo",
+                      "parentReference": { "path": "/drive/root:/Apps" }
+                    }
+                """.trimIndent()
+                else -> """
+                    {
+                      "id": "folder1",
+                      "name": "New folder",
+                      "lastModifiedDateTime": "2025-10-12T10:00:00Z",
+                      "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo" },
+                      "folder": { "childCount": 0 }
+                    }
+                """.trimIndent()
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("first"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        service.moveFolder(CloudItemId("folder1"), "/New folder".asFolderPath())
+        service.setToken(CloudAccessToken("second"))
+        service.moveFolder(CloudItemId("folder1"), "/New folder".asFolderPath())
+
+        assertThat(engine.requestHistory.map { "${it.method.value} ${it.url.encodedPath}" }).containsExactly(
+            "GET /v1.0/me/drive/special/approot",
+            "PATCH /v1.0/me/drive/items/folder1",
+            "GET /v1.0/me/drive/special/approot",
+            "PATCH /v1.0/me/drive/items/folder1"
+        )
+        assertThat(engine.requestHistory[3].body.toByteArray().decodeToString())
+            .isEqualTo("""{"name":"New folder","parentReference":{"id":"rootB"}}""")
+    }
+
+    @Test
     fun `moving to an existing path throws ConflictException`() = runTest {
         val engine = MockEngine {
             respond(

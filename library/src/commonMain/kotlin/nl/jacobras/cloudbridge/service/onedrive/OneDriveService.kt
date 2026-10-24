@@ -47,7 +47,7 @@ public class OneDriveService internal constructor(
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
-    private var appRoot: DriveItemId? = null
+    private val appRoot = tokenScopedCache<DriveItemId>()
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
@@ -190,7 +190,7 @@ public class OneDriveService internal constructor(
 
     /**
      * Resolves the path of this item relative to the app root (of which the path is fetched once
-     * and then cached).
+     * per account and then cached).
      */
     private suspend fun DriveItem.resolvePath(): FilePath = resolveRelativePath().asFilePath()
 
@@ -207,10 +207,10 @@ public class OneDriveService internal constructor(
     }
 
     /**
-     * The app root folder, fetched once and then cached.
+     * The app root folder, fetched once per account and then cached.
      */
     private suspend fun getAppRootId(): DriveItemId {
-        return appRoot ?: api.getAppRoot().also { appRoot = it }
+        return appRoot.getOrFetch { api.getAppRoot() }
     }
 
     override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile =

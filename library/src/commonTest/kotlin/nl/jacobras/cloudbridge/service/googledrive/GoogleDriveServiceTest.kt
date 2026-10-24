@@ -266,6 +266,50 @@ class GoogleDriveServiceTest {
     }
 
     @Test
+    fun `appDataFolder id is fetched again after switching accounts`() = runTest {
+        val engine = MockEngine { request ->
+            val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") "rootA" else "rootB"
+            val content = if (request.method == HttpMethod.Patch) {
+                """
+                    {
+                      "mimeType": "text/plain",
+                      "parents": ["$rootId"],
+                      "size": "8",
+                      "id": "file1",
+                      "name": "hello.txt",
+                      "trashed": false,
+                      "modifiedTime": "2025-10-12T10:00:00.000Z",
+                      "version": "2"
+                    }
+                """.trimIndent()
+            } else {
+                """{"id": "$rootId"}"""
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("first"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        service.updateFile(CloudItemId("file1"), "Updated!")
+        service.setToken(CloudAccessToken("second"))
+        val file = service.updateFile(CloudItemId("file1"), "Updated!")
+
+        assertThat(file.path).isEqualTo("/hello.txt".asFilePath())
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Patch,
+            HttpMethod.Get,
+            HttpMethod.Patch,
+            HttpMethod.Get
+        )
+    }
+
+    @Test
     fun `create file`() = runTest {
         val engine = MockEngine { request ->
             if (request.isNameCheck()) return@MockEngine respondFiles()

@@ -58,7 +58,7 @@ public class GoogleDriveService internal constructor(
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
-    private var appDataFolderId: String? = null
+    private val appDataFolderId = tokenScopedCache<String>()
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
@@ -276,15 +276,19 @@ public class GoogleDriveService internal constructor(
     }
 
     /**
-     * Whether this file is directly in the appDataFolder (of which the ID is fetched once and cached).
+     * Whether this file is directly in the appDataFolder (of which the ID is fetched once per account
+     * and cached).
      */
     private suspend fun DriveFile.isInRoot(): Boolean {
         val rootId = getAppDataFolderId()
         return parents.firstOrNull()?.let { it == rootId } ?: true
     }
 
+    /**
+     * The app data folder ID, fetched once per account and then cached.
+     */
     private suspend fun getAppDataFolderId(): String {
-        return appDataFolderId ?: api.getAppDataFolder().id.also { appDataFolderId = it }
+        return appDataFolderId.getOrFetch { api.getAppDataFolder().id }
     }
 
     private fun FilePath.toMetadata(mimeType: String): DriveFileMetadata {

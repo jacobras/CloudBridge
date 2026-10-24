@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.util.TokenScopedCache
 
 /**
  * @param httpClient Client override for tests.
@@ -70,6 +71,11 @@ public abstract class OAuthCloudService internal constructor(
     public fun setToken(token: CloudAccessToken?) {
         this.token = token
     }
+
+    /**
+     * Creates a cache of which the value is only reused as long as the token doesn't change.
+     */
+    internal fun <T : Any> tokenScopedCache() = TokenScopedCache<T> { token }
 
     override fun isAuthenticated(): Boolean {
         return token != null
