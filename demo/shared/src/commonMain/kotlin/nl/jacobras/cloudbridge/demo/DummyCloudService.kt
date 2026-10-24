@@ -221,6 +221,7 @@ class DummyCloudService(
 
         val existing = cloudItems.firstOrNull { it.id == id }
                 as? CloudFolder ?: throw CloudServiceException.NotFoundException(id.value)
+        require(!newPath.startsWith(existing.path)) { "Can't move a folder into itself" }
         val renamed = existing.copy(
             name = newPath.name,
             path = newPath
