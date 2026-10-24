@@ -93,7 +93,7 @@ public class DropboxService internal constructor(
     override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
         val response = api.createFolder(
             Json.encodeToString(
-                CreateFolderRequest(path = "/" + path.name)
+                CreateFolderRequest(path = path.toString())
             )
         )
         CloudFolder(

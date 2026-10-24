@@ -335,6 +335,28 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `create nested folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"metadata":{"name":"Sub","path_lower":"/work/sub","path_display":"/Work/Sub","id":"id:abc"}}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.createFolder("/Work/Sub".asFolderPath())
+
+        assertThat(folder.path).isEqualTo("/Work/Sub".asFolderPath())
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.body.toByteArray().decodeToString()).isEqualTo("""{"path":"/Work/Sub"}""")
+        }
+    }
+
+    @Test
     fun `small binary file uploads in a single request`() = runTest {
         val engine = MockEngine {
             respond(

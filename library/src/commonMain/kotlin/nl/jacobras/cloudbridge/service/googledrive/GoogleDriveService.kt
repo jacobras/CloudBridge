@@ -126,18 +126,19 @@ public class GoogleDriveService internal constructor(
     }
 
     override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
-        ensureNameAvailable(parent = "appDataFolder", name = path.name)
+        val parentId = path.parent.toParentId()
+        ensureNameAvailable(parent = parentId, name = path.name)
         val response = api.createFolder(
             json.encodeToString(
                 CreateFolderRequest(
                     name = path.name,
-                    parents = listOf("appDataFolder")
+                    parents = listOf(parentId)
                 )
             )
         )
         CloudFolder(
             id = CloudItemId(response.id),
-            path = response.toFolderPath(isRoot = true),
+            path = response.toFolderPath(isRoot = path.parent.isRoot),
             name = response.name
         )
     }

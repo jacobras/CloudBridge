@@ -368,6 +368,42 @@ class GoogleDriveServiceTest {
     }
 
     @Test
+    fun `create nested folder`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.isNameCheck()) return@MockEngine respondFiles()
+            respond(
+                content = """
+                    {
+                      "mimeType": "application/vnd.google-apps.folder",
+                      "parents": [
+                        "parentId"
+                      ],
+                      "id": "subId",
+                      "name": "Sub",
+                      "trashed": false,
+                      "modifiedTime": "2025-10-11T15:22:38.925Z",
+                      "version": "1"
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.createFolder("/parentId/Sub".asFolderPath())
+
+        assertThat(folder.path).isEqualTo("/parentId/subId".asFolderPath())
+        assertThat(engine.requestHistory.first().url.parameters["q"])
+            .isEqualTo("name = 'Sub' and 'parentId' in parents and trashed = false")
+        assertThat(engine.requestHistory.last().body.toByteArray().decodeToString())
+            .contains(""""parents":["parentId"]""")
+    }
+
+    @Test
     fun `creating file or folder with existing name throws ConflictException`() = runTest {
         val engine = MockEngine {
             respondFiles(EXISTING_FILE_JSON)

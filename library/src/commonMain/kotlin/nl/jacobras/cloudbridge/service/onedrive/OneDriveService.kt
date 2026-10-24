@@ -118,11 +118,12 @@ public class OneDriveService internal constructor(
     }
 
     override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
-        val response = api.createFolder(
-            json.encodeToString(
-                CreateFolderArg(name = path.name)
-            )
-        )
+        val content = json.encodeToString(CreateFolderArg(name = path.name))
+        val response = if (path.parent.isRoot) {
+            api.createFolder(content)
+        } else {
+            api.createFolder(path.parent.toString(withLeadingSlash = false), content)
+        }
         CloudFolder(
             id = CloudItemId(response.id),
             path = path,

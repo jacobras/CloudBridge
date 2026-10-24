@@ -51,6 +51,13 @@ internal interface OneDriveApi {
     @Headers("Content-Type: application/json")
     suspend fun createFolder(@Body content: String): DriveItem
 
+    @POST("v1.0/me/drive/special/approot:/{folderPath}:/children")
+    @Headers("Content-Type: application/json")
+    suspend fun createFolder(
+        @Path("folderPath", encoded = true) folderPath: String,
+        @Body content: String
+    ): DriveItem
+
     @GET("v1.0/me/drive/special/approot:/{path}:/content")
     suspend fun downloadFileByPath(
         @Path("path") path: String

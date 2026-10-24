@@ -2,6 +2,7 @@ package nl.jacobras.cloudbridge.service.onedrive
 
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
@@ -439,6 +440,45 @@ class OneDriveServiceTest {
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot/children")
+        }
+    }
+
+    @Test
+    fun `create nested folder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "id": "abc",
+                      "lastModifiedDateTime": "2025-10-11T15:22:39Z",
+                      "name": "Sub",
+                      "size": 0,
+                      "parentReference": {
+                        "id": "def",
+                        "path": "/drive/root:/Apps/CloudBridge Demo/Work"
+                      },
+                      "folder": {
+                        "childCount": 0
+                      }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        val folder = service.createFolder("/Work/Sub".asFolderPath())
+
+        assertThat(folder.path).isEqualTo("/Work/Sub".asFolderPath())
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Post)
+            assertThat(it.url.toString())
+                .isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot:/Work:/children")
+            assertThat(it.body.toByteArray().decodeToString()).contains(""""name":"Sub"""")
         }
     }
 
