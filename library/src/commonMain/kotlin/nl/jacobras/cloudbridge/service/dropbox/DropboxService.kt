@@ -5,6 +5,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -312,6 +313,8 @@ public class DropboxService internal constructor(
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
         } catch (e: CloudServiceException) {
+            throw e
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)

@@ -21,6 +21,7 @@ import io.ktor.http.contentType
 import io.ktor.http.decodeURLPart
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.io.Buffer
@@ -290,6 +291,8 @@ public class WebDavService internal constructor(
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
         } catch (e: CloudServiceException) {
+            throw e
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)

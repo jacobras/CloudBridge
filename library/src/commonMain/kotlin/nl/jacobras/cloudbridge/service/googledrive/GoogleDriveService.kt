@@ -23,6 +23,7 @@ import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -501,6 +502,8 @@ public class GoogleDriveService internal constructor(
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
         } catch (e: CloudServiceException) {
+            throw e
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)

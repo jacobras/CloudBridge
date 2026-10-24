@@ -12,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.decodeURLPart
+import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -403,6 +404,8 @@ public class OneDriveService internal constructor(
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
         } catch (e: CloudServiceException) {
+            throw e
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
