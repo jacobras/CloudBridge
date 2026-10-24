@@ -62,7 +62,7 @@ public class OneDriveService internal constructor(
     }
 
     override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
-        val item = api.getItemByPath(path.toString())
+        val item = api.getItemByPath(path.toString(withLeadingSlash = false))
         if (item.folder != null) {
             throw CloudServiceException.NotFoundException(path.toString())
         }
@@ -73,7 +73,7 @@ public class OneDriveService internal constructor(
         require(!path.isRoot) { "Can't get info for the root folder" }
 
         return tryCall(path.toString()) {
-            val item = api.getItemByPath(path.toString())
+            val item = api.getItemByPath(path.toString(withLeadingSlash = false))
             if (item.folder == null) {
                 throw CloudServiceException.NotFoundException(path.toString())
             }
@@ -85,7 +85,7 @@ public class OneDriveService internal constructor(
         val response = if (path.isRoot) {
             api.listFiles()
         } else {
-            api.listFiles(path.toString())
+            api.listFiles(path.toString(withLeadingSlash = false))
         }
         response.files.map {
             if (it.folder != null) {
@@ -133,7 +133,7 @@ public class OneDriveService internal constructor(
 
     override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
         val response = api.createFile(
-            path = path.toString(),
+            path = path.toString(withLeadingSlash = false),
             contentType = "text/plain",
             content = content.encodeToByteArray()
         )
@@ -160,10 +160,10 @@ public class OneDriveService internal constructor(
             itemId = path.toString(),
             source = source,
             sizeInBytes = sizeInBytes,
-            uploadSingle = { api.createFile(path.toString(), mimeType, it) },
+            uploadSingle = { api.createFile(path.toString(withLeadingSlash = false), mimeType, it) },
             createSession = {
                 api.createUploadSession(
-                    path.toString(),
+                    path.toString(withLeadingSlash = false),
                     json.encodeToString(CreateUploadSessionArg())
                 )
             }
@@ -239,7 +239,7 @@ public class OneDriveService internal constructor(
         val parentId = if (parent.isRoot) {
             getAppRootId().id
         } else {
-            api.getItemByPath(parent.toString()).id
+            api.getItemByPath(parent.toString(withLeadingSlash = false)).id
         }
         val arg = MoveArg(
             name = name,

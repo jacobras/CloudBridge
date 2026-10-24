@@ -320,7 +320,7 @@ class OneDriveServiceTest {
         )
         // The destination folder is looked up by path, the app root is fetched to resolve the new path
         assertThat(engine.requestHistory.map { "${it.method.value} ${it.url.encodedPath}" }).containsExactly(
-            "GET /v1.0/me/drive/special/approot://Notes",
+            "GET /v1.0/me/drive/special/approot:/Notes",
             "PATCH /v1.0/me/drive/items/file1",
             "GET /v1.0/me/drive/special/approot"
         )
@@ -502,7 +502,7 @@ class OneDriveServiceTest {
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Put)
             assertThat(it.url.toString())
-                .isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot://image.png:/content")
+                .isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot:/image.png:/content")
             assertThat(it.body.contentType.toString()).isEqualTo("image/png")
             assertThat(it.body.toByteArray().toList()).isEqualTo(listOf<Byte>(0, 1, 2))
         }
@@ -553,7 +553,7 @@ class OneDriveServiceTest {
 
         assertThat(file.id).isEqualTo(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
         assertThat(engine.requestHistory.map { "${it.method.value} ${it.url}" }).containsExactly(
-            "POST https://graph.microsoft.com/v1.0/me/drive/special/approot://archive.zip:/createUploadSession",
+            "POST https://graph.microsoft.com/v1.0/me/drive/special/approot:/archive.zip:/createUploadSession",
             "PUT https://my.microsoftpersonalcontent.com/up/session1",
             "PUT https://my.microsoftpersonalcontent.com/up/session1",
             "PUT https://my.microsoftpersonalcontent.com/up/session1"
@@ -682,7 +682,7 @@ class OneDriveServiceTest {
             )
         )
         assertThat(engine.requestHistory.single().url.encodedPath)
-            .isEqualTo("/v1.0/me/drive/special/approot://Notes/Welcome.txt")
+            .isEqualTo("/v1.0/me/drive/special/approot:/Notes/Welcome.txt")
     }
 
     @Test
@@ -745,7 +745,7 @@ class OneDriveServiceTest {
             )
         )
         assertThat(engine.requestHistory.single().url.encodedPath)
-            .isEqualTo("/v1.0/me/drive/special/approot://Notes")
+            .isEqualTo("/v1.0/me/drive/special/approot:/Notes")
     }
 
     @Test

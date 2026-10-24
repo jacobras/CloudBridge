@@ -59,6 +59,14 @@ public value class FilePath(internal val value: String) : Path {
     }
 
     override fun toString(): String = value
+
+    public fun toString(withLeadingSlash: Boolean): String {
+        return if (withLeadingSlash) {
+            value
+        } else {
+            value.removePrefix("/")
+        }
+    }
 }
 
 public fun String.asFilePath(): FilePath {
