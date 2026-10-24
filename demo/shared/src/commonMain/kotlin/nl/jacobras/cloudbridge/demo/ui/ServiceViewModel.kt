@@ -95,8 +95,10 @@ internal class ServiceViewModel(
                 }
                 error.update { "" }
             } catch (e: CloudServiceException) {
-                content.update { FileContent.None }
-                error.update { e.toString() }
+                if (selectedItem.value == file) {
+                    content.update { FileContent.None }
+                    error.update { e.toString() }
+                }
             }
         }
     }
