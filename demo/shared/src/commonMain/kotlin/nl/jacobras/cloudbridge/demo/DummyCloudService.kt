@@ -213,6 +213,8 @@ class DummyCloudService(
     }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
