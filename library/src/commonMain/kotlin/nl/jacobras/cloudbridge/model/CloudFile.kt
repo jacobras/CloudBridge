@@ -11,11 +11,13 @@ import kotlin.time.Instant
  * @param name Name of the file, including extension.
  * @param sizeInBytes Size of the file in bytes.
  * @param modified Last time the file was modified.
+ * @param revision Revision identifier. Changes whenever the file's content changes.
  */
 public data class CloudFile(
     override val id: CloudItemId,
     override val path: FilePath,
     override val name: String,
     val sizeInBytes: Long,
-    val modified: Instant
+    val modified: Instant,
+    val revision: String
 ) : CloudItem

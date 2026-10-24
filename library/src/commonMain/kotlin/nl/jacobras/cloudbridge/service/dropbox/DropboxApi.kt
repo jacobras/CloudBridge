@@ -5,6 +5,8 @@ import de.jensklingenberg.ktorfit.http.Header
 import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.Query
+import de.jensklingenberg.ktorfit.http.Streaming
+import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -41,19 +43,54 @@ internal interface DropboxApi {
 
     @POST("2/files/create_folder_v2")
     @Headers("Content-Type: application/json")
-    suspend fun createFolder(@Body content: String)
+    suspend fun createFolder(@Body content: String): CreateFolderResponse
 
     @POST("https://content.dropboxapi.com/2/files/download")
     suspend fun downloadFile(
         @Header("Dropbox-API-Arg") arguments: String,
     ): String
 
+    @Streaming
+    @POST("https://content.dropboxapi.com/2/files/download")
+    suspend fun downloadFileStreaming(
+        @Header("Dropbox-API-Arg") arguments: String,
+    ): HttpStatement
+
     @POST("https://content.dropboxapi.com/2/files/upload")
     @Headers("Content-Type: application/octet-stream")
     suspend fun uploadFile(
         @Header("Dropbox-API-Arg") arguments: String,
         @Body content: ByteArray
-    ): String
+    ): UploadResponse
+
+    @POST("https://content.dropboxapi.com/2/files/upload_session/start")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadSessionStart(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    ): UploadSessionStartResponse
+
+    @POST("https://content.dropboxapi.com/2/files/upload_session/append_v2")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadSessionAppend(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    )
+
+    @POST("https://content.dropboxapi.com/2/files/upload_session/finish")
+    @Headers("Content-Type: application/octet-stream")
+    suspend fun uploadSessionFinish(
+        @Header("Dropbox-API-Arg") arguments: String,
+        @Body content: ByteArray
+    ): UploadResponse
+
+    @POST("2/files/get_metadata")
+    @Headers("Content-Type: application/json")
+    suspend fun getMetadata(@Body arg: String): FileEntry
+
+    @POST("2/files/move_v2")
+    @Headers("Content-Type: application/json")
+    suspend fun move(@Body arg: String): MoveResponse
 
     @POST("2/files/delete_v2")
     @Headers("Content-Type: application/json")
@@ -106,9 +143,6 @@ internal data class FileEntry(
     @SerialName("name")
     val name: String,
 
-    @SerialName("path_lower")
-    val pathLower: String,
-
     @SerialName("path_display")
     val pathDisplay: String,
 
@@ -156,6 +190,45 @@ internal data class DropboxUploadArg(
 )
 
 @Serializable
+internal data class UploadSessionStartArg(
+    @SerialName("close")
+    val close: Boolean = false
+)
+
+@Serializable
+internal data class UploadSessionStartResponse(
+    @SerialName("session_id")
+    val sessionId: String
+)
+
+@Serializable
+internal data class UploadSessionCursor(
+    @SerialName("session_id")
+    val sessionId: String,
+
+    /**
+     * Amount of bytes uploaded so far.
+     */
+    @SerialName("offset")
+    val offset: Long
+)
+
+@Serializable
+internal data class UploadSessionAppendArg(
+    @SerialName("cursor")
+    val cursor: UploadSessionCursor
+)
+
+@Serializable
+internal data class UploadSessionFinishArg(
+    @SerialName("cursor")
+    val cursor: UploadSessionCursor,
+
+    @SerialName("commit")
+    val commit: DropboxUploadArg
+)
+
+@Serializable
 internal enum class Mode {
     @SerialName("add")
     Add,
@@ -177,6 +250,66 @@ internal data class DropboxDownloadArg(
 internal data class CreateFolderRequest(
     @SerialName("path")
     val path: String
+)
+
+@Serializable
+internal data class CreateFolderResponse(
+    @SerialName("metadata")
+    val metadata: FolderMetadata
+)
+
+@Serializable
+internal data class FolderMetadata(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("path_display")
+    val pathDisplay: String
+)
+
+@Serializable
+internal data class UploadResponse(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("path_display")
+    val pathDisplay: String,
+
+    @SerialName("size")
+    val size: Long,
+
+    @SerialName("client_modified")
+    val clientModified: String,
+
+    @SerialName("rev")
+    val rev: String
+)
+
+@Serializable
+internal data class GetMetadataArg(
+    @SerialName("path")
+    val path: String
+)
+
+@Serializable
+internal data class MoveArg(
+    @SerialName("from_path")
+    val fromPath: String,
+
+    @SerialName("to_path")
+    val toPath: String
+)
+
+@Serializable
+internal data class MoveResponse(
+    @SerialName("metadata")
+    val metadata: FileEntry
 )
 
 @Serializable

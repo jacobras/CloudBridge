@@ -4,8 +4,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -14,13 +16,18 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.decodeURLPart
-import io.ktor.http.withCharset
-import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.io.Buffer
 import kotlinx.io.IOException
+import kotlinx.io.Sink
+import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
@@ -34,7 +41,10 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
+import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.ensureSuffix
+import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.transferTo
 
 /**
  * Instance of a WebDAV server.
@@ -70,61 +80,79 @@ public class WebDavService internal constructor(
         )
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
-        val response = client.request(buildUrl(path.toString())) {
-            method = HttpMethod("PROPFIND")
-            header("Depth", "1")
-            contentType(ContentType.Application.Xml)
-            setBody(PROPFIND_BODY)
-        }
-        val resources = withContext(Dispatchers.Default) {
-            WebDavListParser.parse(response.bodyAsText())
-        }
-        val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
-        resources
-            .drop(1) // Skip the self-entity
-            .map {
-                // Hrefs include the server's own path, which buildUrl() adds again
-                val relativePath = it.href.removePrefix(serverPath)
-                if (it.isCollection) {
-                    CloudFolder(
-                        id = CloudItemId(relativePath),
-                        path = relativePath.asFolderPath(),
-                        name = it.displayName
-                    )
-                } else {
-                    CloudFile(
-                        id = CloudItemId(relativePath),
-                        path = relativePath.asFilePath(),
-                        name = it.displayName,
-                        sizeInBytes = it.contentLength ?: -1L,
-                        modified = it.lastModified
-                    )
-                }
-            }
+    override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
+        propfind(path.toString(), depth = 0).single().toCloudItem() as? CloudFile
+            ?: throw CloudServiceException.NotFoundException(path.toString())
     }
 
-    override suspend fun createFolder(path: FolderPath): Unit = tryCall(path.toString()) {
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        require(!path.isRoot) { "Can't get info for the root folder" }
+
+        return tryCall(path.toString()) {
+            propfind(path.toString(), depth = 0, suffixSlash = true).single()
+                .toCloudItem() as? CloudFolder
+                ?: throw CloudServiceException.NotFoundException(path.toString())
+        }
+    }
+
+    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
+        propfind(path.toString(), depth = 1)
+            .drop(1) // Skip the self-entity
+            .map { it.toCloudItem() }
+    }
+
+    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
         client.request(buildUrl(path.toString(), suffixSlash = true)) {
             method = HttpMethod(("MKCOL"))
         }
+
+        // MKCOL doesn't return any metadata, so fetch it separately
+        propfind(path.toString(), depth = 0, suffixSlash = true).single()
+            .toCloudItem() as CloudFolder
     }
 
-    override suspend fun createFile(path: FilePath, content: String): Unit =
-        tryCall(path.toString()) {
-            client.request(buildUrl(path.toString())) {
-                method = HttpMethod.Put
-                contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
-                setBody(content)
-            }
-        }
+    override suspend fun createFile(path: FilePath, content: String): CloudFile {
+        val bytes = content.encodeToByteArray()
+        return createFile(
+            path = path,
+            source = Buffer().apply { write(bytes) },
+            sizeInBytes = bytes.size.toLong(),
+            mimeType = TEXT_MIME_TYPE
+        )
+    }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): Unit = tryCall(id.value) {
-        client.request(buildUrl(id.value)) {
-            method = HttpMethod.Put
-            contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
-            setBody(content)
-        }
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile = tryCall(path.toString()) {
+        put(path.toString(), source, sizeInBytes, mimeType)
+
+        // PUT doesn't return any metadata, so fetch it separately
+        propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
+    }
+
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
+        val bytes = content.encodeToByteArray()
+        return updateFile(
+            id = id,
+            source = Buffer().apply { write(bytes) },
+            sizeInBytes = bytes.size.toLong(),
+            mimeType = TEXT_MIME_TYPE
+        )
+    }
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile = tryCall(id.value) {
+        put(id.value, source, sizeInBytes, mimeType)
+
+        // PUT doesn't return any metadata, so fetch it separately
+        propfind(id.value, depth = 0).single().toCloudItem() as CloudFile
     }
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
@@ -133,9 +161,89 @@ public class WebDavService internal constructor(
         }.bodyAsText()
     }
 
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink): Unit = tryCall(id.value) {
+        client.prepareGet(buildUrl(id.value)).execute { it.bodyAsChannel().transferTo(sink) }
+    }
+
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        return move(id, newPath.toString(), isFolder = false) as CloudFile
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+        return move(id, newPath.toString(), isFolder = true) as CloudFolder
+    }
+
+    /**
+     * Moves [id] to [newPath]. `Overwrite: F` makes the server respond with 412 Precondition
+     * Failed if the target already exists.
+     */
+    private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
+        return tryCall(id.value) {
+            client.request(buildUrl(id.value, suffixSlash = isFolder)) {
+                method = HttpMethod("MOVE")
+                header("Destination", buildUrl(newPath, suffixSlash = isFolder))
+                header("Overwrite", "F")
+            }
+
+            // MOVE doesn't return any metadata, so fetch it separately
+            propfind(newPath, depth = 0, suffixSlash = isFolder).single().toCloudItem()
+        }
+    }
+
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Delete
+        }
+    }
+
+    private suspend fun put(path: String, source: Source, sizeInBytes: Long?, mimeType: String) {
+        client.request(buildUrl(path)) {
+            method = HttpMethod.Put
+            setBody(SourceContent(source, sizeInBytes, ContentType.parse(mimeType)))
+        }
+    }
+
+    /**
+     * Fetches the properties of [path] and, for [depth] 1, its direct children.
+     *
+     * @param suffixSlash True to suffix a slash, required for collections.
+     */
+    private suspend fun propfind(
+        path: String,
+        depth: Int,
+        suffixSlash: Boolean = false
+    ): List<WebDavResource> {
+        val response = client.request(buildUrl(path, suffixSlash)) {
+            method = HttpMethod("PROPFIND")
+            header("Depth", depth.toString())
+            contentType(ContentType.Application.Xml)
+            setBody(PROPFIND_BODY)
+        }
+        return withContext(Dispatchers.Default) {
+            WebDavListParser.parse(response.bodyAsText())
+        }
+    }
+
+    private fun WebDavResource.toCloudItem(): CloudItem {
+        // Hrefs include the server's own path, which buildUrl() adds again
+        val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
+        val relativePath = href.removePrefix(serverPath)
+        return if (isCollection) {
+            CloudFolder(
+                id = CloudItemId(relativePath),
+                path = relativePath.asFolderPath(),
+                name = displayName
+            )
+        } else {
+            CloudFile(
+                id = CloudItemId(relativePath),
+                path = relativePath.asFilePath(),
+                name = displayName,
+                sizeInBytes = contentLength ?: -1L,
+                modified = lastModified,
+                revision = etag ?: error("Missing etag for file")
+            )
         }
     }
 
@@ -172,18 +280,44 @@ public class WebDavService internal constructor(
                     CloudServiceException.InsufficientSpaceException()
                 }
 
+                HttpStatusCode.PreconditionFailed -> {
+                    CloudServiceException.ConflictException(itemId)
+                }
+
                 else -> {
                     CloudServiceException.Unknown(e)
                 }
             }
         } catch (e: IOException) {
             throw CloudServiceException.ConnectionException(e)
+        } catch (e: CloudServiceException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             throw CloudServiceException.Unknown(e)
         }
     }
 }
 
+/**
+ * Streams [source] as request body. WebDAV has no chunked upload, so large files are sent in
+ * a single request, without holding the whole file in memory.
+ */
+private class SourceContent(
+    private val source: Source,
+    override val contentLength: Long?,
+    override val contentType: ContentType
+) : OutgoingContent.WriteChannelContent() {
+    override suspend fun writeTo(channel: ByteWriteChannel) {
+        source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
+            channel.writeFully(chunk)
+        }
+    }
+}
+
+private const val TEXT_MIME_TYPE = "text/plain; charset=UTF-8"
+private const val STREAM_CHUNK_SIZE = 64 * 1024
 private const val PROPFIND_BODY = """<?xml version="1.0" encoding="utf-8"?>
 <d:propfind xmlns:d="DAV:">
   <d:prop>
