@@ -345,7 +345,7 @@ class WebDavServiceTest {
     fun `download file`() = runTest {
         val engine = MockEngine {
             respond(
-                content = "asdf",
+                content = "Hello",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/octet-stream")
             )
@@ -361,7 +361,7 @@ class WebDavServiceTest {
 
         val content = service.downloadFile(CloudItemId("/Notes for Android/B/in B.txt"))
 
-        assertThat(content).isEqualTo("asdf")
+        assertThat(content).isEqualTo("Hello")
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/B/in%20B.txt")

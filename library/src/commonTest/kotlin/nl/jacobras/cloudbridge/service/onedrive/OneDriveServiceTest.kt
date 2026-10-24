@@ -164,7 +164,7 @@ class OneDriveServiceTest {
                       "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"",
                       "id": "33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc",
                       "lastModifiedDateTime": "2025-10-11T16:13:38Z",
-                      "name": "asdf.txt",
+                      "name": "Welcome.txt",
                       "size": 1,
                       "parentReference": {
                         "driveType": "personal",
@@ -186,13 +186,13 @@ class OneDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.createFile("asdf.txt".asFilePath(), "a")
+        val file = service.createFile("Welcome.txt".asFilePath(), "a")
 
         assertThat(file).isEqualTo(
             CloudFile(
                 id = CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
-                path = "asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 1,
                 modified = Instant.parse("2025-10-11T16:13:38Z"),
                 revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\""
@@ -212,7 +212,7 @@ class OneDriveServiceTest {
                       "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\"",
                       "id": "33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc",
                       "lastModifiedDateTime": "2025-10-12T10:00:00Z",
-                      "name": "asdf.txt",
+                      "name": "Welcome.txt",
                       "size": 2,
                       "parentReference": {
                         "id": "33488461260C4A76!s1234",
@@ -253,8 +253,8 @@ class OneDriveServiceTest {
         assertThat(file).isEqualTo(
             CloudFile(
                 id = CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
-                path = "/My Notes/asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "/My Notes/Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 2,
                 modified = Instant.parse("2025-10-12T10:00:00Z"),
                 revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\""
@@ -559,7 +559,7 @@ class OneDriveServiceTest {
                           "id": "33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc",
                           "lastModifiedDateTime": "2025-10-11T16:32:05Z",
                           "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\"",
-                          "name": "asdf.txt",
+                          "name": "Welcome.txt",
                           "size": 1,
                           "parentReference": {
                             "driveType": "personal",
@@ -593,8 +593,8 @@ class OneDriveServiceTest {
             ),
             CloudFile(
                 id = CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"),
-                path = "asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 1,
                 modified = Instant.parse("2025-10-11T16:32:05Z"),
                 revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\""
@@ -615,7 +615,7 @@ class OneDriveServiceTest {
                       "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\"",
                       "id": "file1",
                       "lastModifiedDateTime": "2025-10-11T16:13:38Z",
-                      "name": "asdf.txt",
+                      "name": "Welcome.txt",
                       "size": 1,
                       "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo/Notes" }
                     }
@@ -629,20 +629,20 @@ class OneDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.getFileInfo("/Notes/asdf.txt".asFilePath())
+        val file = service.getFileInfo("/Notes/Welcome.txt".asFilePath())
 
         assertThat(file).isEqualTo(
             CloudFile(
                 id = CloudItemId("file1"),
-                path = "/Notes/asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "/Notes/Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 1,
                 modified = Instant.parse("2025-10-11T16:13:38Z"),
                 revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},1\""
             )
         )
         assertThat(engine.requestHistory.single().url.encodedPath)
-            .isEqualTo("/v1.0/me/drive/special/approot://Notes/asdf.txt")
+            .isEqualTo("/v1.0/me/drive/special/approot://Notes/Welcome.txt")
     }
 
     @Test
@@ -712,7 +712,7 @@ class OneDriveServiceTest {
     fun `get folder info throws NotFoundException for a file`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{"id": "file1", "name": "asdf.txt", "size": 1, "eTag": "1", "lastModifiedDateTime": "2025-10-11T16:13:38Z", "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo" }}""",
+                content = """{"id": "file1", "name": "Welcome.txt", "size": 1, "eTag": "1", "lastModifiedDateTime": "2025-10-11T16:13:38Z", "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo" }}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -722,7 +722,7 @@ class OneDriveServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.getFolderInfo("/asdf.txt".asFolderPath()) }
+        assertFailure { service.getFolderInfo("/Welcome.txt".asFolderPath()) }
             .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 

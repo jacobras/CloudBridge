@@ -150,7 +150,7 @@ class DropboxServiceTest {
     fun `create file`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1,"is_downloadable":true,"content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"}""",
+                content = """{"name":"Welcome.txt","path_lower":"/Welcome.txt","path_display":"/Welcome.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1,"is_downloadable":true,"content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -160,13 +160,13 @@ class DropboxServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.createFile("/asdf.txt".asFilePath(), "a")
+        val file = service.createFile("/Welcome.txt".asFilePath(), "a")
 
         assertThat(file).isEqualTo(
             CloudFile(
                 id = CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
-                path = "/asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "/Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 1,
                 modified = Instant.parse("2025-10-11T16:30:47Z"),
                 revision = "01640e48e7e6a010000000301ae1691"
@@ -182,7 +182,7 @@ class DropboxServiceTest {
     fun `update file`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{"name":"asdf.txt","path_lower":"/notes/asdf.txt","path_display":"/Notes/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-12T10:00:00Z","server_modified":"2025-10-12T10:00:00Z","rev":"01640e48e7e6a010000000301ae1692","size":2,"is_downloadable":true,"content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"}""",
+                content = """{"name":"Welcome.txt","path_lower":"/notes/Welcome.txt","path_display":"/Notes/Welcome.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-12T10:00:00Z","server_modified":"2025-10-12T10:00:00Z","rev":"01640e48e7e6a010000000301ae1692","size":2,"is_downloadable":true,"content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -197,8 +197,8 @@ class DropboxServiceTest {
         assertThat(file).isEqualTo(
             CloudFile(
                 id = CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
-                path = "/notes/asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "/notes/Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 2,
                 modified = Instant.parse("2025-10-12T10:00:00Z"),
                 revision = "01640e48e7e6a010000000301ae1692"
@@ -420,9 +420,9 @@ class DropboxServiceTest {
                           "content_hash": "80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac",
                           "id": "id:uwStUuhj4qYAAAAAAAAAIQ",
                           "is_downloadable": true,
-                          "name": "asdf.txt",
-                          "path_display": "/asdf.txt",
-                          "path_lower": "/asdf.txt",
+                          "name": "Welcome.txt",
+                          "path_display": "/Welcome.txt",
+                          "path_lower": "/Welcome.txt",
                           "property_groups": [],
                           "rev": "01640e48e7e6a010000000301ae1691",
                           "server_modified": "2025-10-11T16:30:47Z",
@@ -451,8 +451,8 @@ class DropboxServiceTest {
             ),
             CloudFile(
                 id = CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"),
-                path = "/asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "/Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 1,
                 modified = Instant.parse("2025-10-11T16:30:47Z"),
                 revision = "01640e48e7e6a010000000301ae1691"
@@ -468,7 +468,7 @@ class DropboxServiceTest {
     fun `get file info`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{".tag":"file","name":"asdf.txt","path_lower":"/notes/asdf.txt","path_display":"/Notes/asdf.txt","id":"id:file1","client_modified":"2025-10-11T16:30:47Z","rev":"0164","size":1}""",
+                content = """{".tag":"file","name":"Welcome.txt","path_lower":"/notes/Welcome.txt","path_display":"/Notes/Welcome.txt","id":"id:file1","client_modified":"2025-10-11T16:30:47Z","rev":"0164","size":1}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -478,13 +478,13 @@ class DropboxServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.getFileInfo("/Notes/asdf.txt".asFilePath())
+        val file = service.getFileInfo("/Notes/Welcome.txt".asFilePath())
 
         assertThat(file).isEqualTo(
             CloudFile(
                 id = CloudItemId("id:file1"),
-                path = "/notes/asdf.txt".asFilePath(),
-                name = "asdf.txt",
+                path = "/notes/Welcome.txt".asFilePath(),
+                name = "Welcome.txt",
                 sizeInBytes = 1,
                 modified = Instant.parse("2025-10-11T16:30:47Z"),
                 revision = "0164"
@@ -494,7 +494,7 @@ class DropboxServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/get_metadata")
             assertThat(
                 it.body.toByteArray().decodeToString()
-            ).isEqualTo("""{"path":"/Notes/asdf.txt"}""")
+            ).isEqualTo("""{"path":"/Notes/Welcome.txt"}""")
         }
     }
 
@@ -567,7 +567,7 @@ class DropboxServiceTest {
     fun `get folder info throws NotFoundException for a file`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{".tag":"file","name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:file1","client_modified":"2025-10-11T16:30:47Z","rev":"0164","size":1}""",
+                content = """{".tag":"file","name":"Welcome.txt","path_lower":"/Welcome.txt","path_display":"/Welcome.txt","id":"id:file1","client_modified":"2025-10-11T16:30:47Z","rev":"0164","size":1}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -577,7 +577,7 @@ class DropboxServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.getFolderInfo("/asdf.txt".asFolderPath()) }
+        assertFailure { service.getFolderInfo("/Welcome.txt".asFolderPath()) }
             .isInstanceOf<CloudServiceException.NotFoundException>()
     }
 
@@ -598,7 +598,7 @@ class DropboxServiceTest {
     fun `delete file`() = runTest {
         val engine = MockEngine {
             respond(
-                content = """{"metadata":{".tag":"file","client_modified":"2025-10-11T16:30:47Z","content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac","id":"id:uwStUuhj4qYAAAAAAAAAIQ","is_downloadable":true,"name":"asdf.txt","path_display":"/asdf.txt","path_lower":"/asdf.txt","property_groups":[],"rev":"01640e48e7e6a010000000301ae1691","server_modified":"2025-10-11T16:30:47Z","size":1}}""",
+                content = """{"metadata":{".tag":"file","client_modified":"2025-10-11T16:30:47Z","content_hash":"80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac","id":"id:uwStUuhj4qYAAAAAAAAAIQ","is_downloadable":true,"name":"Welcome.txt","path_display":"/Welcome.txt","path_lower":"/Welcome.txt","property_groups":[],"rev":"01640e48e7e6a010000000301ae1691","server_modified":"2025-10-11T16:30:47Z","size":1}}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -620,7 +620,7 @@ class DropboxServiceTest {
 }
 
 private const val UPLOAD_RESPONSE =
-    """{"name":"asdf.txt","path_lower":"/asdf.txt","path_display":"/asdf.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1}"""
+    """{"name":"Welcome.txt","path_lower":"/Welcome.txt","path_display":"/Welcome.txt","id":"id:uwStUuhj4qYAAAAAAAAAIQ","client_modified":"2025-10-11T16:30:47Z","server_modified":"2025-10-11T16:30:47Z","rev":"01640e48e7e6a010000000301ae1691","size":1}"""
 
 private const val NOT_FOUND_RESPONSE =
     """{"error":{".tag":"path","path":{".tag":"not_found"}},"error_summary":"path/not_found/"}"""
