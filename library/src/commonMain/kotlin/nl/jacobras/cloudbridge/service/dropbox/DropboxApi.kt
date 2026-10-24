@@ -143,9 +143,6 @@ internal data class FileEntry(
     @SerialName("name")
     val name: String,
 
-    @SerialName("path_lower")
-    val pathLower: String,
-
     @SerialName("path_display")
     val pathDisplay: String,
 
@@ -269,8 +266,8 @@ internal data class FolderMetadata(
     @SerialName("name")
     val name: String,
 
-    @SerialName("path_lower")
-    val pathLower: String
+    @SerialName("path_display")
+    val pathDisplay: String
 )
 
 @Serializable
@@ -281,8 +278,8 @@ internal data class UploadResponse(
     @SerialName("name")
     val name: String,
 
-    @SerialName("path_lower")
-    val pathLower: String,
+    @SerialName("path_display")
+    val pathDisplay: String,
 
     @SerialName("size")
     val size: Long,

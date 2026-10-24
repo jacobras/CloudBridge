@@ -98,7 +98,7 @@ public class DropboxService internal constructor(
         )
         CloudFolder(
             id = CloudItemId(response.metadata.id),
-            path = response.metadata.pathLower.asFolderPath(),
+            path = response.metadata.pathDisplay.asFolderPath(),
             name = response.metadata.name
         )
     }
@@ -208,7 +208,7 @@ public class DropboxService internal constructor(
     private fun UploadResponse.toCloudFile(): CloudFile {
         return CloudFile(
             id = CloudItemId(id),
-            path = pathLower.asFilePath(),
+            path = pathDisplay.asFilePath(),
             name = name,
             sizeInBytes = size,
             modified = Instant.parse(clientModified),
@@ -260,7 +260,7 @@ public class DropboxService internal constructor(
                     "file" -> {
                         UpdatedDeltaChange(
                             itemId = CloudItemId(it.id ?: error("Missing id for file")),
-                            path = it.pathLower.asFilePath(),
+                            path = it.pathDisplay.asFilePath(),
                             name = it.name,
                             revision = it.rev,
                             modified = it.clientModified?.let(Instant::parse)
@@ -269,7 +269,7 @@ public class DropboxService internal constructor(
                     "folder" -> {
                         UpdatedDeltaChange(
                             itemId = CloudItemId(it.id ?: error("Missing id for folder")),
-                            path = it.pathLower.asFolderPath(),
+                            path = it.pathDisplay.asFolderPath(),
                             name = it.name,
                             revision = null,
                             modified = null
@@ -278,7 +278,7 @@ public class DropboxService internal constructor(
                     "deleted" -> {
                         DeletedDeltaChange(
                             itemId = null,
-                            path = it.pathLower.asFilePath()
+                            path = it.pathDisplay.asFilePath()
                         )
                     }
                     else -> error("Unsupported tag: ${it.tag}")
@@ -325,7 +325,7 @@ private fun FileEntry.toCloudItem(): CloudItem {
         "file" -> {
             CloudFile(
                 id = CloudItemId(id ?: error("Missing id for file")),
-                path = pathLower.asFilePath(),
+                path = pathDisplay.asFilePath(),
                 name = name,
                 sizeInBytes = size ?: error("Missing size for file"),
                 modified = Instant.parse(
@@ -337,7 +337,7 @@ private fun FileEntry.toCloudItem(): CloudItem {
         "folder" -> {
             CloudFolder(
                 id = CloudItemId(id ?: error("Missing id for folder")),
-                path = pathLower.asFolderPath(),
+                path = pathDisplay.asFolderPath(),
                 name = name
             )
         }
