@@ -36,6 +36,7 @@ import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.model.CloudFile
+import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.humanreadable.HumanReadable
 
@@ -57,6 +58,7 @@ internal fun DetailPane(
     val isDownloading by viewModel.isDownloading.collectAsState()
 
     var pendingCreate by remember { mutableStateOf<CreateType?>(null) }
+    var pendingRename by remember { mutableStateOf<CloudItem?>(null) }
 
     val upload by viewModel.uploadProgress.collectAsState()
     var draggingFiles by remember { mutableStateOf(false) }
@@ -183,7 +185,9 @@ internal fun DetailPane(
             FilesList(
                 modifier = Modifier.fillMaxSize(),
                 files = files,
-                onItemClick = viewModel::selectItem
+                onItemClick = viewModel::selectItem,
+                onRenameClick = { pendingRename = it },
+                onDeleteClick = { viewModel.delete(it) }
             )
         }
     }
@@ -225,6 +229,21 @@ internal fun DetailPane(
             onAdvance = viewModel::advanceDeltaCursor,
             onReset = viewModel::resetDeltaCursor,
             onDismiss = { showDelta = false }
+        )
+    }
+
+    pendingRename?.let { item ->
+        EditDialog(
+            title = "Rename",
+            confirmLabel = "Rename",
+            nameEditable = true,
+            showContent = false,
+            initialName = item.name,
+            onConfirm = { name, _ ->
+                viewModel.rename(item, name)
+                pendingRename = null
+            },
+            onDismiss = { pendingRename = null }
         )
     }
 

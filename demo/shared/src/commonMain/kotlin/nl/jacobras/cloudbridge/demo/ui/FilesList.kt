@@ -14,13 +14,17 @@ import nl.jacobras.cloudbridge.model.CloudItem
 internal fun FilesList(
     files: List<CloudItem>,
     onItemClick: (CloudItem) -> Unit,
+    onRenameClick: (CloudItem) -> Unit,
+    onDeleteClick: (CloudItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.verticalScroll(rememberScrollState())) {
         files.forEachIndexed { index, item ->
             FileRow(
                 item = item,
-                onClick = { onItemClick(item) }
+                onClick = { onItemClick(item) },
+                onRename = { onRenameClick(item) },
+                onDelete = { onDeleteClick(item) }
             )
             if (index != files.lastIndex) {
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))

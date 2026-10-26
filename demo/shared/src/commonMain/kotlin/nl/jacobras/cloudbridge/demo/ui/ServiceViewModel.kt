@@ -221,6 +221,21 @@ internal class ServiceViewModel(
         }
     }
 
+    /**
+     * Renames [item], which is in the current folder, to [newName].
+     */
+    fun rename(item: CloudItem, newName: String) = viewModelScope.launch {
+        try {
+            when (item) {
+                is CloudFile -> service.moveFile(item.id, childPath(newName).asFilePath())
+                is CloudFolder -> service.moveFolder(item.id, childPath(newName).asFolderPath())
+            }
+            refresh()
+        } catch (e: CloudServiceException) {
+            error.update { e.toString() }
+        }
+    }
+
     fun delete(item: CloudItem) = viewModelScope.launch {
         try {
             service.delete(item.id)
