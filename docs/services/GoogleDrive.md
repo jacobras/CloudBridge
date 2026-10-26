@@ -20,7 +20,10 @@ the [shared API](../api/Overview.md) is available.
 
 === "Duplication"
 
-    Files and folders do not need unique names in Google Drive, so there can be duplicates.
+    Files and folders don't need unique names in Google Drive. To avoid confusing duplicates,
+    CloudBridge does its best to prevent them: `createFile()`, `createFolder()`, `moveFile()`
+    and `moveFolder()` first check the target folder and throw a `ConflictException` if
+    a file/folder with the new name already exists.
 
 === "File types"
 

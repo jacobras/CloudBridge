@@ -5,11 +5,15 @@ import de.jensklingenberg.ktorfit.http.DELETE
 import de.jensklingenberg.ktorfit.http.Field
 import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.GET
+import de.jensklingenberg.ktorfit.http.Header
 import de.jensklingenberg.ktorfit.http.Headers
+import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.PUT
 import de.jensklingenberg.ktorfit.http.Path
+import de.jensklingenberg.ktorfit.http.Streaming
 import de.jensklingenberg.ktorfit.http.Url
+import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -45,7 +49,14 @@ internal interface OneDriveApi {
 
     @POST("v1.0/me/drive/special/approot/children")
     @Headers("Content-Type: application/json")
-    suspend fun createFolder(@Body content: String)
+    suspend fun createFolder(@Body content: String): DriveItem
+
+    @POST("v1.0/me/drive/special/approot:/{folderPath}:/children")
+    @Headers("Content-Type: application/json")
+    suspend fun createFolder(
+        @Path("folderPath", encoded = true) folderPath: String,
+        @Body content: String
+    ): DriveItem
 
     @GET("v1.0/me/drive/special/approot:/{path}:/content")
     suspend fun downloadFileByPath(
@@ -57,19 +68,54 @@ internal interface OneDriveApi {
         @Path("itemId") id: String
     ): String
 
+    @Streaming
+    @GET("v1.0/me/drive/items/{itemId}/content")
+    suspend fun downloadFileByIdStreaming(
+        @Path("itemId") id: String
+    ): HttpStatement
+
     @PUT("v1.0/me/drive/special/approot:/{path}:/content")
-    @Headers("Content-Type: text/plain")
     suspend fun createFile(
         @Path("path") path: String,
-        @Body content: String
-    )
+        @Header("Content-Type") contentType: String,
+        @Body content: ByteArray
+    ): DriveItem
 
     @PUT("v1.0/me/drive/items/{itemId}/content")
-    @Headers("Content-Type: text/plain")
     suspend fun updateFile(
         @Path("itemId") id: String,
+        @Header("Content-Type") contentType: String,
+        @Body content: ByteArray
+    ): DriveItem
+
+    /**
+     * Docs: https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession
+     */
+    @POST("v1.0/me/drive/special/approot:/{path}:/createUploadSession")
+    @Headers("Content-Type: application/json")
+    suspend fun createUploadSession(
+        @Path("path") path: String,
         @Body content: String
-    )
+    ): UploadSession
+
+    @POST("v1.0/me/drive/items/{itemId}/createUploadSession")
+    @Headers("Content-Type: application/json")
+    suspend fun createUploadSessionById(
+        @Path("itemId") id: String,
+        @Body content: String
+    ): UploadSession
+
+    @GET("v1.0/me/drive/special/approot:/{path}")
+    suspend fun getItemByPath(
+        @Path("path", encoded = true) path: String
+    ): DriveItem
+
+    @PATCH("v1.0/me/drive/items/{itemId}")
+    @Headers("Content-Type: application/json")
+    suspend fun move(
+        @Path("itemId") id: String,
+        @Body content: String
+    ): DriveItem
 
     @DELETE("v1.0/me/drive/special/approot:/{path}")
     suspend fun delete(
@@ -134,6 +180,9 @@ internal data class DriveItem(
     @SerialName("lastModifiedDateTime")
     val lastModified: String,
 
+    @SerialName("eTag")
+    val eTag: String? = null,
+
     @SerialName("folder")
     val folder: Folder? = null
 )
@@ -163,10 +212,57 @@ internal data class Folder(
 )
 
 @Serializable
-internal data class DriveItemId(
+internal data class MoveArg(
+
+    @SerialName("name")
+    val name: String,
+
+    @SerialName("parentReference")
+    val parent: MoveParentReference
+)
+
+@Serializable
+internal data class MoveParentReference(
 
     @SerialName("id")
     val id: String
+)
+
+@Serializable
+internal data class CreateUploadSessionArg(
+
+    @SerialName("item")
+    val item: UploadSessionItem = UploadSessionItem()
+)
+
+@Serializable
+internal data class UploadSessionItem(
+
+    @SerialName("@microsoft.graph.conflictBehavior")
+    val conflictBehavior: String = "replace"
+)
+
+@Serializable
+internal data class UploadSession(
+
+    /**
+     * Pre-authenticated URL to upload the chunks to.
+     */
+    @SerialName("uploadUrl")
+    val uploadUrl: String
+)
+
+@Serializable
+internal data class DriveItemId(
+
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("name")
+    val name: String? = null,
+
+    @SerialName("parentReference")
+    val parent: ParentReference? = null
 )
 
 @Serializable

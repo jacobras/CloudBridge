@@ -1,5 +1,8 @@
 package nl.jacobras.cloudbridge.demo
 
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -21,7 +24,9 @@ import nl.jacobras.cloudbridge.model.asFolderPath
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(startToken), DeltaCloudService {
+class DummyCloudService(
+    startToken: CloudAccessToken?
+) : OAuthCloudService(startToken), DeltaCloudService {
 
     override val baseUrl: String = ""
 
@@ -33,12 +38,13 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             id = CloudItemId("456"),
             path = "/Welcome.txt".asFilePath(),
             name = "Welcome.txt",
-            sizeInBytes = 123L,
-            modified = Clock.System.now()
+            sizeInBytes = 12L,
+            modified = Clock.System.now(),
+            revision = "rev-0"
         )
     )
     private var cloudItemContents = mutableMapOf(
-        CloudItemId("456") to "Hello world!"
+        CloudItemId("456") to "Hello world!".encodeToByteArray()
     )
 
     /**
@@ -70,7 +76,26 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         return cloudItems.filter { it.path.startsWith(path) }
     }
 
-    override suspend fun createFolder(path: FolderPath) {
+    override suspend fun getFileInfo(path: FilePath): CloudFile {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        return cloudItems.firstOrNull { it is CloudFile && it.path.toString() == path.toString() }
+                as? CloudFile ?: throw CloudServiceException.NotFoundException(path.toString())
+    }
+
+    override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        require(!path.isRoot) { "Can't get info for the root folder" }
+        return cloudItems.firstOrNull { it is CloudFolder && it.path.toString() == path.toString() }
+                as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+    }
+
+    override suspend fun createFolder(path: FolderPath): CloudFolder {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -83,12 +108,15 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         cloudItems += folder
         folderModified[folder.id] = Clock.System.now()
         recordUpdate(folder)
+        return folder
     }
 
     override suspend fun createFile(
         path: FilePath,
         content: String
-    ) {
+    ): CloudFile = createFile(path, content.encodeToByteArray())
+
+    private fun createFile(path: FilePath, content: ByteArray): CloudFile {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -98,18 +126,22 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
             id = id,
             path = path,
             name = path.name,
-            sizeInBytes = content.length * 8L,
-            modified = Clock.System.now()
+            sizeInBytes = content.size.toLong(),
+            modified = Clock.System.now(),
+            revision = nextRevision(id)
         )
         cloudItems += file
         cloudItemContents[id] = content
         recordUpdate(file)
+        return file
     }
 
     override suspend fun updateFile(
         id: CloudItemId,
         content: String
-    ) {
+    ): CloudFile = updateFile(id, content.encodeToByteArray())
+
+    private fun updateFile(id: CloudItemId, content: ByteArray): CloudFile {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
@@ -117,21 +149,108 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         val existing = cloudItems.firstOrNull { it.id == id }
                 as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
         val updated = existing.copy(
-            sizeInBytes = content.length * 8L,
-            modified = Clock.System.now()
+            sizeInBytes = content.size.toLong(),
+            modified = Clock.System.now(),
+            revision = nextRevision(id)
         )
         cloudItems -= existing
         cloudItems += updated
         cloudItemContents[id] = content
         recordUpdate(updated)
+        return updated
     }
 
+    override suspend fun createFile(
+        path: FilePath,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile = createFile(path, source.readByteArray())
+
+    override suspend fun updateFile(
+        id: CloudItemId,
+        source: Source,
+        sizeInBytes: Long?,
+        mimeType: String
+    ): CloudFile = updateFile(id, source.readByteArray())
+
     override suspend fun downloadFile(id: CloudItemId): String {
+        return downloadBytes(id).decodeToString()
+    }
+
+    override suspend fun downloadFile(id: CloudItemId, sink: Sink) {
+        sink.write(downloadBytes(id))
+        sink.flush()
+    }
+
+    private fun downloadBytes(id: CloudItemId): ByteArray {
         if (!isAuthenticated()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
 
         return cloudItemContents[id] ?: throw CloudServiceException.NotFoundException(id.value)
+    }
+
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        val existing = cloudItems.firstOrNull { it.id == id }
+                as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
+        val renamed = existing.copy(
+            name = newPath.name,
+            path = newPath,
+            revision = nextRevision(id)
+        )
+        if (cloudItems.any { it.path.toString() == newPath.toString() }) {
+            throw CloudServiceException.ConflictException(newPath.toString())
+        }
+        cloudItems -= existing
+        cloudItems += renamed
+        recordUpdate(renamed)
+        return renamed
+    }
+
+    override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
+        require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
+
+        if (!isAuthenticated()) {
+            throw CloudServiceException.NotAuthenticatedException()
+        }
+
+        val existing = cloudItems.firstOrNull { it.id == id }
+                as? CloudFolder ?: throw CloudServiceException.NotFoundException(id.value)
+        require(!newPath.startsWith(existing.path)) { "Can't move a folder into itself" }
+        val renamed = existing.copy(
+            name = newPath.name,
+            path = newPath
+        )
+        if (cloudItems.any { it.path.toString() == newPath.toString() }) {
+            throw CloudServiceException.ConflictException(newPath.toString())
+        }
+        cloudItems -= existing
+        cloudItems += renamed
+        folderModified[id] = Clock.System.now()
+        recordUpdate(renamed)
+
+        // Move the folder's contents.
+        val oldPrefix = existing.path.toString()
+        val descendants = cloudItems.filter { it.path.startsWith(existing.path) }
+        for (descendant in descendants) {
+            val movedPath = newPath.toString() + descendant.path.toString().removePrefix(oldPrefix)
+            val moved = when (descendant) {
+                is CloudFile -> descendant.copy(
+                    path = movedPath.asFilePath(),
+                    revision = nextRevision(descendant.id)
+                )
+                is CloudFolder -> descendant.copy(path = movedPath.asFolderPath())
+            }
+            cloudItems -= descendant
+            cloudItems += moved
+            recordUpdate(moved)
+        }
+        return renamed
     }
 
     override suspend fun delete(id: CloudItemId) {
@@ -172,6 +291,11 @@ class DummyCloudService(startToken: CloudAccessToken?) : OAuthCloudService(start
         revisions[item.id] = (revisions[item.id] ?: 0) + 1
         changeLog += item.toUpdatedChange()
     }
+
+    /**
+     * The revision [id] will have after the next [recordUpdate].
+     */
+    private fun nextRevision(id: CloudItemId): String = "rev-${(revisions[id] ?: 0) + 1}"
 
     private fun CloudItem.toUpdatedChange(): UpdatedDeltaChange {
         return UpdatedDeltaChange(

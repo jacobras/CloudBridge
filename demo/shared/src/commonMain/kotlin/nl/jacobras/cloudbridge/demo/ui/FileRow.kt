@@ -96,7 +96,8 @@ private fun PreviewFile() {
             path = FilePath("/preview"),
             name = "Preview",
             sizeInBytes = 12345,
-            modified = Instant.parse("2026-02-12T00:00:00Z")
+            modified = Instant.parse("2026-02-12T00:00:00Z"),
+            revision = "1"
         ),
         onClick = {}
     )

@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.util.TokenScopedCache
 
 /**
  * @param httpClient Client override for tests.
@@ -50,6 +51,18 @@ public abstract class OAuthCloudService internal constructor(
     }
 
     /**
+     * Authenticated client, for requests that are not convenient to use Ktorfit for.
+     */
+    internal val clientWithAuth: HttpClient
+        get() = ktorfit.httpClient
+
+    /**
+     * Client without authentication, for pre-authenticated URLs.
+     */
+    internal val clientWithoutAuth: HttpClient
+        get() = httpClient ?: defaultHttpClient
+
+    /**
      * Sets [token] to this service.
      *
      * @param token The access token to use for authentication, or `null` to authenticate a new
@@ -58,6 +71,11 @@ public abstract class OAuthCloudService internal constructor(
     public fun setToken(token: CloudAccessToken?) {
         this.token = token
     }
+
+    /**
+     * Creates a cache of which the value is only reused as long as the token doesn't change.
+     */
+    internal fun <T : Any> tokenScopedCache() = TokenScopedCache<T> { token }
 
     override fun isAuthenticated(): Boolean {
         return token != null
