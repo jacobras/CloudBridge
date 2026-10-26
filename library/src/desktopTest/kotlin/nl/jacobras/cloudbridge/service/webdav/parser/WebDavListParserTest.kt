@@ -37,6 +37,14 @@ class WebDavListParserTest {
         assertThat(res3.isCollection).isFalse()
     }
 
+    @Test
+    fun `strip weak etag prefix`() {
+        val xml = """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/note.txt</d:href><d:propstat><d:prop><d:resourcetype/><d:getcontentlength>5</d:getcontentlength><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified><d:getetag>W/"abc123"</d:getetag></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"""
+
+        val res = WebDavListParser.parse(xml)
+        assertThat(res.single().etag).isEqualTo("\"abc123\"")
+    }
+
     private fun readFile(filename: String): String {
         return object {}.javaClass.getResource(filename)!!.readText()
     }
