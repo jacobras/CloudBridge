@@ -40,9 +40,10 @@ internal object WebDavListParser {
                         input = props.requireChild(PROP_LAST_MODIFIED).value,
                         format = DateTimeComponents.Formats.RFC_1123
                     ),
-                    // Only available for files. Weak prefix is stripped so that an etag
-                    // flipping between weak and strong (e.g. Apache) isn't seen as a change.
-                    etag = props.child(PROP_ETAG)?.value?.removePrefix("W/")
+                    // Only available for files. Normalized to the raw value; the weak
+                    // prefix is stripped so that an etag flipping between weak and strong
+                    // (e.g. Apache) isn't seen as a change.
+                    etag = props.child(PROP_ETAG)?.value?.removePrefix("W/")?.removeSurrounding("\"")
                 )
             }
             .sortedBy { it.href }
