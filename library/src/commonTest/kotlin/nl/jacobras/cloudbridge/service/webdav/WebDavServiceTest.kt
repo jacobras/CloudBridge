@@ -94,7 +94,7 @@ class WebDavServiceTest {
                 name = "note.txt",
                 sizeInBytes = 5,
                 modified = Instant.parse("2024-04-02T18:27:06Z"),
-                revision = "\"abc123\""
+                revision = "abc123"
             )
         )
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
@@ -138,7 +138,7 @@ class WebDavServiceTest {
                 name = "note.txt",
                 sizeInBytes = 7,
                 modified = Instant.parse("2024-04-03T10:00:00Z"),
-                revision = "\"def456\""
+                revision = "def456"
             )
         )
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
@@ -185,7 +185,7 @@ class WebDavServiceTest {
                 name = "new name.txt",
                 sizeInBytes = 5,
                 modified = Instant.parse("2024-04-02T18:27:06Z"),
-                revision = "\"abc123\""
+                revision = "abc123"
             )
         )
         engine.requestHistory.first().let {
@@ -456,7 +456,7 @@ class WebDavServiceTest {
                 name = "note.txt",
                 sizeInBytes = 5,
                 modified = Instant.parse("2024-04-02T18:27:06Z"),
-                revision = "\"abc123\""
+                revision = "abc123"
             )
         )
         assertThat(engine.requestHistory).single().given {
