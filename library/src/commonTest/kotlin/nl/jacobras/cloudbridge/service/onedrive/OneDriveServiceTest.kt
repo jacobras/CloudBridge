@@ -8,6 +8,7 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -34,6 +35,7 @@ import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class OneDriveServiceTest {
@@ -57,6 +59,29 @@ class OneDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/oidc/userinfo")
         }
+    }
+
+    @Test
+    fun `rate limit exception`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":"activityLimitReached","message":"The request has been throttled"}}""",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(
+                    HttpHeaders.ContentType to listOf("application/json"),
+                    HttpHeaders.RetryAfter to listOf("120")
+                )
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isEqualTo(120.seconds)
     }
 
     @Test
