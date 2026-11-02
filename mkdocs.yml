@@ -64,3 +64,4 @@ nav:
       - 'Authentication/User info': 'api/Authentication.md'
       - 'Files': 'api/Files.md'
       - 'Error handling': 'api/Errors.md'
+      - 'Rate limiting': 'api/RateLimiting.md'

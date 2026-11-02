@@ -6,7 +6,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import nl.jacobras.cloudbridge.CloudServiceException
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
@@ -22,7 +21,7 @@ internal class RateLimiter internal constructor(
     val maxConcurrent: Int,
     val maxRatePerSecond: Double,
     val maxRetries: Int = 3,
-    val maxRetryDelay: Duration = 1.minutes,
+    val maxRetryDelay: Duration = 30.seconds,
     timeSource: TimeSource = TimeSource.Monotonic
 ) {
 
@@ -79,7 +78,9 @@ internal class RateLimiter internal constructor(
                     nextAllowed - now
                 }
             }
-            if (wait == Duration.ZERO) return
+            if (wait == Duration.ZERO) {
+                return
+            }
             delay(wait)
         }
     }

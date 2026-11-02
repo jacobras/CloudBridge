@@ -13,6 +13,7 @@ These are expected in normal use.
 | `CloudServiceException.InsufficientSpaceException` | The account has no storage space left       |
 | `CloudServiceException.NotAuthenticatedException`  | The service has no valid access token (yet) |
 | `CloudServiceException.NotFoundException`          | The requested item could not be found       |
+| `CloudServiceException.RateLimitException`         | A [rate limit](RateLimiting.md) was hit     |
 
 ## Less common exceptions
 
