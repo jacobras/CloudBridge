@@ -1,7 +1,6 @@
 package nl.jacobras.cloudbridge.service.webdav
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
@@ -21,11 +20,9 @@ import io.ktor.http.contentType
 import io.ktor.http.decodeURLPart
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeFully
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.io.Buffer
-import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
@@ -40,6 +37,8 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
+import nl.jacobras.cloudbridge.service.CallDispatcher
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.ensureSuffix
@@ -61,6 +60,29 @@ public class WebDavService internal constructor(
             }
         }
     }
+
+    private val callDispatcher = CallDispatcher(
+        authCheck = ::isAuthenticated,
+        responseErrorMapper = { itemId ->
+            when (response.status) {
+                HttpStatusCode.Unauthorized -> {
+                    CloudServiceException.NotAuthenticatedException()
+                }
+                HttpStatusCode.NotFound -> {
+                    CloudServiceException.NotFoundException(itemId)
+                }
+                HttpStatusCode.InsufficientStorage -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
+                HttpStatusCode.PreconditionFailed -> {
+                    CloudServiceException.ConflictException(itemId)
+                }
+                else -> {
+                    CloudServiceException.Unknown(this)
+                }
+            }
+        }
+    )
 
     /**
      * Sets the [credentials] to authenticate with.
@@ -263,40 +285,8 @@ public class WebDavService internal constructor(
         }
     }
 
-    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        try {
-            return block()
-        } catch (e: ResponseException) {
-            throw when (e.response.status) {
-                HttpStatusCode.Unauthorized -> {
-                    CloudServiceException.NotAuthenticatedException()
-                }
-
-                HttpStatusCode.NotFound -> {
-                    CloudServiceException.NotFoundException(itemId)
-                }
-
-                HttpStatusCode.InsufficientStorage -> {
-                    CloudServiceException.InsufficientSpaceException()
-                }
-
-                HttpStatusCode.PreconditionFailed -> {
-                    CloudServiceException.ConflictException(itemId)
-                }
-
-                else -> {
-                    CloudServiceException.Unknown(e)
-                }
-            }
-        } catch (e: IOException) {
-            throw CloudServiceException.ConnectionException(e)
-        } catch (e: CloudServiceException) {
-            throw e
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CloudServiceException.Unknown(e)
-        }
+    private suspend fun <T> tryCall(itemId: String = "unknown", call: suspend () -> T): T {
+        return callDispatcher.tryCall(itemId, call)
     }
 }
 

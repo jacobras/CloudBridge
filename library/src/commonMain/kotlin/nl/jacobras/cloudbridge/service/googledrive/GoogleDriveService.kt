@@ -23,11 +23,10 @@ import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.coroutines.CancellationException
-import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
+import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -45,11 +44,10 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.forEachChunk
-import nl.jacobras.cloudbridge.util.transferTo
 import nl.jacobras.cloudbridge.util.retryAfter
+import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
@@ -70,6 +68,26 @@ public class GoogleDriveService internal constructor(
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
+    }
+
+    override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
+        when (response.status) {
+            HttpStatusCode.NotFound -> {
+                CloudServiceException.NotFoundException(itemId)
+            }
+            HttpStatusCode.Unauthorized -> {
+                CloudServiceException.NotAuthenticatedException()
+            }
+            HttpStatusCode.TooManyRequests -> {
+                CloudServiceException.RateLimitException(response.retryAfter())
+            }
+            HttpStatusCode.Forbidden if message?.contains("storageQuotaExceeded") == true -> {
+                CloudServiceException.InsufficientSpaceException()
+            }
+            else -> {
+                CloudServiceException.Unknown(this)
+            }
+        }
     }
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
@@ -484,41 +502,6 @@ public class GoogleDriveService internal constructor(
 
     private fun DriveFile.toFilePath(isRoot: Boolean): FilePath {
         return if (isRoot) name.asFilePath() else "${parents.first()}/$name".asFilePath()
-    }
-
-    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthenticated()
-        acquireRateLimitPermit()
-
-        try {
-            return block()
-        } catch (e: ResponseException) {
-            throw when (e.response.status) {
-                HttpStatusCode.NotFound -> {
-                    CloudServiceException.NotFoundException(itemId)
-                }
-                HttpStatusCode.Unauthorized -> {
-                    CloudServiceException.NotAuthenticatedException()
-                }
-                HttpStatusCode.TooManyRequests -> {
-                    CloudServiceException.RateLimitException(e.response.retryAfter())
-                }
-                HttpStatusCode.Forbidden if e.message?.contains("storageQuotaExceeded") == true -> {
-                    CloudServiceException.InsufficientSpaceException()
-                }
-                else -> {
-                    CloudServiceException.Unknown(e)
-                }
-            }
-        } catch (e: IOException) {
-            throw CloudServiceException.ConnectionException(e)
-        } catch (e: CloudServiceException) {
-            throw e
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CloudServiceException.Unknown(e)
-        }
     }
 }
 

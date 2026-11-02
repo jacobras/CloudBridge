@@ -3,6 +3,7 @@ package nl.jacobras.cloudbridge
 import de.jensklingenberg.ktorfit.Ktorfit
 import de.jensklingenberg.ktorfit.ktorfit
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
@@ -11,6 +12,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
+import nl.jacobras.cloudbridge.service.CallDispatcher
 import nl.jacobras.cloudbridge.util.TokenScopedCache
 
 /**
@@ -50,6 +53,13 @@ public abstract class OAuthCloudService internal constructor(
         }
     }
 
+    private val callDispatcher = CallDispatcher(
+        authCheck = ::isAuthenticated,
+        responseErrorMapper = { itemId -> errorMapper(itemId) }
+    )
+
+    protected abstract val errorMapper: ResponseException.(itemId: String) -> CloudServiceException
+
     /**
      * Authenticated client, for requests that are not convenient to use Ktorfit for.
      */
@@ -81,14 +91,12 @@ public abstract class OAuthCloudService internal constructor(
         return token != null
     }
 
-    protected fun requireAuthenticated() {
-        if (token == null) {
-            throw CloudServiceException.NotAuthenticatedException()
-        }
-    }
-
     private fun getAuthHeader(): String? {
         val token = token ?: return null
         return "Bearer ${token.accessToken}"
+    }
+
+    protected suspend fun <T> tryCall(itemId: String = "unknown", call: suspend () -> T): T {
+        return callDispatcher.tryCall(itemId, call)
     }
 }

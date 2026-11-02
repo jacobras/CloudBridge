@@ -5,8 +5,6 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.coroutines.CancellationException
-import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
@@ -30,8 +28,8 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.forEachChunk
-import nl.jacobras.cloudbridge.util.transferTo
 import nl.jacobras.cloudbridge.util.retryAfter
+import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
 
 /**
@@ -51,6 +49,29 @@ public class DropboxService internal constructor(
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
+
+    override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
+        when (response.status) {
+            HttpStatusCode.Conflict if message?.contains("not_found") == true -> {
+                CloudServiceException.NotFoundException(itemId)
+            }
+            HttpStatusCode.Conflict if message?.contains("insufficient_space") == true -> {
+                CloudServiceException.InsufficientSpaceException()
+            }
+            HttpStatusCode.Conflict if message?.contains("conflict") == true -> {
+                CloudServiceException.ConflictException(itemId)
+            }
+            HttpStatusCode.TooManyRequests -> {
+                CloudServiceException.RateLimitException(response.retryAfter())
+            }
+            HttpStatusCode.Unauthorized -> {
+                CloudServiceException.NotAuthenticatedException()
+            }
+            else -> {
+                CloudServiceException.Unknown(this)
+            }
+        }
+    }
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()
@@ -293,69 +314,7 @@ public class DropboxService internal constructor(
             }
         )
     }
-
-    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthenticated()
-        acquireRateLimitPermit()
-
-        try {
-            return block()
-        } catch (e: ResponseException) {
-            throw when (e.response.status) {
-                HttpStatusCode.Conflict if e.message?.contains("not_found") == true -> {
-                    CloudServiceException.NotFoundException(itemId)
-                }
-                HttpStatusCode.Conflict if e.message?.contains("insufficient_space") == true -> {
-                    CloudServiceException.InsufficientSpaceException()
-                }
-                HttpStatusCode.Conflict if e.message?.contains("conflict") == true -> {
-                    CloudServiceException.ConflictException(itemId)
-                }
-                HttpStatusCode.TooManyRequests -> {
-                    CloudServiceException.RateLimitException(e.response.retryAfter())
-                }
-                HttpStatusCode.Unauthorized -> {
-                    CloudServiceException.NotAuthenticatedException()
-                }
-                else -> {
-                    CloudServiceException.Unknown(e)
-                }
-            }
-        } catch (e: IOException) {
-            throw CloudServiceException.ConnectionException(e)
-        } catch (e: CloudServiceException) {
-            throw e
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CloudServiceException.Unknown(e)
-        }
-    }
 }
 
-private fun FileEntry.toCloudItem(): CloudItem {
-    return when (tag) {
-        "file" -> {
-            CloudFile(
-                id = CloudItemId(id ?: error("Missing id for file")),
-                path = pathDisplay.asFilePath(),
-                name = name,
-                sizeInBytes = size ?: error("Missing size for file"),
-                modified = Instant.parse(
-                    clientModified ?: error("Missing modified time for file")
-                ),
-                revision = rev ?: error("Missing rev for file")
-            )
-        }
-        "folder" -> {
-            CloudFolder(
-                id = CloudItemId(id ?: error("Missing id for folder")),
-                path = pathDisplay.asFolderPath(),
-                name = name
-            )
-        }
-        else -> error("Unsupported tag: $tag")
-    }
-}
 
 private const val DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024
