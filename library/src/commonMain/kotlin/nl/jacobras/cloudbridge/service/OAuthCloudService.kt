@@ -100,6 +100,6 @@ public abstract class OAuthCloudService internal constructor(
     }
 
     protected suspend fun <T> tryCall(itemId: String = "unknown", call: suspend () -> T): T {
-        return callDispatcher.tryCall(itemId, call)
+        return callDispatcher.tryCall(itemId, call = call)
     }
 }

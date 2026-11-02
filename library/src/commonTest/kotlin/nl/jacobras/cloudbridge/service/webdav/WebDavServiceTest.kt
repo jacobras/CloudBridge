@@ -6,6 +6,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -17,6 +18,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
@@ -27,10 +29,12 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class WebDavServiceTest {
@@ -102,6 +106,49 @@ class WebDavServiceTest {
             HttpMethod("PROPFIND")
         )
         assertThat(engine.requestHistory.last().headers["Depth"]).isEqualTo("0")
+    }
+
+    @Test
+    fun `rate-limited text upload is retried with the same body`() = runTest {
+        val engine = rateLimitOncePutEngine()
+        val service = webDavService(engine, RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource))
+
+        service.createFile("/Notes for Android/note.txt".asFilePath(), "hello")
+
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Put,
+            HttpMethod.Put,
+            HttpMethod("PROPFIND")
+        )
+        assertThat(engine.requestHistory.take(2).map { it.body.toByteArray().decodeToString() })
+            .containsExactly("hello", "hello")
+    }
+
+    @Test
+    fun `rate-limited source upload is not retried`() = runTest {
+        val engine = rateLimitOncePutEngine()
+        val service = webDavService(engine, RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource))
+
+        assertFailure { service.createFile("/Notes for Android/note.txt".asFilePath(), bufferOf(10)) }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put)
+    }
+
+    @Test
+    fun `rate limit exception`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(HttpHeaders.RetryAfter, "5")
+            )
+        }
+        val service = webDavService(engine, rateLimiter = null)
+
+        assertFailure { service.delete(CloudItemId("/note.txt")) }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isEqualTo(5.seconds)
     }
 
     @Test
@@ -555,14 +602,36 @@ private const val WEBDAV_FILE_RESPONSE =
 private const val WEBDAV_FOLDER_RESPONSE =
     """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/server.php/Notes%20for%20Android/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"""
 
-private fun webDavService(engine: MockEngine) = WebDavService(
+private fun webDavService(
+    engine: MockEngine,
+    rateLimiter: RateLimiter? = RateLimiter(10, Double.POSITIVE_INFINITY)
+) = WebDavService(
     credentials = WebDavCredentials(
         serverUrl = "https://webdav.example.com/server.php",
         username = "user",
         password = "pass"
     ),
-    httpClient = HttpClient(engine) { applyDefaults() }
+    httpClient = HttpClient(engine) { applyDefaults() },
+    rateLimiter = rateLimiter
 )
+
+/**
+ * Responds 429 to the first PUT, and success to everything after.
+ */
+private fun rateLimitOncePutEngine(): MockEngine {
+    var putAttempts = 0
+    return MockEngine { request ->
+        when {
+            request.method == HttpMethod.Put && putAttempts++ == 0 -> respond(
+                content = "",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(HttpHeaders.RetryAfter, "1")
+            )
+            request.method == HttpMethod.Put -> respond(content = "", status = HttpStatusCode.Created)
+            else -> respondMultiStatus(WEBDAV_FILE_RESPONSE)
+        }
+    }
+}
 
 private fun MockRequestHandleScope.respondMultiStatus(content: String) = respond(
     content = content,

@@ -15,6 +15,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
+import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.decodeURLPart
@@ -22,7 +23,6 @@ import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
@@ -43,6 +43,7 @@ import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.ensureSuffix
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 
 /**
@@ -50,7 +51,11 @@ import nl.jacobras.cloudbridge.util.transferTo
  */
 public class WebDavService internal constructor(
     private var credentials: WebDavCredentials,
-    private val httpClient: HttpClient? = null
+    private val httpClient: HttpClient? = null,
+    rateLimiter: RateLimiter? = RateLimiter(
+        maxConcurrent = 10,
+        maxRatePerSecond = 10.0
+    )
 ) : CloudService {
 
     private val client by lazy {
@@ -60,11 +65,6 @@ public class WebDavService internal constructor(
             }
         }
     }
-    private val rateLimiter = RateLimiter(
-        maxConcurrent = 10,
-        maxRatePerSecond = 10.0
-    )
-
     private val callDispatcher = CallDispatcher(
         rateLimiter = rateLimiter,
         authCheck = ::isAuthenticated,
@@ -81,6 +81,9 @@ public class WebDavService internal constructor(
                 }
                 HttpStatusCode.PreconditionFailed -> {
                     CloudServiceException.ConflictException(itemId)
+                }
+                HttpStatusCode.TooManyRequests -> {
+                    CloudServiceException.RateLimitException(response.retryAfter())
                 }
                 else -> {
                     CloudServiceException.Unknown(this)
@@ -139,13 +142,7 @@ public class WebDavService internal constructor(
     }
 
     override suspend fun createFile(path: FilePath, content: String): CloudFile {
-        val bytes = content.encodeToByteArray()
-        return createFile(
-            path = path,
-            source = Buffer().apply { write(bytes) },
-            sizeInBytes = bytes.size.toLong(),
-            mimeType = TEXT_MIME_TYPE
-        )
+        return upload(path.toString(), textContent(content), retryable = true)
     }
 
     override suspend fun createFile(
@@ -153,21 +150,13 @@ public class WebDavService internal constructor(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ): CloudFile = tryCall(path.toString()) {
-        put(path.toString(), source, sizeInBytes, mimeType)
-
-        // PUT doesn't return any metadata, so fetch it separately
-        propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
+    ): CloudFile {
+        val content = SourceContent(source, sizeInBytes, ContentType.parse(mimeType))
+        return upload(path.toString(), content, retryable = false)
     }
 
     override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
-        val bytes = content.encodeToByteArray()
-        return updateFile(
-            id = id,
-            source = Buffer().apply { write(bytes) },
-            sizeInBytes = bytes.size.toLong(),
-            mimeType = TEXT_MIME_TYPE
-        )
+        return upload(id.value, textContent(content), retryable = true)
     }
 
     override suspend fun updateFile(
@@ -175,11 +164,33 @@ public class WebDavService internal constructor(
         source: Source,
         sizeInBytes: Long?,
         mimeType: String
-    ): CloudFile = tryCall(id.value) {
-        put(id.value, source, sizeInBytes, mimeType)
+    ): CloudFile {
+        val content = SourceContent(source, sizeInBytes, ContentType.parse(mimeType))
+        return upload(id.value, content, retryable = false)
+    }
 
-        // PUT doesn't return any metadata, so fetch it separately
-        propfind(id.value, depth = 0).single().toCloudItem() as CloudFile
+    /**
+     * Uploads [content] to [path].
+     *
+     * @param retryable Whether [content] can be sent again when a rate limit requires a retry.
+     */
+    private suspend fun upload(path: String, content: OutgoingContent, retryable: Boolean): CloudFile {
+        return tryCall(path, retryable) {
+            client.request(buildUrl(path)) {
+                method = HttpMethod.Put
+                setBody(content)
+            }
+
+            // PUT doesn't return any metadata, so fetch it separately
+            propfind(path, depth = 0).single().toCloudItem() as CloudFile
+        }
+    }
+
+    /**
+     * Unlike [SourceContent], this can be sent again when a rate limit requires a retry.
+     */
+    private fun textContent(content: String): OutgoingContent {
+        return ByteArrayContent(content.encodeToByteArray(), ContentType.parse(TEXT_MIME_TYPE))
     }
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
@@ -221,13 +232,6 @@ public class WebDavService internal constructor(
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Delete
-        }
-    }
-
-    private suspend fun put(path: String, source: Source, sizeInBytes: Long?, mimeType: String) {
-        client.request(buildUrl(path)) {
-            method = HttpMethod.Put
-            setBody(SourceContent(source, sizeInBytes, ContentType.parse(mimeType)))
         }
     }
 
@@ -290,14 +294,19 @@ public class WebDavService internal constructor(
         }
     }
 
-    private suspend fun <T> tryCall(itemId: String = "unknown", call: suspend () -> T): T {
-        return callDispatcher.tryCall(itemId, call)
+    private suspend fun <T> tryCall(
+        itemId: String = "unknown",
+        retryable: Boolean = true,
+        call: suspend () -> T
+    ): T {
+        return callDispatcher.tryCall(itemId, retryable, call)
     }
 }
 
 /**
  * Streams [source] as request body. WebDAV has no chunked upload, so large files are sent in
- * a single request, without holding the whole file in memory.
+ * a single request, without holding the whole file in memory. As [source] can only be read
+ * once, this can't be sent again for a retry.
  */
 private class SourceContent(
     private val source: Source,

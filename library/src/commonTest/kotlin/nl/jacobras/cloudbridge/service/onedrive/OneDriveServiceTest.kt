@@ -19,6 +19,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
@@ -30,6 +31,7 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
@@ -752,6 +754,56 @@ class OneDriveServiceTest {
             null,
             null,
             null
+        )
+    }
+
+    @Test
+    fun `rate-limited chunk is retried on its own`() = runTest {
+        var secondChunkAttempts = 0
+        val engine = MockEngine { request ->
+            val range = request.headers[HttpHeaders.ContentRange]
+            when {
+                request.url.encodedPath.endsWith("createUploadSession") -> respond(
+                    content = """{"uploadUrl":"https://my.microsoftpersonalcontent.com/up/session1"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+                range == "bytes 4-7/10" && secondChunkAttempts++ == 0 -> respond(
+                    content = """{"error":{"code":"activityLimitReached","message":"The request has been throttled"}}""",
+                    status = HttpStatusCode.TooManyRequests,
+                    headers = headersOf(
+                        HttpHeaders.ContentType to listOf("application/json"),
+                        HttpHeaders.RetryAfter to listOf("1")
+                    )
+                )
+                range == "bytes 8-9/10" -> respond(
+                    content = DRIVE_ITEM_RESPONSE,
+                    status = HttpStatusCode.Created,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+                else -> respond(
+                    content = """{"nextExpectedRanges":["4-"]}""",
+                    status = HttpStatusCode.Accepted,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        service.uploadChunkSize = 4
+
+        service.createFile("archive.zip".asFilePath(), bufferOf(10), sizeInBytes = 10)
+
+        assertThat(engine.requestHistory.count { it.method == HttpMethod.Post }).isEqualTo(1)
+        val chunks = engine.requestHistory.filter { it.method == HttpMethod.Put }
+        assertThat(chunks.map { it.headers[HttpHeaders.ContentRange] }).containsExactly(
+            "bytes 0-3/10",
+            "bytes 4-7/10",
+            "bytes 4-7/10",
+            "bytes 8-9/10"
         )
     }
 

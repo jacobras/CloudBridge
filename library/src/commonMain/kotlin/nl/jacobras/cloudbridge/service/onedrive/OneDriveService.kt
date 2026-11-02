@@ -40,14 +40,15 @@ import kotlin.time.Instant
 
 public class OneDriveService internal constructor(
     token: CloudAccessToken?,
-    httpClientOverride: HttpClient? = null
-) : OAuthCloudService(
-    startToken = token,
-    httpClientOverride = httpClientOverride,
-    rateLimiter = RateLimiter(
+    httpClientOverride: HttpClient? = null,
+    rateLimiter: RateLimiter? = RateLimiter(
         maxConcurrent = 5,
         maxRatePerSecond = 5.0
     )
+) : OAuthCloudService(
+    startToken = token,
+    httpClientOverride = httpClientOverride,
+    rateLimiter = rateLimiter
 ), DeltaCloudService {
 
     override val baseUrl: String = "https://graph.microsoft.com/"
@@ -298,31 +299,31 @@ public class OneDriveService internal constructor(
         uploadSingle: suspend (ByteArray) -> DriveItem,
         createSession: suspend () -> UploadSession
     ): DriveItem {
-        return tryCall(itemId) {
-            var uploadUrl: String? = null
-            var response: DriveItem? = null
-            source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
-                if (offset == 0L && isLast) {
-                    response = uploadSingle(chunk)
-                    return@forEachChunk
-                }
+        var uploadUrl: String? = null
+        var response: DriveItem? = null
+        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+            if (offset == 0L && isLast) {
+                response = tryCall(itemId) { uploadSingle(chunk) }
+                return@forEachChunk
+            }
 
-                val total = sizeInBytes ?: throw CloudServiceException.IllegalArgumentException(
-                    "sizeInBytes is required for OneDrive uploads larger than $uploadChunkSize bytes, but it was null"
+            val total = sizeInBytes ?: throw CloudServiceException.IllegalArgumentException(
+                "sizeInBytes is required for OneDrive uploads larger than $uploadChunkSize bytes, but it was null"
+            )
+            val end = offset + chunk.size - 1
+            if (!isLast && end >= total) {
+                throw CloudServiceException.IllegalArgumentException(
+                    "Content is larger than sizeInBytes ($total bytes)"
                 )
-                val end = offset + chunk.size - 1
-                if (!isLast && end >= total) {
-                    throw CloudServiceException.IllegalArgumentException(
-                        "Content is larger than sizeInBytes ($total bytes)"
-                    )
-                }
-                if (isLast && end + 1 != total) {
-                    throw CloudServiceException.IllegalArgumentException(
-                        "Content size (${end + 1} bytes) doesn't match sizeInBytes ($total bytes)"
-                    )
-                }
-                val url = uploadUrl ?: createSession().uploadUrl.also { uploadUrl = it }
+            }
+            if (isLast && end + 1 != total) {
+                throw CloudServiceException.IllegalArgumentException(
+                    "Content size (${end + 1} bytes) doesn't match sizeInBytes ($total bytes)"
+                )
+            }
+            val url = uploadUrl ?: tryCall(itemId) { createSession().uploadUrl }.also { uploadUrl = it }
 
+            tryCall(itemId) {
                 // The upload URL is pre-authenticated, so it needs to be sent without an Authorization header
                 val chunkResponse = clientWithoutAuth.put(url) {
                     header(HttpHeaders.ContentRange, "bytes $offset-$end/$total")
@@ -332,8 +333,8 @@ public class OneDriveService internal constructor(
                     response = json.decodeFromString<DriveItem>(chunkResponse.bodyAsText())
                 }
             }
-            checkNotNull(response)
         }
+        return checkNotNull(response)
     }
 
     private fun DriveItem.toCloudFile(path: FilePath): CloudFile {

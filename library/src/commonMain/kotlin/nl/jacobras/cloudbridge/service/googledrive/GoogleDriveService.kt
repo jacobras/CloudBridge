@@ -51,14 +51,15 @@ import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
     token: CloudAccessToken?,
-    httpClientOverride: HttpClient? = null
-) : OAuthCloudService(
-    startToken = token,
-    httpClientOverride = httpClientOverride,
-    rateLimiter = RateLimiter(
+    httpClientOverride: HttpClient? = null,
+    rateLimiter: RateLimiter? = RateLimiter(
         maxConcurrent = 5,
         maxRatePerSecond = 5.0
     )
+) : OAuthCloudService(
+    startToken = token,
+    httpClientOverride = httpClientOverride,
+    rateLimiter = rateLimiter
 ), DeltaCloudService {
 
     override val baseUrl: String = "https://www.googleapis.com/"
@@ -373,20 +374,22 @@ public class GoogleDriveService internal constructor(
         uploadSingle: suspend (ByteArray) -> DriveFile,
         startSession: suspend () -> HttpResponse
     ): DriveFile {
-        return tryCall(itemId) {
-            var sessionUri: String? = null
-            var response: DriveFile? = null
-            source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
-                if (offset == 0L && isLast) {
-                    response = uploadSingle(chunk)
-                    return@forEachChunk
-                }
+        var sessionUri: String? = null
+        var response: DriveFile? = null
+        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+            if (offset == 0L && isLast) {
+                response = tryCall(itemId) { uploadSingle(chunk) }
+                return@forEachChunk
+            }
 
-                val uri = sessionUri
-                    ?: startSession().headers[HttpHeaders.Location]?.also { sessionUri = it }
-                    ?: error("Missing upload session URI")
-                val end = offset + chunk.size - 1
-                val total = if (isLast) (end + 1).toString() else sizeInBytes?.toString() ?: "*"
+            val uri = sessionUri ?: tryCall(itemId) {
+                startSession().headers[HttpHeaders.Location] ?: error("Missing upload session URI")
+            }.also { sessionUri = it }
+            val end = offset + chunk.size - 1
+            val total = if (isLast) (end + 1).toString() else sizeInBytes?.toString() ?: "*"
+
+            // Do repeatable upload of chunk
+            tryCall(itemId) {
                 val chunkResponse = clientWithAuth.put(uri) {
                     expectSuccess = false
                     header(HttpHeaders.ContentRange, "bytes $offset-$end/$total")
@@ -403,8 +406,8 @@ public class GoogleDriveService internal constructor(
                     else -> throw ResponseException(chunkResponse, chunkResponse.bodyAsText())
                 }
             }
-            checkNotNull(response)
         }
+        return checkNotNull(response)
     }
 
     private fun DriveFile.toCloudFile(isRoot: Boolean): CloudFile {

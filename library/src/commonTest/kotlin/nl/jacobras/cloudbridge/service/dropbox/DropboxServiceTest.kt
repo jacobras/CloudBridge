@@ -18,6 +18,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
@@ -29,6 +30,7 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
@@ -75,7 +77,8 @@ class DropboxServiceTest {
         }
         val service = DropboxService(
             token = CloudAccessToken("valid"),
-            httpClientOverride = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = null
         )
 
         assertFailure { service.getUserInfo() }
@@ -460,6 +463,62 @@ class DropboxServiceTest {
             """{"cursor":{"session_id":"session1","offset":8},"commit":{"path":"/archive.zip","mode":"add"}}"""
         )
         assertThat(engine.requestHistory.map { it.body.toByteArray().size }).containsExactly(
+            4,
+            4,
+            2
+        )
+    }
+
+    @Test
+    fun `rate-limited chunk is retried on its own`() = runTest {
+        var appendAttempts = 0
+        val engine = MockEngine { request ->
+            val path = request.url.encodedPath
+            if (path.endsWith("/append_v2") && appendAttempts++ == 0) {
+                respond(
+                    content = """{"error":{"reason":{".tag":"too_many_write_operations"},"retry_after":1},"error_summary":""}""",
+                    status = HttpStatusCode.TooManyRequests,
+                    headers = headersOf(
+                        HttpHeaders.ContentType to listOf("application/json"),
+                        HttpHeaders.RetryAfter to listOf("1")
+                    )
+                )
+            } else {
+                respond(
+                    content = when {
+                        path.endsWith("/start") -> """{"session_id":"session1"}"""
+                        path.endsWith("/finish") -> UPLOAD_RESPONSE
+                        else -> "null"
+                    },
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        service.uploadChunkSize = 4
+
+        val file = service.createFile("/archive.zip".asFilePath(), bufferOf(10))
+
+        assertThat(file.revision).isEqualTo("01640e48e7e6a010000000301ae1691")
+        assertThat(engine.requestHistory.map { it.url.encodedPath.substringAfterLast('/') }).containsExactly(
+            "start",
+            "append_v2",
+            "append_v2",
+            "finish"
+        )
+        assertThat(engine.requestHistory.map { it.headers["Dropbox-API-Arg"] }).containsExactly(
+            """{}""",
+            """{"cursor":{"session_id":"session1","offset":4}}""",
+            """{"cursor":{"session_id":"session1","offset":4}}""",
+            """{"cursor":{"session_id":"session1","offset":8},"commit":{"path":"/archive.zip","mode":"add"}}"""
+        )
+        assertThat(engine.requestHistory.map { it.body.toByteArray().size }).containsExactly(
+            4,
             4,
             4,
             2

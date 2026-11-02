@@ -22,6 +22,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
@@ -33,6 +34,7 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
@@ -96,7 +98,8 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClientOverride = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = null
         )
 
         assertFailure { service.getUserInfo() }
@@ -786,6 +789,59 @@ class GoogleDriveServiceTest {
             "bytes 4-7/*",
             "bytes 8-9/10"
         )
+    }
+
+    @Test
+    fun `rate-limited chunk is retried on its own`() = runTest {
+        val sessionUri = "https://www.googleapis.com/upload/session1"
+        var secondChunkAttempts = 0
+        val engine = MockEngine { request ->
+            val range = request.headers[HttpHeaders.ContentRange]
+            when {
+                request.isNameCheck() -> respondFiles()
+                request.method == HttpMethod.Post -> respond(
+                    content = "",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.Location, sessionUri)
+                )
+                range == "bytes 4-7/*" && secondChunkAttempts++ == 0 -> respond(
+                    content = """{"error":{"code":429,"message":"Rate Limit Exceeded","errors":[{"reason":"rateLimitExceeded"}]}}""",
+                    status = HttpStatusCode.TooManyRequests,
+                    headers = headersOf(
+                        HttpHeaders.ContentType to listOf("application/json; charset=UTF-8"),
+                        HttpHeaders.RetryAfter to listOf("1")
+                    )
+                )
+                range?.endsWith("/10") == true -> respond(
+                    content = """{"id":"file1","name":"archive.zip","mimeType":"application/zip","size":"10","parents":["appDataFolder"],"modifiedTime":"2025-10-11T16:31:27.438Z","version":"1"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+                else -> respond(content = "", status = HttpStatusCode.PermanentRedirect)
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        service.uploadChunkSize = 4
+
+        val file = service.createFile(
+            "/archive.zip".asFilePath(),
+            bufferOf(10),
+            mimeType = "application/zip"
+        )
+
+        assertThat(file.id).isEqualTo(CloudItemId("file1"))
+        val chunks = engine.requestHistory.filter { it.method == HttpMethod.Put }
+        assertThat(chunks.map { it.headers[HttpHeaders.ContentRange] }).containsExactly(
+            "bytes 0-3/*",
+            "bytes 4-7/*",
+            "bytes 4-7/*",
+            "bytes 8-9/10"
+        )
+        assertThat(engine.requestHistory.count { it.method == HttpMethod.Post }).isEqualTo(1)
     }
 
     @Test
