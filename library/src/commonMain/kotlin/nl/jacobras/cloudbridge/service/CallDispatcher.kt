@@ -18,12 +18,10 @@ internal class CallDispatcher(
     /**
      * Executes [call], up to [RateLimiter.maxRetries] times during rate-limiting.
      *
-     * @param retryable False to never retry, for calls that can't be executed multiple times.
-     * @param call The call to execute, must be safe to execute multiple times if [retryable].
+     * @param call The call to execute, must be safe to execute multiple times.
      */
     suspend fun <T> tryCall(
         itemId: String,
-        retryable: Boolean = true,
         call: suspend () -> T
     ): T {
         if (!authCheck()) {
@@ -36,9 +34,6 @@ internal class CallDispatcher(
             try {
                 return mapError(itemId, call)
             } catch (e: CloudServiceException.RateLimitException) {
-                if (!retryable) {
-                    throw e
-                }
                 val retryDelay = calculateRetryDelay(e, attempt) ?: throw e
                 permit?.release()
                 rateLimiter?.pause(retryDelay)

@@ -182,7 +182,7 @@ public class OneDriveService internal constructor(
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
@@ -208,7 +208,7 @@ public class OneDriveService internal constructor(
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
@@ -288,20 +288,20 @@ public class OneDriveService internal constructor(
     }
 
     /**
-     * Uploads [source] with [uploadSingle] if it fits in one chunk, otherwise in an upload session
-     * created by [createSession]. Upload sessions require [sizeInBytes].
+     * Uploads the content opened by [source] with [uploadSingle] if it fits in one chunk, otherwise
+     * in an upload session created by [createSession]. Upload sessions require [sizeInBytes].
      */
     @Suppress("UseRequire")
     private suspend fun upload(
         itemId: String,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         uploadSingle: suspend (ByteArray) -> DriveItem,
         createSession: suspend () -> UploadSession
     ): DriveItem {
         var uploadUrl: String? = null
         var response: DriveItem? = null
-        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+        forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
             if (offset == 0L && isLast) {
                 response = tryCall(itemId) { uploadSingle(chunk) }
                 return@forEachChunk

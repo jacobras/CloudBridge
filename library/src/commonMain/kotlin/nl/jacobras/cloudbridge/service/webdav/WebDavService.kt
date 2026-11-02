@@ -23,6 +23,7 @@ import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
@@ -41,6 +42,7 @@ import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.CallDispatcher
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
+import nl.jacobras.cloudbridge.util.SafeSourceOpener
 import nl.jacobras.cloudbridge.util.ensureSuffix
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.retryAfter
@@ -142,52 +144,71 @@ public class WebDavService internal constructor(
     }
 
     override suspend fun createFile(path: FilePath, content: String): CloudFile {
-        return upload(path.toString(), textContent(content), retryable = true)
+        val body = textContent(content)
+        return upload(path.toString()) { put(path.toString(), body) }
     }
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
-        val content = SourceContent(source, sizeInBytes, ContentType.parse(mimeType))
-        return upload(path.toString(), content, retryable = false)
+        return uploadSource(path.toString(), sizeInBytes, ContentType.parse(mimeType), source)
     }
 
     override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
-        return upload(id.value, textContent(content), retryable = true)
+        val body = textContent(content)
+        return upload(id.value) { put(id.value, body) }
     }
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
-        val content = SourceContent(source, sizeInBytes, ContentType.parse(mimeType))
-        return upload(id.value, content, retryable = false)
+        return uploadSource(id.value, sizeInBytes, ContentType.parse(mimeType), source)
+    }
+
+    private suspend fun uploadSource(
+        path: String,
+        sizeInBytes: Long?,
+        contentType: ContentType,
+        source: suspend () -> Source
+    ): CloudFile {
+        val opener = SafeSourceOpener(source)
+        return upload(path) {
+            opener.open().use { put(path, SourceContent(it, sizeInBytes, contentType)) }
+        }
     }
 
     /**
-     * Uploads [content] to [path].
-     *
-     * @param retryable Whether [content] can be sent again when a rate limit requires a retry.
+     * Calls [put] and fetches the metadata of the uploaded file at [path].
      */
-    private suspend fun upload(path: String, content: OutgoingContent, retryable: Boolean): CloudFile {
-        return tryCall(path, retryable) {
-            client.request(buildUrl(path)) {
-                method = HttpMethod.Put
-                setBody(content)
-            }
+    private suspend fun upload(path: String, put: suspend () -> Unit): CloudFile {
+        return tryCall(path) {
+            put()
 
             // PUT doesn't return any metadata, so fetch it separately
             propfind(path, depth = 0).single().toCloudItem() as CloudFile
         }
     }
 
+    private suspend fun put(path: String, content: OutgoingContent) {
+        try {
+            client.request(buildUrl(path)) {
+                method = HttpMethod.Put
+                setBody(content)
+            }
+        } catch (e: IOException) {
+            throw (content as? SourceContent)?.failure ?: e
+        }
+        (content as? SourceContent)?.failure?.let { throw it }
+    }
+
     /**
-     * Unlike [SourceContent], this can be sent again when a rate limit requires a retry.
+     * Can be sent multiple times, as needed for retries after rate limiting.
      */
     private fun textContent(content: String): OutgoingContent {
         return ByteArrayContent(content.encodeToByteArray(), ContentType.parse(TEXT_MIME_TYPE))
@@ -296,26 +317,43 @@ public class WebDavService internal constructor(
 
     private suspend fun <T> tryCall(
         itemId: String = "unknown",
-        retryable: Boolean = true,
         call: suspend () -> T
     ): T {
-        return callDispatcher.tryCall(itemId, retryable, call)
+        return callDispatcher.tryCall(itemId, call)
     }
 }
 
 /**
  * Streams [source] as request body. WebDAV has no chunked upload, so large files are sent in
  * a single request, without holding the whole file in memory. As [source] can only be read
- * once, this can't be sent again for a retry.
+ * once, a retry needs a new instance with a new source.
+ *
+ * When reading fails or the source doesn't hold exactly [contentLength] bytes, the body is
+ * cancelled so a truncated file is never stored, and the cause is kept in [failure].
  */
 private class SourceContent(
     private val source: Source,
     override val contentLength: Long?,
     override val contentType: ContentType
 ) : OutgoingContent.WriteChannelContent() {
+    var failure: CloudServiceException.SourceReadException? = null
+        private set
+
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
-            channel.writeFully(chunk)
+        try {
+            var bytesWritten = 0L
+            source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
+                channel.writeFully(chunk)
+                bytesWritten += chunk.size
+            }
+            if (contentLength != null && bytesWritten != contentLength) {
+                throw CloudServiceException.SourceReadException(
+                    IOException("Expected $contentLength bytes, but the source held $bytesWritten bytes")
+                )
+            }
+        } catch (e: CloudServiceException.SourceReadException) {
+            failure = e
+            channel.cancel(e)
         }
     }
 }

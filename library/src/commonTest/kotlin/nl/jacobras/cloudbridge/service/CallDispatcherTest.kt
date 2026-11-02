@@ -77,20 +77,6 @@ class CallDispatcherTest {
     }
 
     @Test
-    fun `do not retry when not retryable`() = runTest {
-        val dispatcher = dispatcher(limiter(maxRetries = 3))
-        var attempts = 0
-
-        assertFailure {
-            dispatcher.tryCall("item", retryable = false) {
-                attempts++
-                throw CloudServiceException.RateLimitException(null)
-            }
-        }.isInstanceOf<CloudServiceException.RateLimitException>()
-        assertThat(attempts).isEqualTo(1)
-    }
-
-    @Test
     fun `back off exponentially`() = runTest {
         val dispatcher = dispatcher(limiter(maxRetries = 3))
         val attemptTimes = mutableListOf<Long>()

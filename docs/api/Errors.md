@@ -23,5 +23,5 @@ These are not expected to happen during normal use.
 |--------------------------------------------------|-------------------------------------------------------------------------------------------|
 | `CloudServiceException.IllegalArgumentException` | An argument is invalid, e.g. a missing or wrong `sizeInBytes` for a large OneDrive upload |
 | `CloudServiceException.SinkWriteException`       | Writing the download to the `Sink` failed                                                 |
-| `CloudServiceException.SourceReadException`      | Reading the `Source` to upload failed                                                     |
+| `CloudServiceException.SourceReadException`      | Reading the `Source` to upload failed, or it was already read                             |
 | `CloudServiceException.Unknown`                  | Any other unexpected error                                                                |

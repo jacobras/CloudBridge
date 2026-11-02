@@ -419,8 +419,11 @@ class DropboxServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        val file =
-            service.createFile("/image.png".asFilePath(), bufferOf(3), mimeType = "image/png")
+        val file = service.createFile(
+            path = "/image.png".asFilePath(),
+            mimeType = "image/png",
+            source = { bufferOf(3) }
+        )
 
         assertThat(file.id).isEqualTo(CloudItemId("id:uwStUuhj4qYAAAAAAAAAIQ"))
         assertThat(engine.requestHistory).single().given {
@@ -449,7 +452,10 @@ class DropboxServiceTest {
         )
         service.uploadChunkSize = 4
 
-        val file = service.createFile("/archive.zip".asFilePath(), bufferOf(10))
+        val file = service.createFile(
+            path = "/archive.zip".asFilePath(),
+            source = { bufferOf(10) }
+        )
 
         assertThat(file.revision).isEqualTo("01640e48e7e6a010000000301ae1691")
         assertThat(engine.requestHistory.map { it.url.toString() }).containsExactly(
@@ -502,7 +508,10 @@ class DropboxServiceTest {
         )
         service.uploadChunkSize = 4
 
-        val file = service.createFile("/archive.zip".asFilePath(), bufferOf(10))
+        val file = service.createFile(
+            path = "/archive.zip".asFilePath(),
+            source = { bufferOf(10) }
+        )
 
         assertThat(file.revision).isEqualTo("01640e48e7e6a010000000301ae1691")
         assertThat(engine.requestHistory.map { it.url.encodedPath.substringAfterLast('/') }).containsExactly(
@@ -533,7 +542,12 @@ class DropboxServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.createFile("/image.png".asFilePath(), failingSource()) }
+        assertFailure {
+            service.createFile(
+                path = "/image.png".asFilePath(),
+                source = { failingSource() }
+            )
+        }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
@@ -553,7 +567,12 @@ class DropboxServiceTest {
         )
         service.uploadChunkSize = 4
 
-        assertFailure { service.createFile("/archive.zip".asFilePath(), failingSource(5)) }
+        assertFailure {
+            service.createFile(
+                path = "/archive.zip".asFilePath(),
+                source = { failingSource(5) }
+            )
+        }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.url.toString() }).containsExactly(
             "https://content.dropboxapi.com/2/files/upload_session/start"

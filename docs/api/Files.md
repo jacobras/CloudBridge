@@ -87,26 +87,28 @@ try {
 
 ## Uploading binary or large files
 
-For images, archives and other binary content, pass a `kotlinx.io.Source`. The content is read until
-its end, but the stream isn't closed. Files larger than 10 MB are automatically uploaded in
-chunks[^1].
+For images, archives and other binary content, pass a function that opens a `kotlinx.io.Source`.
+Files larger than 10 MB are automatically uploaded in chunks[^1].
 
 ```kotlin
 try {
     val localPath = Path("photo.jpg")
-    SystemFileSystem.source(localPath).buffered().use { source ->
-        service.createFile(
-            path = localPath.name.asFilePath(),
-            source = source,
-            sizeInBytes = SystemFileSystem.metadataOrNull(localPath)?.size,
-            mimeType = "image/jpeg"
-        )
-    }
+    service.createFile(
+        path = localPath.name.asFilePath(),
+        source = { SystemFileSystem.source(localPath).buffered() },
+        sizeInBytes = SystemFileSystem.metadataOrNull(localPath)?.size,
+        mimeType = "image/jpeg",
+    )
 } catch (e: CloudServiceException) {
     // Handle...
 }
 ```
 
+* The function is called once per attempt, so an upload can be [retried](RateLimiting.md#retries)
+  after rate limiting. It must return a **new** `Source` at the start of the content each time. A
+  `CloudServiceException.SourceReadException` is thrown if it returns a source that was already
+  read.
+* Each source is read until its end and then closed by the library.
 * `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws a
   `CloudServiceException.IllegalArgumentException` if missing or not matching the content size in
   that case).
@@ -122,14 +124,12 @@ Here's an example on how to use an `InputStream` on Android and desktop:
 ```kotlin
 try {
     val file = File("photo.jpg")
-    file.inputStream().use { stream ->
-        service.createFile(
-            path = file.name.asFilePath(),
-            source = stream.asSource().buffered(),
-            sizeInBytes = file.length(),
-            mimeType = "image/jpeg"
-        )
-    }
+    service.createFile(
+        path = file.name.asFilePath(),
+        source = { file.inputStream().asSource().buffered() },
+        sizeInBytes = file.length(),
+        mimeType = "image/jpeg"
+    )
 } catch (e: CloudServiceException) {
     // Handle...
 }

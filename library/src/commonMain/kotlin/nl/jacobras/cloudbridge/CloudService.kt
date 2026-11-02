@@ -75,9 +75,11 @@ public interface CloudService {
     public suspend fun updateFile(id: CloudItemId, content: String): CloudFile
 
     /**
-     * Creates a file at path [path] with the binary content of [source]. The source is read
-     * until its end, but not closed. Large files are automatically uploaded in chunks.
+     * Creates a file at path [path] with the binary content of [source]. Large files are
+     * automatically uploaded in chunks.
      *
+     * @param source Must return a new [Source] because it may be retried during rate limiting.
+     * Each returned source is read until its end and then closed.
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
      * @return The created file.
@@ -88,15 +90,17 @@ public interface CloudService {
      */
     public suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long? = null,
         mimeType: String = "application/octet-stream"
     ): CloudFile
 
     /**
-     * Updates the file with id [id] to the binary content of [source]. The source is read
-     * until its end, but not closed. Large files are automatically uploaded in chunks.
+     * Updates the file with id [id] to the binary content of [source]. Large files are
+     * automatically uploaded in chunks.
      *
+     * @param source Must return a new [Source] because it may be retried during rate limiting.
+     * Each returned source is read until its end and then closed.
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
      * @return The updated file.
@@ -107,7 +111,7 @@ public interface CloudService {
      */
     public suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long? = null,
         mimeType: String = "application/octet-stream"
     ): CloudFile

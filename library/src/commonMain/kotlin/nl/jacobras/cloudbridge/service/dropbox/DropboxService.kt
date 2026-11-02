@@ -162,7 +162,7 @@ public class DropboxService internal constructor(
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
@@ -174,7 +174,7 @@ public class DropboxService internal constructor(
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
@@ -187,10 +187,13 @@ public class DropboxService internal constructor(
     /**
      * Uploads [source] in a single request if it fits in one chunk, otherwise in an upload session.
      */
-    private suspend fun upload(arg: DropboxUploadArg, source: Source): UploadResponse {
+    private suspend fun upload(
+        arg: DropboxUploadArg,
+        source: suspend () -> Source
+    ): UploadResponse {
         var sessionId: String? = null
         var response: UploadResponse? = null
-        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+        forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
             tryCall(arg.path) {
                 when {
                     isLast && offset == 0L -> {

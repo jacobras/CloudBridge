@@ -511,7 +511,7 @@ class GoogleDriveServiceTest {
 
         assertFailure { service.createFile("/hello.txt".asFilePath(), "Hello") }
             .isInstanceOf<CloudServiceException.ConflictException>()
-        assertFailure { service.createFile("/hello.txt".asFilePath(), bufferOf(3)) }
+        assertFailure { service.createFile("/hello.txt".asFilePath(), { bufferOf(3) }) }
             .isInstanceOf<CloudServiceException.ConflictException>()
         assertFailure { service.createFolder("/hello.txt".asFolderPath()) }
             .isInstanceOf<CloudServiceException.ConflictException>()
@@ -752,8 +752,8 @@ class GoogleDriveServiceTest {
         service.uploadChunkSize = 4
 
         val file = service.createFile(
-            "/archive.zip".asFilePath(),
-            bufferOf(10),
+            path = "/archive.zip".asFilePath(),
+            source = { bufferOf(10) },
             mimeType = "application/zip"
         )
 
@@ -828,8 +828,8 @@ class GoogleDriveServiceTest {
         service.uploadChunkSize = 4
 
         val file = service.createFile(
-            "/archive.zip".asFilePath(),
-            bufferOf(10),
+            path = "/archive.zip".asFilePath(),
+            source = { bufferOf(10) },
             mimeType = "application/zip"
         )
 
@@ -870,7 +870,11 @@ class GoogleDriveServiceTest {
         )
         service.uploadChunkSize = 4
 
-        assertFailure { service.createFile("/archive.zip".asFilePath(), bufferOf(10)) }
+        assertFailure {
+            service.createFile(
+                path = "/archive.zip".asFilePath(),
+                source = { bufferOf(10) })
+        }
             .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
     }
 
@@ -882,7 +886,7 @@ class GoogleDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.updateFile(CloudItemId("file1"), failingSource()) }
+        assertFailure { service.updateFile(CloudItemId(value = "file1"), { failingSource() }) }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
@@ -913,7 +917,11 @@ class GoogleDriveServiceTest {
         )
         service.uploadChunkSize = 4
 
-        assertFailure { service.createFile("/archive.zip".asFilePath(), failingSource(5)) }
+        assertFailure {
+            service.createFile(
+                path = "/archive.zip".asFilePath(),
+                source = { failingSource(5) })
+        }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Get,

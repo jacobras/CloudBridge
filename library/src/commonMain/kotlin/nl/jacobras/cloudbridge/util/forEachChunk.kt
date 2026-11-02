@@ -38,3 +38,16 @@ internal suspend fun Source.forEachChunk(
         offset += chunk.size
     } while (!isLast)
 }
+
+/**
+ * Opens a source with [openSource], reads it with [Source.forEachChunk] and closes it.
+ *
+ * @throws CloudServiceException.SourceReadException when opening or reading the source fails.
+ */
+internal suspend fun forEachChunk(
+    openSource: suspend () -> Source,
+    chunkSizeBytes: Int,
+    block: suspend (chunk: ByteArray, offset: Long, isLast: Boolean) -> Unit
+) {
+    SafeSourceOpener(openSource).open().use { it.forEachChunk(chunkSizeBytes, block) }
+}

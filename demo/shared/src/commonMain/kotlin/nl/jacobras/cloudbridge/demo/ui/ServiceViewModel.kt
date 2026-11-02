@@ -185,17 +185,16 @@ internal class ServiceViewModel(
                         totalBytes = file.sizeInBytes
                     )
                 }
-                val source = ProgressSource(file.open()) { bytesRead ->
-                    uploadProgress.update { it?.copy(bytesRead = bytesRead) }
-                }.buffered()
-                source.use {
-                    service.createFile(
-                        path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
-                        source = it,
-                        sizeInBytes = file.sizeInBytes,
-                        mimeType = file.mimeType ?: "application/octet-stream"
-                    )
-                }
+                service.createFile(
+                    path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
+                    source = {
+                        ProgressSource(file.open()) { bytesRead ->
+                            uploadProgress.update { it?.copy(bytesRead = bytesRead) }
+                        }.buffered()
+                    },
+                    sizeInBytes = file.sizeInBytes,
+                    mimeType = file.mimeType ?: "application/octet-stream"
+                )
             }
             error.update { "" }
         } catch (e: CloudServiceException) {

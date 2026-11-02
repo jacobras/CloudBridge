@@ -21,5 +21,6 @@ A `CloudServiceException.RateLimitException` is thrown, with `retryAfter` (if pr
 
 * The retries are exhausted.
 * The service asks to wait longer than 30 seconds.
-* The request was the WebDAV upload of a `Source`, as the source can only be read once. Uploading a
-  `String` to WebDAV can be retried.
+
+A retried binary upload calls the `source` param passed to `createFile()` or `updateFile()` again.
+See [uploading binary or large files](Files.md#uploading-binary-or-large-files).

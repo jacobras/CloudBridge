@@ -594,7 +594,11 @@ class OneDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        val file = service.createFile("image.png".asFilePath(), bufferOf(3), mimeType = "image/png")
+        val file = service.createFile(
+            path = "image.png".asFilePath(),
+            source = { bufferOf(3) },
+            mimeType = "image/png"
+        )
 
         assertThat(file.id).isEqualTo(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
         assertThat(engine.requestHistory).single().given {
@@ -615,7 +619,11 @@ class OneDriveServiceTest {
         )
         service.uploadChunkSize = 4
 
-        assertFailure { service.createFile("archive.zip".asFilePath(), bufferOf(10)) }
+        assertFailure {
+            service.createFile(
+                path = "archive.zip".asFilePath(),
+                source = { bufferOf(10) })
+        }
             .isInstanceOf<CloudServiceException.IllegalArgumentException>()
             .hasMessage("sizeInBytes is required for OneDrive uploads larger than 4 bytes, but it was null")
         assertThat(engine.requestHistory).isEmpty()
@@ -633,7 +641,7 @@ class OneDriveServiceTest {
         assertFailure {
             service.createFile(
                 path = "archive.zip".asFilePath(),
-                source = bufferOf(10),
+                source = { bufferOf(10) },
                 sizeInBytes = 6
             )
         }
@@ -652,8 +660,8 @@ class OneDriveServiceTest {
 
         assertFailure {
             service.createFile(
-                "archive.zip".asFilePath(),
-                bufferOf(10),
+                path = "archive.zip".asFilePath(),
+                source = { bufferOf(10) },
                 sizeInBytes = 12
             )
         }
@@ -669,7 +677,11 @@ class OneDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.createFile("image.png".asFilePath(), failingSource()) }
+        assertFailure {
+            service.createFile(
+                path = "image.png".asFilePath(),
+                source = { failingSource() })
+        }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
@@ -684,7 +696,11 @@ class OneDriveServiceTest {
         service.uploadChunkSize = 4
 
         assertFailure {
-            service.createFile("archive.zip".asFilePath(), failingSource(5), sizeInBytes = 10)
+            service.createFile(
+                path = "archive.zip".asFilePath(),
+                source = { failingSource(5) },
+                sizeInBytes = 10
+            )
         }.isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Post,
@@ -735,7 +751,11 @@ class OneDriveServiceTest {
         )
         service.uploadChunkSize = 4
 
-        val file = service.createFile("archive.zip".asFilePath(), bufferOf(10), sizeInBytes = 10)
+        val file = service.createFile(
+            path = "archive.zip".asFilePath(),
+            source = { bufferOf(10) },
+            sizeInBytes = 10
+        )
 
         assertThat(file.id).isEqualTo(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
         assertThat(engine.requestHistory.map { "${it.method.value} ${it.url}" }).containsExactly(
@@ -795,7 +815,11 @@ class OneDriveServiceTest {
         )
         service.uploadChunkSize = 4
 
-        service.createFile("archive.zip".asFilePath(), bufferOf(10), sizeInBytes = 10)
+        service.createFile(
+            path = "archive.zip".asFilePath(),
+            source = { bufferOf(10) },
+            sizeInBytes = 10
+        )
 
         assertThat(engine.requestHistory.count { it.method == HttpMethod.Post }).isEqualTo(1)
         val chunks = engine.requestHistory.filter { it.method == HttpMethod.Put }

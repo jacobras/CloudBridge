@@ -192,7 +192,7 @@ public class GoogleDriveService internal constructor(
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
@@ -222,7 +222,7 @@ public class GoogleDriveService internal constructor(
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String
     ): CloudFile {
@@ -361,14 +361,14 @@ public class GoogleDriveService internal constructor(
     }
 
     /**
-     * Uploads [source] with [uploadSingle] if it fits in one chunk, otherwise in a resumable
-     * upload session started by [startSession].
+     * Uploads the content opened by [source] with [uploadSingle] if it fits in one chunk,
+     * otherwise in a resumable upload session started by [startSession].
      *
      * Docs: https://developers.google.com/workspace/drive/api/guides/manage-uploads#resumable
      */
     private suspend fun upload(
         itemId: String,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String,
         uploadSingle: suspend (ByteArray) -> DriveFile,
@@ -376,7 +376,7 @@ public class GoogleDriveService internal constructor(
     ): DriveFile {
         var sessionUri: String? = null
         var response: DriveFile? = null
-        source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+        forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
             if (offset == 0L && isLast) {
                 response = tryCall(itemId) { uploadSingle(chunk) }
                 return@forEachChunk
