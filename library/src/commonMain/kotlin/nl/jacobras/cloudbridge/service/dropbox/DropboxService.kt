@@ -10,6 +10,7 @@ import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
+import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -27,8 +28,10 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.transferTo
+import nl.jacobras.cloudbridge.util.retryAfter
 import kotlin.time.Instant
 
 /**
@@ -36,10 +39,14 @@ import kotlin.time.Instant
  */
 public class DropboxService internal constructor(
     token: CloudAccessToken?,
-    httpClient: HttpClient?
-) : OAuthCloudService(token, httpClient), DeltaCloudService {
+    httpClient: HttpClient?,
+    rateLimiter: RateLimiter? = null
+) : OAuthCloudService(token, httpClient, rateLimiter), DeltaCloudService {
 
-    public constructor(token: CloudAccessToken?) : this(token, null)
+    public constructor(
+        token: CloudAccessToken?,
+        rateLimiter: RateLimiter? = CloudBridge.defaultDropboxRateLimiter
+    ) : this(token, null, rateLimiter)
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
@@ -289,6 +296,7 @@ public class DropboxService internal constructor(
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
         requireAuthenticated()
+        acquireRateLimitPermit()
 
         try {
             return block()
@@ -302,6 +310,9 @@ public class DropboxService internal constructor(
                 }
                 HttpStatusCode.Conflict if e.message?.contains("conflict") == true -> {
                     CloudServiceException.ConflictException(itemId)
+                }
+                HttpStatusCode.TooManyRequests -> {
+                    CloudServiceException.RateLimitException(e.response.retryAfter())
                 }
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()

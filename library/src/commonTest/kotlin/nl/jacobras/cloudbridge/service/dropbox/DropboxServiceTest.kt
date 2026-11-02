@@ -7,6 +7,7 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -33,6 +34,7 @@ import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class DropboxServiceTest {
@@ -57,6 +59,29 @@ class DropboxServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/users/get_current_account")
         }
+    }
+
+    @Test
+    fun `rate limit exception`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"reason":{".tag":"too_many_write_operations"},"retry_after":1},"error_summary":""}""",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(
+                    HttpHeaders.ContentType to listOf("application/json"),
+                    HttpHeaders.RetryAfter to listOf("1")
+                )
+            )
+        }
+        val service = DropboxService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isEqualTo(1.seconds)
     }
 
     @Test
