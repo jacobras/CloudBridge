@@ -45,16 +45,23 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.CloudBridge
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.transferTo
+import nl.jacobras.cloudbridge.util.retryAfter
 import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
     token: CloudAccessToken?,
-    httpClient: HttpClient?
-) : OAuthCloudService(token, httpClient), DeltaCloudService {
+    httpClient: HttpClient?,
+    rateLimiter: RateLimiter? = null
+) : OAuthCloudService(token, httpClient, rateLimiter), DeltaCloudService {
 
-    public constructor(token: CloudAccessToken?) : this(token, null)
+    public constructor(
+        token: CloudAccessToken?,
+        rateLimiter: RateLimiter? = CloudBridge.defaultGoogleDriveRateLimiter
+    ) : this(token, null, rateLimiter)
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
@@ -481,6 +488,7 @@ public class GoogleDriveService internal constructor(
 
     private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
         requireAuthenticated()
+        acquireRateLimitPermit()
 
         try {
             return block()
@@ -491,6 +499,9 @@ public class GoogleDriveService internal constructor(
                 }
                 HttpStatusCode.Unauthorized -> {
                     CloudServiceException.NotAuthenticatedException()
+                }
+                HttpStatusCode.TooManyRequests -> {
+                    CloudServiceException.RateLimitException(e.response.retryAfter())
                 }
                 HttpStatusCode.Forbidden if e.message?.contains("storageQuotaExceeded") == true -> {
                     CloudServiceException.InsufficientSpaceException()

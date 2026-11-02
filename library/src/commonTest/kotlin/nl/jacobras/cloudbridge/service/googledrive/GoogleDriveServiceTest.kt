@@ -9,6 +9,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -37,6 +38,7 @@ import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class GoogleDriveServiceTest {
@@ -78,6 +80,29 @@ class GoogleDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://www.googleapis.com/drive/v3/about?fields=user")
         }
+    }
+
+    @Test
+    fun `rate limit exception`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":429,"message":"Rate Limit Exceeded","errors":[{"message":"Rate Limit Exceeded","domain":"usageLimits","reason":"rateLimitExceeded"}]}}""",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(
+                    HttpHeaders.ContentType to listOf("application/json; charset=UTF-8"),
+                    HttpHeaders.RetryAfter to listOf("30")
+                )
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isEqualTo(30.seconds)
     }
 
     @Test
