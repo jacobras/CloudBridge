@@ -4,7 +4,7 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.OAuthCloudService
+import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaChange

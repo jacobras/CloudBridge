@@ -1,4 +1,4 @@
-package nl.jacobras.cloudbridge
+package nl.jacobras.cloudbridge.service
 
 import de.jensklingenberg.ktorfit.Ktorfit
 import de.jensklingenberg.ktorfit.ktorfit
@@ -11,19 +11,21 @@ import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
+import nl.jacobras.cloudbridge.CloudService
+import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
-import nl.jacobras.cloudbridge.service.CallDispatcher
 import nl.jacobras.cloudbridge.util.TokenScopedCache
 
 /**
- * @param httpClient Client override for tests.
+ * @param httpClientOverride Client override for tests.
+ * @param rateLimiter Limits the requests of this service, or `null` for no limits.
  */
 public abstract class OAuthCloudService internal constructor(
     startToken: CloudAccessToken?,
-    private val httpClient: HttpClient?
+    private val httpClientOverride: HttpClient?,
+    rateLimiter: RateLimiter?
 ) : CloudService {
-    public constructor(startToken: CloudAccessToken?) : this(startToken, null)
 
     private var token: CloudAccessToken? = startToken
 
@@ -33,7 +35,7 @@ public abstract class OAuthCloudService internal constructor(
         ktorfit {
             baseUrl(baseUrl)
             httpClient(
-                (httpClient ?: defaultHttpClient).config {
+                (httpClientOverride ?: defaultHttpClient).config {
                     install(ContentNegotiation) {
                         json(
                             Json {
@@ -54,6 +56,7 @@ public abstract class OAuthCloudService internal constructor(
     }
 
     private val callDispatcher = CallDispatcher(
+        rateLimiter = rateLimiter,
         authCheck = ::isAuthenticated,
         responseErrorMapper = { itemId -> errorMapper(itemId) }
     )
@@ -70,7 +73,7 @@ public abstract class OAuthCloudService internal constructor(
      * Client without authentication, for pre-authenticated URLs.
      */
     internal val clientWithoutAuth: HttpClient
-        get() = httpClient ?: defaultHttpClient
+        get() = httpClientOverride ?: defaultHttpClient
 
     /**
      * Sets [token] to this service.

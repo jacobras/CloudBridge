@@ -4,8 +4,10 @@ import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 
 internal class CallDispatcher(
+    private val rateLimiter: RateLimiter?,
     private val authCheck: () -> Boolean,
     private val responseErrorMapper: ResponseException.(itemId: String) -> CloudServiceException
 ) {
@@ -17,6 +19,7 @@ internal class CallDispatcher(
         if (!authCheck()) {
             throw CloudServiceException.NotAuthenticatedException()
         }
+        rateLimiter?.acquire()
 
         return try {
             call()

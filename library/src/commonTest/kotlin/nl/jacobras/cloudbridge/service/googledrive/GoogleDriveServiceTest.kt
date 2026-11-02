@@ -71,7 +71,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("invalid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getUserInfo() }
@@ -96,7 +96,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getUserInfo() }
@@ -132,7 +132,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg")) }
@@ -156,7 +156,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val sink = Buffer()
@@ -181,7 +181,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
@@ -199,7 +199,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
@@ -231,7 +231,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure {
@@ -277,7 +277,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.updateFile(
@@ -342,7 +342,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("first"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         service.updateFile(CloudItemId("file1"), "Updated!")
@@ -383,7 +383,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.createFile("/hello.txt".asFilePath(), "Hello you!")
@@ -436,7 +436,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.createFolder("/Work".asFolderPath())
@@ -484,7 +484,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.createFolder("/parentId/Sub".asFolderPath())
@@ -503,7 +503,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.createFile("/hello.txt".asFilePath(), "Hello") }
@@ -531,7 +531,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.moveFile(
@@ -583,7 +583,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.moveFile(
@@ -622,7 +622,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.moveFolder(
@@ -656,7 +656,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure {
@@ -683,7 +683,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         service.moveFile(
@@ -699,7 +699,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.moveFolder(CloudItemId("1BZWMYkXl"), "/".asFolderPath()) }
@@ -744,7 +744,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
 
@@ -810,7 +810,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
 
@@ -823,7 +823,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { error("No request expected") }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.updateFile(CloudItemId("file1"), failingSource()) }
@@ -853,7 +853,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
 
@@ -905,7 +905,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val items = service.listFiles(FolderPath("/"))
@@ -947,7 +947,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.getFileInfo("/1THG-A2vXis2oKtcHO7fK6u_1VLRN/hello.txt".asFilePath())
@@ -971,7 +971,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondFiles() }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFileInfo("/it's.txt".asFilePath()) }
@@ -995,7 +995,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.getFolderInfo("/folder1".asFolderPath())
@@ -1018,7 +1018,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFolderInfo("/".asFolderPath()) }
@@ -1031,7 +1031,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFolderInfo("/1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg".asFolderPath()) }
@@ -1048,7 +1048,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         service.delete(CloudItemId("1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"))

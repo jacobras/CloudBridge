@@ -60,8 +60,13 @@ public class WebDavService internal constructor(
             }
         }
     }
+    private val rateLimiter = RateLimiter(
+        maxConcurrent = 10,
+        maxRatePerSecond = 10.0
+    )
 
     private val callDispatcher = CallDispatcher(
+        rateLimiter = rateLimiter,
         authCheck = ::isAuthenticated,
         responseErrorMapper = { itemId ->
             when (response.status) {

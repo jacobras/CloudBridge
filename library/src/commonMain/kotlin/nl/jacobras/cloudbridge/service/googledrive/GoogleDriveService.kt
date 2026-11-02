@@ -26,9 +26,7 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
@@ -45,6 +43,7 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
+import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
@@ -52,14 +51,15 @@ import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
     token: CloudAccessToken?,
-    httpClient: HttpClient?,
-    rateLimiter: RateLimiter? = null
-) : OAuthCloudService(token, httpClient, rateLimiter), DeltaCloudService {
-
-    public constructor(
-        token: CloudAccessToken?,
-        rateLimiter: RateLimiter? = CloudBridge.defaultGoogleDriveRateLimiter
-    ) : this(token, null, rateLimiter)
+    httpClientOverride: HttpClient? = null
+) : OAuthCloudService(
+    startToken = token,
+    httpClientOverride = httpClientOverride,
+    rateLimiter = RateLimiter(
+        maxConcurrent = 5,
+        maxRatePerSecond = 5.0
+    )
+), DeltaCloudService {
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
