@@ -279,7 +279,8 @@ private fun UploadProgressRow(progress: UploadProgress) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = buildString {
-                append("Uploading ${progress.fileName} (${HumanReadable.fileSize(progress.bytesRead)}")
+                append("Uploading ${progress.filesDone}/${progress.fileCount} files")
+                append(" (${HumanReadable.fileSize(progress.bytesRead)}")
                 if (progress.totalBytes != null) {
                     append(" of ${HumanReadable.fileSize(progress.totalBytes)}")
                 }

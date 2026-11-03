@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.IOException
@@ -170,45 +171,61 @@ internal class ServiceViewModel(
     }
 
     /**
-     * Uploads [files] one by one into the current folder.
+     * Uploads [files] concurrently into the current folder, each in its own coroutine.
      */
     fun uploadFiles(files: List<LocalFile>) {
-        if (uploadProgress.value != null) return
+        if (files.isEmpty() || uploadProgress.value != null) return
         val targetFolder = path.value
+        val sizes = files.map { it.sizeInBytes }
+        val totalBytes = if (sizes.any { it == null }) null else sizes.sumOf { it ?: 0L }
 
-        try {
-            for (file in files) {
-                viewModelScope.launch {
-                    uploadProgress.update {
-                        UploadProgress(
-                            file.name,
-                            bytesRead = 0,
-                            totalBytes = file.sizeInBytes
-                        )
-                    }
+        uploadProgress.update {
+            UploadProgress(
+                bytesReadPerFile = List(files.size) { 0L },
+                filesDone = 0,
+                totalBytes = totalBytes
+            )
+        }
+        error.update { "" }
+
+        val jobs = files.mapIndexed { index, file ->
+            viewModelScope.launch {
+                try {
                     service.createFile(
                         path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
                         source = {
+                            // Re-opened on retry, so bytesRead restarts from 0 for this file.
                             ProgressSource(file.open()) { bytesRead ->
-                                uploadProgress.update { it?.copy(bytesRead = bytesRead) }
+                                uploadProgress.update { progress ->
+                                    progress?.copy(
+                                        bytesReadPerFile = progress.bytesReadPerFile.toMutableList()
+                                            .also { it[index] = bytesRead }
+                                    )
+                                }
                             }.buffered()
                         },
                         sizeInBytes = file.sizeInBytes,
                         mimeType = file.mimeType ?: "application/octet-stream"
                     )
+                    uploadProgress.update { it?.copy(filesDone = it.filesDone + 1) }
+                } catch (e: CloudServiceException) {
+                    error.update { "${file.name}: $e" }
+                } catch (e: IllegalArgumentException) {
+                    error.update { "${file.name}: $e" }
+                } catch (e: IOException) {
+                    error.update { "${file.name}: $e" }
                 }
             }
-            error.update { "" }
-        } catch (e: CloudServiceException) {
-            error.update { e.toString() }
-        } catch (e: IllegalArgumentException) {
-            error.update { e.toString() }
-        } catch (e: IOException) {
-            error.update { e.toString() }
-        } finally {
-            uploadProgress.update { null }
-            // Files before a failed one may have been uploaded, so refresh to show them.
-            refresh(clearError = false)
+        }
+
+        viewModelScope.launch {
+            try {
+                jobs.joinAll()
+            } finally {
+                uploadProgress.update { null }
+                // Some files may have been uploaded even if others failed, so refresh to show them.
+                refresh(clearError = false)
+            }
         }
     }
 
