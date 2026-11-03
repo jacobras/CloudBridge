@@ -172,29 +172,31 @@ internal class ServiceViewModel(
     /**
      * Uploads [files] one by one into the current folder.
      */
-    fun uploadFiles(files: List<LocalFile>) = viewModelScope.launch {
-        if (uploadProgress.value != null) return@launch
+    fun uploadFiles(files: List<LocalFile>) {
+        if (uploadProgress.value != null) return
         val targetFolder = path.value
 
         try {
             for (file in files) {
-                uploadProgress.update {
-                    UploadProgress(
-                        file.name,
-                        bytesRead = 0,
-                        totalBytes = file.sizeInBytes
+                viewModelScope.launch {
+                    uploadProgress.update {
+                        UploadProgress(
+                            file.name,
+                            bytesRead = 0,
+                            totalBytes = file.sizeInBytes
+                        )
+                    }
+                    service.createFile(
+                        path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
+                        source = {
+                            ProgressSource(file.open()) { bytesRead ->
+                                uploadProgress.update { it?.copy(bytesRead = bytesRead) }
+                            }.buffered()
+                        },
+                        sizeInBytes = file.sizeInBytes,
+                        mimeType = file.mimeType ?: "application/octet-stream"
                     )
                 }
-                service.createFile(
-                    path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
-                    source = {
-                        ProgressSource(file.open()) { bytesRead ->
-                            uploadProgress.update { it?.copy(bytesRead = bytesRead) }
-                        }.buffered()
-                    },
-                    sizeInBytes = file.sizeInBytes,
-                    mimeType = file.mimeType ?: "application/octet-stream"
-                )
             }
             error.update { "" }
         } catch (e: CloudServiceException) {
