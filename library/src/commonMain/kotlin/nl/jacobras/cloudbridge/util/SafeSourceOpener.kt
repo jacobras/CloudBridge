@@ -56,18 +56,6 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
         throw e
     }
 
-    /**
-     * Closes this source, adding any failure to [cause] as suppressed so it doesn't hide [cause].
-     */
-    @Suppress("TooGenericExceptionCaught")
-    private fun Source.closeSuppressing(cause: Throwable) {
-        try {
-            close()
-        } catch (closeError: Throwable) {
-            cause.addSuppressed(closeError)
-        }
-    }
-
     private fun reusedSourceException() = CloudServiceException.SourceReadException(
         IOException("The source param should have returned a new Source, but instead was reused")
     )
