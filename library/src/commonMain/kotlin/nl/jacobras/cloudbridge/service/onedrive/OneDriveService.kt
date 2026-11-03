@@ -34,6 +34,7 @@ import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.mapUnknownErrors
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
@@ -326,7 +327,9 @@ public class OneDriveService internal constructor(
                     "Content size (${end + 1} bytes) doesn't match sizeInBytes ($total bytes)"
                 )
             }
-            val url = uploadUrl ?: tryCall(itemId) { createSession().uploadUrl }.also { uploadUrl = it }
+            val url = uploadUrl ?: tryCall(itemId) {
+                createSession().uploadUrl
+            }.also { uploadUrl = it }
 
             tryCall(itemId) {
                 // The upload URL is pre-authenticated, so it needs to be sent without an Authorization header
@@ -417,17 +420,6 @@ public class OneDriveService internal constructor(
                 }
             )
         }
-    }
-}
-
-@Suppress("TooGenericExceptionCaught")
-private inline fun <T> mapUnknownErrors(block: () -> T): T {
-    return try {
-        block()
-    } catch (e: CloudServiceException) {
-        throw e
-    } catch (e: Exception) {
-        throw CloudServiceException.Unknown(e)
     }
 }
 

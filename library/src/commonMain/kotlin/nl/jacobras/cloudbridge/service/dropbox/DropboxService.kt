@@ -27,6 +27,7 @@ import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.mapUnknownErrors
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
@@ -293,7 +294,7 @@ public class DropboxService internal constructor(
         return DeltaResult(
             newCursor = DeltaCursor(response.cursor),
             changes = entries.map {
-                try {
+                mapUnknownErrors {
                     when (it.tag) {
                         "file" -> {
                             UpdatedDeltaChange(
@@ -321,8 +322,6 @@ public class DropboxService internal constructor(
                         }
                         else -> error("Unsupported tag: ${it.tag}")
                     }
-                } catch (e: Exception) {
-                    throw CloudServiceException.Unknown(e)
                 }
             }
         )
