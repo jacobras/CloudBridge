@@ -19,6 +19,7 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
      * @throws CloudServiceException.SourceReadException when opening fails, or when the source is
      * the same instance as before or is empty while the first one wasn't.
      */
+    @Suppress("TooGenericExceptionCaught")
     suspend fun open(): Source {
         val source = try {
             source()
@@ -30,13 +31,24 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
             throw reusedSourceException()
         }
 
-        val isEmpty = withContext(ioDispatcher) {
+        // Close on any failure of the whole withContext call: cancellation while entering or
+        // returning from it would otherwise leak the source, since the caller never gets it.
+        val isEmpty = try {
+            withContext(ioDispatcher) { source.exhausted() }
+        } catch (e: IOException) {
             try {
-                source.exhausted()
-            } catch (e: IOException) {
                 source.close()
-                throw CloudServiceException.SourceReadException(e)
+            } catch (closeError: Throwable) {
+                e.addSuppressed(closeError)
             }
+            throw CloudServiceException.SourceReadException(e)
+        } catch (e: Throwable) {
+            try {
+                source.close()
+            } catch (closeError: Throwable) {
+                e.addSuppressed(closeError)
+            }
+            throw e
         }
         if (isFirst) {
             firstWasEmpty = isEmpty
