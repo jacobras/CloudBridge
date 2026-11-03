@@ -6,6 +6,7 @@ import co.touchlab.kermit.ktor.KermitKtorLogger
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.LoggingFormat
+import io.ktor.http.HttpHeaders
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -28,6 +29,7 @@ internal fun setUpLogging() {
             level = LogLevel.BODY
             // OkHttp format omits binary bodies (like file uploads) instead of dumping them.
             format = LoggingFormat.OkHttp
+            sanitizeHeader { it == HttpHeaders.Authorization }
         }
     }
 }
