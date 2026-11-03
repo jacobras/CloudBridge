@@ -3,6 +3,7 @@ package nl.jacobras.cloudbridge.service
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
+import nl.jacobras.cloudbridge.CloudBridge.logger
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import kotlin.math.pow
@@ -36,8 +37,9 @@ internal class CallDispatcher(
             } catch (e: CloudServiceException.RateLimitException) {
                 val retryDelay = calculateRetryDelay(e, attempt) ?: throw e
                 permit?.release()
-                rateLimiter?.pause(retryDelay)
                 attempt++
+                logger.log("Rate limited on $itemId, retry $attempt in $retryDelay")
+                rateLimiter?.pause(retryDelay)
             } finally {
                 permit?.release()
             }
