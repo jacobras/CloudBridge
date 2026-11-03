@@ -19,7 +19,6 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
      * @throws CloudServiceException.SourceReadException when opening fails, or when the source is
      * the same instance as before or is empty while the first one wasn't.
      */
-    @Suppress("TooGenericExceptionCaught")
     suspend fun open(): Source {
         val source = try {
             source()
@@ -31,25 +30,7 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
             throw reusedSourceException()
         }
 
-        // Close on any failure of the whole withContext call: cancellation while entering or
-        // returning from it would otherwise leak the source, since the caller never gets it.
-        val isEmpty = try {
-            withContext(ioDispatcher) { source.exhausted() }
-        } catch (e: IOException) {
-            try {
-                source.close()
-            } catch (closeError: Throwable) {
-                e.addSuppressed(closeError)
-            }
-            throw CloudServiceException.SourceReadException(e)
-        } catch (e: Throwable) {
-            try {
-                source.close()
-            } catch (closeError: Throwable) {
-                e.addSuppressed(closeError)
-            }
-            throw e
-        }
+        val isEmpty = source.isEmptyOrClose()
         if (isFirst) {
             firstWasEmpty = isEmpty
         } else if (isEmpty && !firstWasEmpty) {
@@ -59,6 +40,32 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
 
         previous = source
         return source
+    }
+
+    /**
+     * Returns whether this source is empty, closing it on any failure.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun Source.isEmptyOrClose(): Boolean = try {
+        withContext(ioDispatcher) { exhausted() }
+    } catch (e: IOException) {
+        closeSuppressing(e)
+        throw CloudServiceException.SourceReadException(e)
+    } catch (e: Throwable) {
+        closeSuppressing(e)
+        throw e
+    }
+
+    /**
+     * Closes this source, adding any failure to [cause] as suppressed so it doesn't hide [cause].
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun Source.closeSuppressing(cause: Throwable) {
+        try {
+            close()
+        } catch (closeError: Throwable) {
+            cause.addSuppressed(closeError)
+        }
     }
 
     private fun reusedSourceException() = CloudServiceException.SourceReadException(
