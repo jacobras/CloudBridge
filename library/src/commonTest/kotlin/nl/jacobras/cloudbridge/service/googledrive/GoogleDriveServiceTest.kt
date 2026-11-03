@@ -314,6 +314,56 @@ class GoogleDriveServiceTest {
     }
 
     @Test
+    fun `rate-limited app data folder lookup after update doesn't repeat the update`() = runTest {
+        var appDataFolderAttempts = 0
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Patch) {
+                respond(
+                    content = """
+                        {
+                          "mimeType": "text/plain",
+                          "parents": ["1THG-A2vXis2oKtcHO7fK6u_1VLRN"],
+                          "size": "8",
+                          "id": "1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg",
+                          "name": "hello.txt",
+                          "trashed": false,
+                          "modifiedTime": "2025-10-12T10:00:00.000Z",
+                          "version": "2"
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+            } else if (appDataFolderAttempts++ == 0) {
+                respond(content = "", status = HttpStatusCode.TooManyRequests)
+            } else {
+                respond(
+                    content = """{"id": "1THG-A2vXis2oKtcHO7fK6u_1VLRN"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+
+        val file = service.updateFile(
+            CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+            "Updated!"
+        )
+
+        assertThat(file.path).isEqualTo("/hello.txt".asFilePath())
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Patch,
+            HttpMethod.Get,
+            HttpMethod.Get
+        )
+    }
+
+    @Test
     fun `appDataFolder id is fetched again after switching accounts`() = runTest {
         val engine = MockEngine { request ->
             val rootId = if (request.headers[HttpHeaders.Authorization] == "Bearer first") {

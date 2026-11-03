@@ -45,6 +45,7 @@ import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.mapUnknownErrors
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
@@ -113,14 +114,15 @@ public class GoogleDriveService internal constructor(
     override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
         require(!path.isRoot) { "Can't get info for the root folder" }
 
-        return tryCall(path.toString()) {
-            val folder = api.getFile(path.name)
-            if (!folder.isFolder || folder.trashed) {
-                throw CloudServiceException.NotFoundException(path.toString())
-            }
+        val folder = tryCall(path.toString()) { api.getFile(path.name) }
+        if (!folder.isFolder || folder.trashed) {
+            throw CloudServiceException.NotFoundException(path.toString())
+        }
+        val isRoot = folder.isInRoot()
+        return mapUnknownErrors {
             CloudFolder(
                 id = CloudItemId(folder.id),
-                path = folder.toFolderPath(isRoot = folder.isInRoot()),
+                path = folder.toFolderPath(isRoot = isRoot),
                 name = folder.name
             )
         }
@@ -152,43 +154,47 @@ public class GoogleDriveService internal constructor(
         }
     }
 
-    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
+    override suspend fun createFolder(path: FolderPath): CloudFolder {
         val parentId = path.parent.toParentId()
         ensureNameAvailable(parent = parentId, name = path.name)
-        val response = api.createFolder(
-            json.encodeToString(
-                CreateFolderRequest(
-                    name = path.name,
-                    parents = listOf(parentId)
+        return tryCall(path.toString()) {
+            val response = api.createFolder(
+                json.encodeToString(
+                    CreateFolderRequest(
+                        name = path.name,
+                        parents = listOf(parentId)
+                    )
                 )
             )
-        )
-        CloudFolder(
-            id = CloudItemId(response.id),
-            path = response.toFolderPath(isRoot = path.parent.isRoot),
-            name = response.name
-        )
+            CloudFolder(
+                id = CloudItemId(response.id),
+                path = response.toFolderPath(isRoot = path.parent.isRoot),
+                name = response.name
+            )
+        }
     }
 
-    override suspend fun createFile(path: FilePath, content: String): CloudFile =
-        tryCall(path.toString()) {
-            val metadata = path.toMetadata(mimeType = "text/plain")
-            ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
+    override suspend fun createFile(path: FilePath, content: String): CloudFile {
+        val metadata = path.toMetadata(mimeType = "text/plain")
+        ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
+        return tryCall(path.toString()) {
             createSingle(
                 metadata = metadata,
                 content = content.toByteArray()
             ).toCloudFile(isRoot = path.toFolderPath().isRoot)
         }
+    }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
-        tryCall(id.value) {
-            val response = api.updateFile(
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
+        val response = tryCall(id.value) {
+            api.updateFile(
                 id = id.value,
                 contentType = "text/plain",
                 content = content.toByteArray()
             )
-            response.toCloudFile(isRoot = response.isInRoot())
         }
+        return response.toCloudFile(isRoot = response.isInRoot())
+    }
 
     override suspend fun createFile(
         path: FilePath,
@@ -197,9 +203,7 @@ public class GoogleDriveService internal constructor(
         mimeType: String
     ): CloudFile {
         val metadata = path.toMetadata(mimeType)
-        tryCall(path.toString()) {
-            ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
-        }
+        ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
         return upload(
             itemId = path.toString(),
             source = source,
@@ -238,23 +242,23 @@ public class GoogleDriveService internal constructor(
                 }
             }
         )
-        return tryCall(id.value) { response.toCloudFile(isRoot = response.isInRoot()) }
+        return response.toCloudFile(isRoot = response.isInRoot())
     }
 
-    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile =
-        tryCall(id.value) {
-            val response = move(id, newPath.toFolderPath(), newPath.name)
-            response.toCloudFile(isRoot = response.isInRoot())
-        }
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        val response = move(id, newPath.toFolderPath(), newPath.name)
+        return response.toCloudFile(isRoot = response.isInRoot())
+    }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
 
-        return tryCall(id.value) {
-            val response = move(id, newPath.parent, newPath.name)
+        val response = move(id, newPath.parent, newPath.name)
+        val isRoot = response.isInRoot()
+        return mapUnknownErrors {
             CloudFolder(
                 id = CloudItemId(response.id),
-                path = response.toFolderPath(isRoot = response.isInRoot()),
+                path = response.toFolderPath(isRoot = isRoot),
                 name = response.name
             )
         }
@@ -264,19 +268,21 @@ public class GoogleDriveService internal constructor(
      * Renames the item and, if [parent] differs from its current parent, moves it there.
      */
     private suspend fun move(id: CloudItemId, parent: FolderPath, name: String): DriveFile {
-        val currentParent = api.getFile(id.value).parents.firstOrNull()
+        val currentParent = tryCall(id.value) { api.getFile(id.value) }.parents.firstOrNull()
         val newParent = parent.toParentId()
         ensureNameAvailable(parent = newParent, name = name, ownId = id.value)
 
         // "appDataFolder" is an alias, so resolve it to compare with the actual parent id
         val resolvedNewParent = if (parent.isRoot) getAppDataFolderId() else newParent
         val parentChanged = currentParent != resolvedNewParent
-        return api.move(
-            id = id.value,
-            content = json.encodeToString(RenameRequest(name)),
-            addParents = newParent.takeIf { parentChanged },
-            removeParents = currentParent.takeIf { parentChanged }
-        )
+        return tryCall(id.value) {
+            api.move(
+                id = id.value,
+                content = json.encodeToString(RenameRequest(name)),
+                addParents = newParent.takeIf { parentChanged },
+                removeParents = currentParent.takeIf { parentChanged }
+            )
+        }
     }
 
     /**
@@ -284,10 +290,12 @@ public class GoogleDriveService internal constructor(
      * To prevent that, this throws if [parent] already contains an item named [name] (other
      * than [ownId]). This is a best effort: a concurrent request can still create a duplicate.
      *
+     * Must not be called from within [tryCall], as this fires off a request.
+     *
      * @throws CloudServiceException.ConflictException
      */
     private suspend fun ensureNameAvailable(parent: String, name: String, ownId: String? = null) {
-        if (findByName(parent, name).any { it.id != ownId }) {
+        if (tryCall(name) { findByName(parent, name) }.any { it.id != ownId }) {
             throw CloudServiceException.ConflictException(name)
         }
     }
@@ -304,7 +312,7 @@ public class GoogleDriveService internal constructor(
 
     /**
      * Whether this file is directly in the appDataFolder (of which the ID is fetched once per account
-     * and cached).
+     * and cached). Must not be called from within [tryCall], as this fires off a request.
      */
     private suspend fun DriveFile.isInRoot(): Boolean {
         val rootId = getAppDataFolderId()
@@ -312,10 +320,11 @@ public class GoogleDriveService internal constructor(
     }
 
     /**
-     * The app data folder ID, fetched once per account and then cached.
+     * The app data folder ID, fetched once per account and then cached. Must not be called from
+     * within [tryCall], as fetching it is a request of its own.
      */
     private suspend fun getAppDataFolderId(): String {
-        return appDataFolderId.getOrFetch { api.getAppDataFolder().id }
+        return appDataFolderId.getOrFetch { tryCall { api.getAppDataFolder() }.id }
     }
 
     private fun FilePath.toMetadata(mimeType: String): DriveFileMetadata {
@@ -410,8 +419,8 @@ public class GoogleDriveService internal constructor(
         return checkNotNull(response)
     }
 
-    private fun DriveFile.toCloudFile(isRoot: Boolean): CloudFile {
-        return CloudFile(
+    private fun DriveFile.toCloudFile(isRoot: Boolean): CloudFile = mapUnknownErrors {
+        CloudFile(
             id = CloudItemId(id),
             name = name,
             path = toFilePath(isRoot = isRoot),
@@ -437,54 +446,61 @@ public class GoogleDriveService internal constructor(
      * Google Drive specifics: deleted items are only reported by id, so
      * [DeletedDeltaChange.path] is `/<fileId>`. See the library documentation on paths.
      */
-    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult = tryCall {
-        val rootId = api.getAppDataFolder().id
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
+        val rootId = getAppDataFolderId()
 
         if (previousCursor == DeltaCursor.INITIAL) {
 
             // Initial call does not return token that can be used for changes, so we'll fetch
             // it manually here. It's done before actual listing, because from this moment we
             // don't want to miss any changes.
-            val startPageToken = api.getStartPageToken().startPageToken
+            val startPageToken = tryCall { api.getStartPageToken() }.startPageToken
 
             val files = mutableListOf<DriveFile>()
             var pageToken: String? = null
             do {
-                val response = api.listFiles(query = null, pageToken = pageToken)
+                val currentPageToken = pageToken
+                val response = tryCall { api.listFiles(query = null, pageToken = currentPageToken) }
                 files += response.files
                 pageToken = response.nextPageToken
             } while (pageToken != null)
 
-            DeltaResult(
-                newCursor = DeltaCursor(startPageToken),
-                changes = files.map { it.toUpdatedChange(rootId) }
-            )
+            return mapUnknownErrors {
+                DeltaResult(
+                    newCursor = DeltaCursor(startPageToken),
+                    changes = files.map { it.toUpdatedChange(rootId) }
+                )
+            }
         } else {
             val changes = mutableListOf<DriveChange>()
             var pageToken = previousCursor.value
             var newStartPageToken: String? = null
             while (newStartPageToken == null) {
-                val response = api.listChanges(pageToken = pageToken)
+                val currentPageToken = pageToken
+                val response = tryCall { api.listChanges(pageToken = currentPageToken) }
                 changes += response.changes
                 newStartPageToken = response.newStartPageToken
-                pageToken =
+                pageToken = mapUnknownErrors {
                     response.nextPageToken ?: newStartPageToken ?: error("Missing page token")
+                }
             }
 
-            DeltaResult(
-                newCursor = DeltaCursor(newStartPageToken),
-                changes = changes.map { change ->
-                    val file = change.file
-                    if (change.removed || file == null || file.trashed) {
-                        DeletedDeltaChange(
-                            itemId = CloudItemId(change.fileId),
-                            path = "/${change.fileId}".asFilePath()
-                        )
-                    } else {
-                        file.toUpdatedChange(rootId)
+            return mapUnknownErrors {
+                DeltaResult(
+                    newCursor = DeltaCursor(newStartPageToken),
+                    changes = changes.map { change ->
+                        val file = change.file
+                        if (change.removed || file == null || file.trashed) {
+                            DeletedDeltaChange(
+                                itemId = CloudItemId(change.fileId),
+                                path = "/${change.fileId}".asFilePath()
+                            )
+                        } else {
+                            file.toUpdatedChange(rootId)
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 
