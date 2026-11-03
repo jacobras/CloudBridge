@@ -109,6 +109,41 @@ class GoogleDriveServiceTest {
     }
 
     @Test
+    fun `rate limit exception from user limits`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "error": {
+                        "errors": [
+                          {
+                            "domain": "usageLimits",
+                            "reason": "userRateLimitExceeded",
+                            "message": "User Rate Limit Exceeded"
+                          }
+                        ],
+                        "code": 403,
+                        "message": "User Rate Limit Exceeded"
+                      }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.Forbidden,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = null
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isNull()
+    }
+
+    @Test
     fun `downloading missing file throws NotFoundException`() = runTest {
         val engine = MockEngine {
             respond(

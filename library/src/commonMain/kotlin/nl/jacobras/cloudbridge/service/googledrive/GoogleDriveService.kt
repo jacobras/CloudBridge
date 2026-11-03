@@ -83,6 +83,9 @@ public class GoogleDriveService internal constructor(
             HttpStatusCode.TooManyRequests -> {
                 CloudServiceException.RateLimitException(response.retryAfter())
             }
+            HttpStatusCode.Forbidden if message?.contains("RateLimitExceeded", ignoreCase = true) == true -> {
+                CloudServiceException.RateLimitException(response.retryAfter())
+            }
             HttpStatusCode.Forbidden if message?.contains("storageQuotaExceeded") == true -> {
                 CloudServiceException.InsufficientSpaceException()
             }
