@@ -5,6 +5,7 @@ import co.touchlab.kermit.Severity
 import co.touchlab.kermit.ktor.KermitKtorLogger
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.LoggingFormat
 import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -25,6 +26,8 @@ internal fun setUpLogging() {
         install(Logging) {
             logger = KermitKtorLogger(severity = Severity.Debug, logger = Logger)
             level = LogLevel.BODY
+            // OkHttp format omits binary bodies (like file uploads) instead of dumping them.
+            format = LoggingFormat.OkHttp
         }
     }
 }
