@@ -376,6 +376,58 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `rate-limited app root lookup after move doesn't repeat the move`() = runTest {
+        var appRootAttempts = 0
+        val engine = MockEngine { request ->
+            val isAppRoot = request.method == HttpMethod.Get &&
+                    request.url.encodedPath.endsWith("approot")
+            if (isAppRoot && appRootAttempts++ == 0) {
+                return@MockEngine respond(
+                    content = """{"error":{"code":"activityLimitReached","message":"The request has been throttled"}}""",
+                    status = HttpStatusCode.TooManyRequests,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+            val content = when {
+                request.method == HttpMethod.Get && !isAppRoot ->
+                    """{"id": "notesFolderId", "name": "Notes", "lastModifiedDateTime": "2025-10-11T16:13:38Z", "parentReference": {"path": "/drive/root:/Apps/CloudBridge%20Demo"}, "folder": {"childCount": 1}}"""
+                isAppRoot ->
+                    """{"id": "appRootId", "name": "CloudBridge Demo", "parentReference": { "path": "/drive/root:/Apps" }}"""
+                else -> """
+                    {
+                      "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},3\"",
+                      "id": "file1",
+                      "lastModifiedDateTime": "2025-10-12T10:00:00Z",
+                      "name": "new.txt",
+                      "size": 2,
+                      "parentReference": { "path": "/drive/root:/Apps/CloudBridge%20Demo/Notes" }
+                    }
+                """.trimIndent()
+            }
+            respond(
+                content = content,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+
+        val file = service.moveFile(CloudItemId("file1"), "/Notes/new.txt".asFilePath())
+
+        assertThat(file.path).isEqualTo("/Notes/new.txt".asFilePath())
+        assertThat(engine.requestHistory.map { "${it.method.value} ${it.url.encodedPath}" }).containsExactly(
+            "GET /v1.0/me/drive/special/approot:/Notes",
+            "PATCH /v1.0/me/drive/items/file1",
+            "GET /v1.0/me/drive/special/approot",
+            "GET /v1.0/me/drive/special/approot"
+        )
+    }
+
+    @Test
     fun `move folder`() = runTest {
         val engine = MockEngine { request ->
             val content = when (request.method) {

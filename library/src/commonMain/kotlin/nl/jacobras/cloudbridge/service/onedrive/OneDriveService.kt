@@ -170,15 +170,16 @@ public class OneDriveService internal constructor(
         response.toCloudFile(path)
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
-        tryCall(id.value) {
-            val response = api.updateFile(
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
+        val response = tryCall(id.value) {
+            api.updateFile(
                 id = id.value,
                 contentType = "text/plain",
                 content = content.encodeToByteArray()
             )
-            response.toCloudFile(response.resolvePath())
         }
+        return response.toCloudFile(response.resolvePath())
+    }
 
     override suspend fun createFile(
         path: FilePath,
@@ -221,51 +222,51 @@ public class OneDriveService internal constructor(
                 api.createUploadSessionById(id.value, json.encodeToString(CreateUploadSessionArg()))
             }
         )
-        return tryCall(id.value) { response.toCloudFile(response.resolvePath()) }
+        return response.toCloudFile(response.resolvePath())
     }
 
     /**
      * Resolves the path of this item relative to the app root (of which the path is fetched once
-     * per account and then cached).
+     * per account and then cached). Must not be called from within [tryCall], as the app root
+     * lookup is a request of its own.
      */
     private suspend fun DriveItem.resolvePath(): FilePath = resolveRelativePath().asFilePath()
 
     private suspend fun DriveItem.resolveRelativePath(): String {
         val root = getAppRootId()
-        val parentPath = root.parent?.path ?: error("Missing parent path for app root")
-        val rootName = root.name ?: error("Missing name for app root")
-        val rootPath = "${parentPath.decodeURLPart()}/$rootName"
+        return mapUnknownErrors {
+            val parentPath = root.parent?.path ?: error("Missing parent path for app root")
+            val rootName = root.name ?: error("Missing name for app root")
+            val rootPath = "${parentPath.decodeURLPart()}/$rootName"
 
-        // Graph returns e.g. "/drive/root:/Apps/My%20App/folder" for an item in "/folder".
-        // Paths are percent-encoded, names aren't, so compare decoded.
-        val relativeFolder = parent.path.decodeURLPart().removePrefix(rootPath)
-        return "$relativeFolder/$name"
+            // Graph returns e.g. "/drive/root:/Apps/My%20App/folder" for an item in "/folder".
+            // Paths are percent-encoded, names aren't, so compare decoded.
+            val relativeFolder = parent.path.decodeURLPart().removePrefix(rootPath)
+            "$relativeFolder/$name"
+        }
     }
 
     /**
      * The app root folder, fetched once per account and then cached.
      */
     private suspend fun getAppRootId(): DriveItemId {
-        return appRoot.getOrFetch { api.getAppRoot() }
+        return appRoot.getOrFetch { tryCall { api.getAppRoot() } }
     }
 
-    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile =
-        tryCall(id.value) {
-            val response = move(id, newPath.toFolderPath(), newPath.name)
-            response.toCloudFile(response.resolvePath())
-        }
+    override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
+        val response = move(id, newPath.toFolderPath(), newPath.name)
+        return response.toCloudFile(response.resolvePath())
+    }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
 
-        return tryCall(id.value) {
-            val response = move(id, newPath.parent, newPath.name)
-            CloudFolder(
-                id = CloudItemId(response.id),
-                path = response.resolveRelativePath().asFolderPath(),
-                name = response.name
-            )
-        }
+        val response = move(id, newPath.parent, newPath.name)
+        return CloudFolder(
+            id = CloudItemId(response.id),
+            path = response.resolveRelativePath().asFolderPath(),
+            name = response.name
+        )
     }
 
     /**
@@ -275,16 +276,20 @@ public class OneDriveService internal constructor(
         val parentId = if (parent.isRoot) {
             getAppRootId().id
         } else {
-            api.getItemByPath(parent.toString(withLeadingSlash = false)).id
+            tryCall(parent.toString()) {
+                api.getItemByPath(parent.toString(withLeadingSlash = false)).id
+            }
         }
         val arg = MoveArg(
             name = name,
             parent = MoveParentReference(parentId)
         )
-        return api.move(
-            id = id.value,
-            content = json.encodeToString(arg)
-        )
+        return tryCall(id.value) {
+            api.move(
+                id = id.value,
+                content = json.encodeToString(arg)
+            )
+        }
     }
 
     /**
@@ -337,8 +342,8 @@ public class OneDriveService internal constructor(
         return checkNotNull(response)
     }
 
-    private fun DriveItem.toCloudFile(path: FilePath): CloudFile {
-        return CloudFile(
+    private fun DriveItem.toCloudFile(path: FilePath): CloudFile = mapUnknownErrors {
+        CloudFile(
             id = CloudItemId(id),
             path = path,
             name = name,
@@ -360,17 +365,21 @@ public class OneDriveService internal constructor(
         api.deleteById(id.value)
     }
 
-    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult = tryCall {
-        val rootId = api.getAppRoot().id
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
+        val rootId = getAppRootId().id
 
-        var response = if (previousCursor == DeltaCursor.INITIAL) {
-            api.getDelta()
-        } else {
-            api.getDeltaByUrl(previousCursor.value)
+        var response = tryCall {
+            if (previousCursor == DeltaCursor.INITIAL) {
+                api.getDelta()
+            } else {
+                api.getDeltaByUrl(previousCursor.value)
+            }
         }
         val items = response.items.toMutableList()
         while (response.deltaLink == null) {
-            response = api.getDeltaByUrl(response.nextLink ?: error("Missing next link"))
+            val nextLink = response.nextLink
+                ?: throw CloudServiceException.Unknown(IllegalStateException("Missing next link"))
+            response = tryCall { api.getDeltaByUrl(nextLink) }
             items += response.items
         }
 
@@ -384,27 +393,41 @@ public class OneDriveService internal constructor(
             if (parentPath == "/") "/$name" else "$parentPath/$name"
         }
 
-        DeltaResult(
-            newCursor = DeltaCursor(response.deltaLink),
-            changes = itemsById.values.filter { it.id != rootId }.map {
-                val path = resolvePath(it.id) ?: it.name?.let { name -> "/$name" } ?: "/${it.id}"
-                val isFolder = it.folder != null
-                if (it.deleted != null) {
-                    DeletedDeltaChange(
-                        itemId = CloudItemId(it.id),
-                        path = if (isFolder) path.asFolderPath() else path.asFilePath()
-                    )
-                } else {
-                    UpdatedDeltaChange(
-                        itemId = CloudItemId(it.id),
-                        path = if (isFolder) path.asFolderPath() else path.asFilePath(),
-                        name = it.name ?: error("Missing name"),
-                        revision = it.eTag,
-                        modified = it.lastModified?.let(Instant::parse)
-                    )
+        return mapUnknownErrors {
+            DeltaResult(
+                newCursor = DeltaCursor(response.deltaLink),
+                changes = itemsById.values.filter { it.id != rootId }.map {
+                    val path =
+                        resolvePath(it.id) ?: it.name?.let { name -> "/$name" } ?: "/${it.id}"
+                    val isFolder = it.folder != null
+                    if (it.deleted != null) {
+                        DeletedDeltaChange(
+                            itemId = CloudItemId(it.id),
+                            path = if (isFolder) path.asFolderPath() else path.asFilePath()
+                        )
+                    } else {
+                        UpdatedDeltaChange(
+                            itemId = CloudItemId(it.id),
+                            path = if (isFolder) path.asFolderPath() else path.asFilePath(),
+                            name = it.name ?: error("Missing name"),
+                            revision = it.eTag,
+                            modified = it.lastModified?.let(Instant::parse)
+                        )
+                    }
                 }
-            }
-        )
+            )
+        }
+    }
+}
+
+@Suppress("TooGenericExceptionCaught")
+private inline fun <T> mapUnknownErrors(block: () -> T): T {
+    return try {
+        block()
+    } catch (e: CloudServiceException) {
+        throw e
+    } catch (e: Exception) {
+        throw CloudServiceException.Unknown(e)
     }
 }
 
