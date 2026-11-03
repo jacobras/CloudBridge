@@ -272,49 +272,57 @@ public class DropboxService internal constructor(
      *   all its children were deleted too.
      * - Folders have no revision or modified time, so those are `null`.
      */
-    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult = tryCall {
-        var response = if (previousCursor == DeltaCursor.INITIAL) {
-            api.listFiles(Json.encodeToString(ListFolderArg(path = "", recursive = true)))
-        } else {
-            api.listFilesContinue(Json.encodeToString(ListFolderContinueArg(previousCursor.value)))
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
+        var response = tryCall {
+            if (previousCursor == DeltaCursor.INITIAL) {
+                api.listFiles(Json.encodeToString(ListFolderArg(path = "", recursive = true)))
+            } else {
+                api.listFilesContinue(Json.encodeToString(ListFolderContinueArg(previousCursor.value)))
+            }
         }
         val entries = response.entries.toMutableList()
         while (response.hasMore) {
-            response = api.listFilesContinue(
-                Json.encodeToString(ListFolderContinueArg(response.cursor))
-            )
+            response = tryCall {
+                api.listFilesContinue(
+                    Json.encodeToString(ListFolderContinueArg(response.cursor))
+                )
+            }
             entries += response.entries
         }
 
-        DeltaResult(
+        return DeltaResult(
             newCursor = DeltaCursor(response.cursor),
             changes = entries.map {
-                when (it.tag) {
-                    "file" -> {
-                        UpdatedDeltaChange(
-                            itemId = CloudItemId(it.id ?: error("Missing id for file")),
-                            path = it.pathDisplay.asFilePath(),
-                            name = it.name,
-                            revision = it.rev,
-                            modified = it.clientModified?.let(Instant::parse)
-                        )
+                try {
+                    when (it.tag) {
+                        "file" -> {
+                            UpdatedDeltaChange(
+                                itemId = CloudItemId(it.id ?: error("Missing id for file")),
+                                path = it.pathDisplay.asFilePath(),
+                                name = it.name,
+                                revision = it.rev,
+                                modified = it.clientModified?.let(Instant::parse)
+                            )
+                        }
+                        "folder" -> {
+                            UpdatedDeltaChange(
+                                itemId = CloudItemId(it.id ?: error("Missing id for folder")),
+                                path = it.pathDisplay.asFolderPath(),
+                                name = it.name,
+                                revision = null,
+                                modified = null
+                            )
+                        }
+                        "deleted" -> {
+                            DeletedDeltaChange(
+                                itemId = null,
+                                path = it.pathDisplay.asFilePath()
+                            )
+                        }
+                        else -> error("Unsupported tag: ${it.tag}")
                     }
-                    "folder" -> {
-                        UpdatedDeltaChange(
-                            itemId = CloudItemId(it.id ?: error("Missing id for folder")),
-                            path = it.pathDisplay.asFolderPath(),
-                            name = it.name,
-                            revision = null,
-                            modified = null
-                        )
-                    }
-                    "deleted" -> {
-                        DeletedDeltaChange(
-                            itemId = null,
-                            path = it.pathDisplay.asFilePath()
-                        )
-                    }
-                    else -> error("Unsupported tag: ${it.tag}")
+                } catch (e: Exception) {
+                    throw CloudServiceException.Unknown(e)
                 }
             }
         )
