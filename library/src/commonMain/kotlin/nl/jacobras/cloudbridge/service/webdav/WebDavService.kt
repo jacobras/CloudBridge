@@ -133,14 +133,19 @@ public class WebDavService internal constructor(
             .map { it.toCloudItem() }
     }
 
-    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
-        client.request(buildUrl(path.toString(), suffixSlash = true)) {
-            method = HttpMethod(("MKCOL"))
+    override suspend fun createFolder(path: FolderPath): CloudFolder {
+        tryCall(path.toString()) {
+            client.request(buildUrl(path.toString(), suffixSlash = true)) {
+                method = HttpMethod(("MKCOL"))
+            }
         }
 
-        // MKCOL doesn't return any metadata, so fetch it separately
-        propfind(path.toString(), depth = 0, suffixSlash = true).single()
-            .toCloudItem() as CloudFolder
+        return tryCall(path.toString()) {
+            // MKCOL doesn't return any metadata, so fetch it separately
+            propfind(path.toString(), depth = 0, suffixSlash = true)
+                .single()
+                .toCloudItem() as CloudFolder
+        }
     }
 
     override suspend fun createFile(path: FilePath, content: String): CloudFile {
@@ -187,9 +192,9 @@ public class WebDavService internal constructor(
      * Calls [put] and fetches the metadata of the uploaded file at [path].
      */
     private suspend fun upload(path: String, put: suspend () -> Unit): CloudFile {
-        return tryCall(path) {
-            put()
+        tryCall(path) { put() }
 
+        return tryCall(path) {
             // PUT doesn't return any metadata, so fetch it separately
             propfind(path, depth = 0).single().toCloudItem() as CloudFile
         }
@@ -238,13 +243,15 @@ public class WebDavService internal constructor(
      * Failed if the target already exists.
      */
     private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
-        return tryCall(id.value) {
+        tryCall(id.value) {
             client.request(buildUrl(id.value, suffixSlash = isFolder)) {
                 method = HttpMethod("MOVE")
                 header("Destination", buildUrl(newPath, suffixSlash = isFolder))
                 header("Overwrite", "F")
             }
+        }
 
+        return tryCall(newPath) {
             // MOVE doesn't return any metadata, so fetch it separately
             propfind(newPath, depth = 0, suffixSlash = isFolder).single().toCloudItem()
         }
