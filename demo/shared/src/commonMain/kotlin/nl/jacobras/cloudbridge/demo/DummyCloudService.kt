@@ -3,8 +3,8 @@ package nl.jacobras.cloudbridge.demo
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaChange
@@ -25,10 +25,10 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 class DummyCloudService(
-    startToken: CloudAccessToken?
-) : OAuthCloudService(startToken), DeltaCloudService {
+    private val token: CloudAccessToken?
+) : CloudService, DeltaCloudService {
 
-    override val baseUrl: String = ""
+    override fun isAuthenticated(): Boolean = token != null
 
     private var cloudItems = mutableListOf(
         CloudFolder(id = CloudItemId("123"), path = "/Cats".asFolderPath(), name = "Cats"),
@@ -162,17 +162,29 @@ class DummyCloudService(
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
-    ): CloudFile = createFile(path, source.readByteArray())
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        val bytes = source().use { it.readByteArray() }
+        val file = createFile(path, bytes)
+        onProgress?.invoke(bytes.size.toLong(), bytes.size.toLong())
+        return file
+    }
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
-    ): CloudFile = updateFile(id, source.readByteArray())
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        val bytes = source().use { it.readByteArray() }
+        val file = updateFile(id, bytes)
+        onProgress?.invoke(bytes.size.toLong(), bytes.size.toLong())
+        return file
+    }
 
     override suspend fun downloadFile(id: CloudItemId): String {
         return downloadBytes(id).decodeToString()

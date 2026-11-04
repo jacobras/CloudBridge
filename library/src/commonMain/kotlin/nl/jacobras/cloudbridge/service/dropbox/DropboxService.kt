@@ -5,13 +5,10 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.coroutines.CancellationException
-import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
-import nl.jacobras.cloudbridge.OAuthCloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
@@ -27,7 +24,12 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
+import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.mapUnknownErrors
+import nl.jacobras.cloudbridge.util.reportChunkSent
+import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
 
@@ -36,14 +38,43 @@ import kotlin.time.Instant
  */
 public class DropboxService internal constructor(
     token: CloudAccessToken?,
-    httpClient: HttpClient?
-) : OAuthCloudService(token, httpClient), DeltaCloudService {
-
-    public constructor(token: CloudAccessToken?) : this(token, null)
+    httpClientOverride: HttpClient? = null,
+    rateLimiter: RateLimiter? = RateLimiter(
+        maxConcurrent = 5,
+        maxRatePerSecond = 5.0
+    )
+) : OAuthCloudService(
+    startToken = token,
+    httpClientOverride = httpClientOverride,
+    rateLimiter = rateLimiter
+), DeltaCloudService {
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
+
+    override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
+        when (response.status) {
+            HttpStatusCode.Conflict if message?.contains("not_found") == true -> {
+                CloudServiceException.NotFoundException(itemId)
+            }
+            HttpStatusCode.Conflict if message?.contains("insufficient_space") == true -> {
+                CloudServiceException.InsufficientSpaceException()
+            }
+            HttpStatusCode.Conflict if message?.contains("conflict") == true -> {
+                CloudServiceException.ConflictException(itemId)
+            }
+            HttpStatusCode.TooManyRequests -> {
+                CloudServiceException.RateLimitException(response.retryAfter())
+            }
+            HttpStatusCode.Unauthorized -> {
+                CloudServiceException.NotAuthenticatedException()
+            }
+            else -> {
+                CloudServiceException.Unknown(this)
+            }
+        }
+    }
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()
@@ -133,36 +164,47 @@ public class DropboxService internal constructor(
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         return upload(
             arg = DropboxUploadArg(path = path.toString(), mode = Mode.Add),
-            source = source
+            source = source,
+            sizeInBytes = sizeInBytes,
+            onProgress = onProgress
         ).toCloudFile()
     }
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         return upload(
             arg = DropboxUploadArg(path = id.value, mode = Mode.Overwrite),
-            source = source
+            source = source,
+            sizeInBytes = sizeInBytes,
+            onProgress = onProgress
         ).toCloudFile()
     }
 
     /**
      * Uploads [source] in a single request if it fits in one chunk, otherwise in an upload session.
      */
-    private suspend fun upload(arg: DropboxUploadArg, source: Source): UploadResponse =
-        tryCall(arg.path) {
-            var sessionId: String? = null
-            var response: UploadResponse? = null
-            source.forEachChunk(uploadChunkSize) { chunk, offset, isLast ->
+    private suspend fun upload(
+        arg: DropboxUploadArg,
+        source: suspend () -> Source,
+        sizeInBytes: Long?,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): UploadResponse {
+        var sessionId: String? = null
+        var response: UploadResponse? = null
+        forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
+            tryCall(arg.path) {
                 when {
                     isLast && offset == 0L -> {
                         // Just one chunk: immediate upload.
@@ -202,8 +244,10 @@ public class DropboxService internal constructor(
                     }
                 }
             }
-            checkNotNull(response)
+            onProgress?.reportChunkSent(sizeInBytes, offset, chunk.size, isLast)
         }
+        return checkNotNull(response)
+    }
 
     private fun UploadResponse.toCloudFile(): CloudFile {
         return CloudFile(
@@ -239,111 +283,58 @@ public class DropboxService internal constructor(
      *   all its children were deleted too.
      * - Folders have no revision or modified time, so those are `null`.
      */
-    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult = tryCall {
-        var response = if (previousCursor == DeltaCursor.INITIAL) {
-            api.listFiles(Json.encodeToString(ListFolderArg(path = "", recursive = true)))
-        } else {
-            api.listFilesContinue(Json.encodeToString(ListFolderContinueArg(previousCursor.value)))
+    override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
+        var response = tryCall {
+            if (previousCursor == DeltaCursor.INITIAL) {
+                api.listFiles(Json.encodeToString(ListFolderArg(path = "", recursive = true)))
+            } else {
+                api.listFilesContinue(Json.encodeToString(ListFolderContinueArg(previousCursor.value)))
+            }
         }
         val entries = response.entries.toMutableList()
         while (response.hasMore) {
-            response = api.listFilesContinue(
-                Json.encodeToString(ListFolderContinueArg(response.cursor))
-            )
+            response = tryCall {
+                api.listFilesContinue(
+                    Json.encodeToString(ListFolderContinueArg(response.cursor))
+                )
+            }
             entries += response.entries
         }
 
-        DeltaResult(
+        return DeltaResult(
             newCursor = DeltaCursor(response.cursor),
             changes = entries.map {
-                when (it.tag) {
-                    "file" -> {
-                        UpdatedDeltaChange(
-                            itemId = CloudItemId(it.id ?: error("Missing id for file")),
-                            path = it.pathDisplay.asFilePath(),
-                            name = it.name,
-                            revision = it.rev,
-                            modified = it.clientModified?.let(Instant::parse)
-                        )
+                mapUnknownErrors {
+                    when (it.tag) {
+                        "file" -> {
+                            UpdatedDeltaChange(
+                                itemId = CloudItemId(it.id ?: error("Missing id for file")),
+                                path = it.pathDisplay.asFilePath(),
+                                name = it.name,
+                                revision = it.rev,
+                                modified = it.clientModified?.let(Instant::parse)
+                            )
+                        }
+                        "folder" -> {
+                            UpdatedDeltaChange(
+                                itemId = CloudItemId(it.id ?: error("Missing id for folder")),
+                                path = it.pathDisplay.asFolderPath(),
+                                name = it.name,
+                                revision = null,
+                                modified = null
+                            )
+                        }
+                        "deleted" -> {
+                            DeletedDeltaChange(
+                                itemId = null,
+                                path = it.pathDisplay.asFilePath()
+                            )
+                        }
+                        else -> error("Unsupported tag: ${it.tag}")
                     }
-                    "folder" -> {
-                        UpdatedDeltaChange(
-                            itemId = CloudItemId(it.id ?: error("Missing id for folder")),
-                            path = it.pathDisplay.asFolderPath(),
-                            name = it.name,
-                            revision = null,
-                            modified = null
-                        )
-                    }
-                    "deleted" -> {
-                        DeletedDeltaChange(
-                            itemId = null,
-                            path = it.pathDisplay.asFilePath()
-                        )
-                    }
-                    else -> error("Unsupported tag: ${it.tag}")
                 }
             }
         )
-    }
-
-    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        requireAuthenticated()
-
-        try {
-            return block()
-        } catch (e: ResponseException) {
-            throw when (e.response.status) {
-                HttpStatusCode.Conflict if e.message?.contains("not_found") == true -> {
-                    CloudServiceException.NotFoundException(itemId)
-                }
-                HttpStatusCode.Conflict if e.message?.contains("insufficient_space") == true -> {
-                    CloudServiceException.InsufficientSpaceException()
-                }
-                HttpStatusCode.Conflict if e.message?.contains("conflict") == true -> {
-                    CloudServiceException.ConflictException(itemId)
-                }
-                HttpStatusCode.Unauthorized -> {
-                    CloudServiceException.NotAuthenticatedException()
-                }
-                else -> {
-                    CloudServiceException.Unknown(e)
-                }
-            }
-        } catch (e: IOException) {
-            throw CloudServiceException.ConnectionException(e)
-        } catch (e: CloudServiceException) {
-            throw e
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CloudServiceException.Unknown(e)
-        }
-    }
-}
-
-private fun FileEntry.toCloudItem(): CloudItem {
-    return when (tag) {
-        "file" -> {
-            CloudFile(
-                id = CloudItemId(id ?: error("Missing id for file")),
-                path = pathDisplay.asFilePath(),
-                name = name,
-                sizeInBytes = size ?: error("Missing size for file"),
-                modified = Instant.parse(
-                    clientModified ?: error("Missing modified time for file")
-                ),
-                revision = rev ?: error("Missing rev for file")
-            )
-        }
-        "folder" -> {
-            CloudFolder(
-                id = CloudItemId(id ?: error("Missing id for folder")),
-                path = pathDisplay.asFolderPath(),
-                name = name
-            )
-        }
-        else -> error("Unsupported tag: $tag")
     }
 }
 

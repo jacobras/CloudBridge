@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.IOException
@@ -170,44 +171,59 @@ internal class ServiceViewModel(
     }
 
     /**
-     * Uploads [files] one by one into the current folder.
+     * Uploads [files] concurrently into the current folder, each in its own coroutine.
      */
-    fun uploadFiles(files: List<LocalFile>) = viewModelScope.launch {
-        if (uploadProgress.value != null) return@launch
+    fun uploadFiles(files: List<LocalFile>) {
+        if (files.isEmpty() || uploadProgress.value != null) return
         val targetFolder = path.value
 
-        try {
-            for (file in files) {
-                uploadProgress.update {
-                    UploadProgress(
-                        file.name,
-                        bytesRead = 0,
-                        totalBytes = file.sizeInBytes
-                    )
-                }
-                val source = ProgressSource(file.open()) { bytesRead ->
-                    uploadProgress.update { it?.copy(bytesRead = bytesRead) }
-                }.buffered()
-                source.use {
+        uploadProgress.update {
+            UploadProgress(
+                bytesSentPerFile = List(files.size) { 0L },
+                totalBytesPerFile = files.map { it.sizeInBytes },
+                filesDone = 0
+            )
+        }
+        error.update { "" }
+
+        val jobs = files.mapIndexed { index, file ->
+            viewModelScope.launch {
+                try {
                     service.createFile(
                         path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
-                        source = it,
+                        source = { file.open().buffered() },
                         sizeInBytes = file.sizeInBytes,
-                        mimeType = file.mimeType ?: "application/octet-stream"
+                        mimeType = file.mimeType ?: "application/octet-stream",
+                        onProgress = { bytesSent, totalBytes ->
+                            uploadProgress.update { progress ->
+                                progress?.copy(
+                                    bytesSentPerFile = progress.bytesSentPerFile.toMutableList()
+                                        .also { it[index] = bytesSent },
+                                    totalBytesPerFile = progress.totalBytesPerFile.toMutableList()
+                                        .also { it[index] = totalBytes ?: it[index] }
+                                )
+                            }
+                        }
                     )
+                    uploadProgress.update { it?.copy(filesDone = it.filesDone + 1) }
+                } catch (e: CloudServiceException) {
+                    error.update { "${file.name}: $e" }
+                } catch (e: IllegalArgumentException) {
+                    error.update { "${file.name}: $e" }
+                } catch (e: IOException) {
+                    error.update { "${file.name}: $e" }
                 }
             }
-            error.update { "" }
-        } catch (e: CloudServiceException) {
-            error.update { e.toString() }
-        } catch (e: IllegalArgumentException) {
-            error.update { e.toString() }
-        } catch (e: IOException) {
-            error.update { e.toString() }
-        } finally {
-            uploadProgress.update { null }
-            // Files before a failed one may have been uploaded, so refresh to show them.
-            refresh(clearError = false)
+        }
+
+        viewModelScope.launch {
+            try {
+                jobs.joinAll()
+            } finally {
+                uploadProgress.update { null }
+                // Some files may have been uploaded even if others failed, so refresh to show them.
+                refresh(clearError = false)
+            }
         }
     }
 

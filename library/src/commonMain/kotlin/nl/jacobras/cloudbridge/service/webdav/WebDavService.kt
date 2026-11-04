@@ -1,7 +1,6 @@
 package nl.jacobras.cloudbridge.service.webdav
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
@@ -16,15 +15,14 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
+import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.decodeURLPart
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeFully
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.io.Buffer
 import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -40,10 +38,14 @@ import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
+import nl.jacobras.cloudbridge.service.CallDispatcher
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
+import nl.jacobras.cloudbridge.util.SafeSourceOpener
 import nl.jacobras.cloudbridge.util.ensureSuffix
 import nl.jacobras.cloudbridge.util.forEachChunk
+import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 
 /**
@@ -51,7 +53,11 @@ import nl.jacobras.cloudbridge.util.transferTo
  */
 public class WebDavService internal constructor(
     private var credentials: WebDavCredentials,
-    private val httpClient: HttpClient? = null
+    private val httpClient: HttpClient? = null,
+    rateLimiter: RateLimiter? = RateLimiter(
+        maxConcurrent = 10,
+        maxRatePerSecond = 10.0
+    )
 ) : CloudService {
 
     private val client by lazy {
@@ -61,6 +67,32 @@ public class WebDavService internal constructor(
             }
         }
     }
+    private val callDispatcher = CallDispatcher(
+        rateLimiter = rateLimiter,
+        authCheck = ::isAuthenticated,
+        responseErrorMapper = { itemId ->
+            when (response.status) {
+                HttpStatusCode.Unauthorized -> {
+                    CloudServiceException.NotAuthenticatedException()
+                }
+                HttpStatusCode.NotFound -> {
+                    CloudServiceException.NotFoundException(itemId)
+                }
+                HttpStatusCode.InsufficientStorage -> {
+                    CloudServiceException.InsufficientSpaceException()
+                }
+                HttpStatusCode.PreconditionFailed -> {
+                    CloudServiceException.ConflictException(itemId)
+                }
+                HttpStatusCode.TooManyRequests -> {
+                    CloudServiceException.RateLimitException(response.retryAfter())
+                }
+                else -> {
+                    CloudServiceException.Unknown(this)
+                }
+            }
+        }
+    )
 
     /**
      * Sets the [credentials] to authenticate with.
@@ -101,58 +133,110 @@ public class WebDavService internal constructor(
             .map { it.toCloudItem() }
     }
 
-    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall(path.toString()) {
-        client.request(buildUrl(path.toString(), suffixSlash = true)) {
-            method = HttpMethod(("MKCOL"))
+    override suspend fun createFolder(path: FolderPath): CloudFolder {
+        tryCall(path.toString()) {
+            client.request(buildUrl(path.toString(), suffixSlash = true)) {
+                method = HttpMethod(("MKCOL"))
+            }
         }
 
-        // MKCOL doesn't return any metadata, so fetch it separately
-        propfind(path.toString(), depth = 0, suffixSlash = true).single()
-            .toCloudItem() as CloudFolder
+        return tryCall(path.toString()) {
+            // MKCOL doesn't return any metadata, so fetch it separately
+            propfind(path.toString(), depth = 0, suffixSlash = true)
+                .single()
+                .toCloudItem() as CloudFolder
+        }
     }
 
     override suspend fun createFile(path: FilePath, content: String): CloudFile {
-        val bytes = content.encodeToByteArray()
-        return createFile(
-            path = path,
-            source = Buffer().apply { write(bytes) },
-            sizeInBytes = bytes.size.toLong(),
-            mimeType = TEXT_MIME_TYPE
-        )
+        val body = textContent(content)
+        return upload(path.toString()) { put(path.toString(), body) }
     }
 
     override suspend fun createFile(
         path: FilePath,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
-    ): CloudFile = tryCall(path.toString()) {
-        put(path.toString(), source, sizeInBytes, mimeType)
-
-        // PUT doesn't return any metadata, so fetch it separately
-        propfind(path.toString(), depth = 0).single().toCloudItem() as CloudFile
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        return uploadSource(
+            path = path.toString(),
+            sizeInBytes = sizeInBytes,
+            contentType = ContentType.parse(mimeType),
+            source = source,
+            onProgress = onProgress
+        )
     }
 
     override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
-        val bytes = content.encodeToByteArray()
-        return updateFile(
-            id = id,
-            source = Buffer().apply { write(bytes) },
-            sizeInBytes = bytes.size.toLong(),
-            mimeType = TEXT_MIME_TYPE
-        )
+        val body = textContent(content)
+        return upload(id.value) { put(id.value, body) }
     }
 
     override suspend fun updateFile(
         id: CloudItemId,
-        source: Source,
+        source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
-    ): CloudFile = tryCall(id.value) {
-        put(id.value, source, sizeInBytes, mimeType)
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        return uploadSource(
+            path = id.value,
+            sizeInBytes = sizeInBytes,
+            contentType = ContentType.parse(mimeType),
+            source = source,
+            onProgress = onProgress
+        )
+    }
 
-        // PUT doesn't return any metadata, so fetch it separately
-        propfind(id.value, depth = 0).single().toCloudItem() as CloudFile
+    private suspend fun uploadSource(
+        path: String,
+        sizeInBytes: Long?,
+        contentType: ContentType,
+        source: suspend () -> Source,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        val opener = SafeSourceOpener(source)
+        return upload(path) {
+            val bytesSent = opener.open().use {
+                val content = SourceContent(it, sizeInBytes, contentType)
+                put(path, content)
+                content.bytesWritten
+            }
+            onProgress?.invoke(bytesSent, bytesSent)
+        }
+    }
+
+    /**
+     * Calls [put] and fetches the metadata of the uploaded file at [path].
+     */
+    private suspend fun upload(path: String, put: suspend () -> Unit): CloudFile {
+        tryCall(path) { put() }
+
+        return tryCall(path) {
+            // PUT doesn't return any metadata, so fetch it separately
+            propfind(path, depth = 0).single().toCloudItem() as CloudFile
+        }
+    }
+
+    private suspend fun put(path: String, content: OutgoingContent) {
+        try {
+            client.request(buildUrl(path)) {
+                method = HttpMethod.Put
+                setBody(content)
+            }
+        } catch (e: IOException) {
+            throw (content as? SourceContent)?.failure ?: e
+        }
+        (content as? SourceContent)?.failure?.let { throw it }
+    }
+
+    /**
+     * Can be sent multiple times, as needed for retries after rate limiting.
+     */
+    private fun textContent(content: String): OutgoingContent {
+        return ByteArrayContent(content.encodeToByteArray(), ContentType.parse(TEXT_MIME_TYPE))
     }
 
     override suspend fun downloadFile(id: CloudItemId): String = tryCall(id.value) {
@@ -179,13 +263,15 @@ public class WebDavService internal constructor(
      * Failed if the target already exists.
      */
     private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
-        return tryCall(id.value) {
+        tryCall(id.value) {
             client.request(buildUrl(id.value, suffixSlash = isFolder)) {
                 method = HttpMethod("MOVE")
                 header("Destination", buildUrl(newPath, suffixSlash = isFolder))
                 header("Overwrite", "F")
             }
+        }
 
+        return tryCall(newPath) {
             // MOVE doesn't return any metadata, so fetch it separately
             propfind(newPath, depth = 0, suffixSlash = isFolder).single().toCloudItem()
         }
@@ -194,13 +280,6 @@ public class WebDavService internal constructor(
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         client.request(buildUrl(id.value)) {
             method = HttpMethod.Delete
-        }
-    }
-
-    private suspend fun put(path: String, source: Source, sizeInBytes: Long?, mimeType: String) {
-        client.request(buildUrl(path)) {
-            method = HttpMethod.Put
-            setBody(SourceContent(source, sizeInBytes, ContentType.parse(mimeType)))
         }
     }
 
@@ -263,55 +342,46 @@ public class WebDavService internal constructor(
         }
     }
 
-    private suspend fun <T> tryCall(itemId: String = "unknown", block: suspend () -> T): T {
-        try {
-            return block()
-        } catch (e: ResponseException) {
-            throw when (e.response.status) {
-                HttpStatusCode.Unauthorized -> {
-                    CloudServiceException.NotAuthenticatedException()
-                }
-
-                HttpStatusCode.NotFound -> {
-                    CloudServiceException.NotFoundException(itemId)
-                }
-
-                HttpStatusCode.InsufficientStorage -> {
-                    CloudServiceException.InsufficientSpaceException()
-                }
-
-                HttpStatusCode.PreconditionFailed -> {
-                    CloudServiceException.ConflictException(itemId)
-                }
-
-                else -> {
-                    CloudServiceException.Unknown(e)
-                }
-            }
-        } catch (e: IOException) {
-            throw CloudServiceException.ConnectionException(e)
-        } catch (e: CloudServiceException) {
-            throw e
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CloudServiceException.Unknown(e)
-        }
+    private suspend fun <T> tryCall(
+        itemId: String = "unknown",
+        call: suspend () -> T
+    ): T {
+        return callDispatcher.tryCall(itemId, call)
     }
 }
 
 /**
  * Streams [source] as request body. WebDAV has no chunked upload, so large files are sent in
- * a single request, without holding the whole file in memory.
+ * a single request, without holding the whole file in memory. As [source] can only be read
+ * once, a retry needs a new instance with a new source.
+ *
+ * When reading fails or the source doesn't hold exactly [contentLength] bytes, the body is
+ * cancelled so a truncated file is never stored, and the cause is kept in [failure].
  */
 private class SourceContent(
     private val source: Source,
     override val contentLength: Long?,
     override val contentType: ContentType
 ) : OutgoingContent.WriteChannelContent() {
+    var failure: CloudServiceException.SourceReadException? = null
+        private set
+    var bytesWritten = 0L
+        private set
+
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
-            channel.writeFully(chunk)
+        try {
+            source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
+                channel.writeFully(chunk)
+                bytesWritten += chunk.size
+            }
+            if (contentLength != null && bytesWritten != contentLength) {
+                throw CloudServiceException.SourceReadException(
+                    IOException("Expected $contentLength bytes, but the source held $bytesWritten bytes")
+                )
+            }
+        } catch (e: CloudServiceException.SourceReadException) {
+            failure = e
+            channel.cancel(e)
         }
     }
 }

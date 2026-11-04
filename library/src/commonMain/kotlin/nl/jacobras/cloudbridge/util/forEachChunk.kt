@@ -38,3 +38,30 @@ internal suspend fun Source.forEachChunk(
         offset += chunk.size
     } while (!isLast)
 }
+
+/**
+ * Opens a source with [openSource], reads it with [Source.forEachChunk] and closes it.
+ *
+ * @throws CloudServiceException.SourceReadException when opening, reading or closing the source
+ * fails.
+ */
+@Suppress("TooGenericExceptionCaught")
+internal suspend fun forEachChunk(
+    openSource: suspend () -> Source,
+    chunkSizeBytes: Int,
+    block: suspend (chunk: ByteArray, offset: Long, isLast: Boolean) -> Unit
+) {
+    val source = SafeSourceOpener(openSource).open()
+    try {
+        source.forEachChunk(chunkSizeBytes, block)
+    } catch (e: Throwable) {
+        source.closeSuppressing(e)
+        throw e
+    }
+
+    try {
+        source.close()
+    } catch (e: IOException) {
+        throw CloudServiceException.SourceReadException(e)
+    }
+}

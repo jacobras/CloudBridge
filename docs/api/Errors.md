@@ -13,6 +13,7 @@ These are expected in normal use.
 | `CloudServiceException.InsufficientSpaceException` | The account has no storage space left       |
 | `CloudServiceException.NotAuthenticatedException`  | The service has no valid access token (yet) |
 | `CloudServiceException.NotFoundException`          | The requested item could not be found       |
+| `CloudServiceException.RateLimitException`         | A [rate limit](RateLimiting.md) was hit     |
 
 ## Less common exceptions
 
@@ -22,5 +23,5 @@ These are not expected to happen during normal use.
 |--------------------------------------------------|-------------------------------------------------------------------------------------------|
 | `CloudServiceException.IllegalArgumentException` | An argument is invalid, e.g. a missing or wrong `sizeInBytes` for a large OneDrive upload |
 | `CloudServiceException.SinkWriteException`       | Writing the download to the `Sink` failed                                                 |
-| `CloudServiceException.SourceReadException`      | Reading the `Source` to upload failed                                                     |
+| `CloudServiceException.SourceReadException`      | Reading the `Source` to upload failed, or it was already read                             |
 | `CloudServiceException.Unknown`                  | Any other unexpected error                                                                |

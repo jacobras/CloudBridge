@@ -1,6 +1,7 @@
 package nl.jacobras.cloudbridge
 
 import kotlinx.io.IOException
+import kotlin.time.Duration
 
 public open class CloudServiceException : Exception {
 
@@ -31,6 +32,13 @@ public open class CloudServiceException : Exception {
 
     public class InsufficientSpaceException : CloudServiceException(
         "The cloud account doesn't have enough available storage space left"
+    )
+
+    /**
+     * @param retryAfter How long the service asked to wait before trying again, if it told.
+     */
+    public class RateLimitException(public val retryAfter: Duration?) : CloudServiceException(
+        "The cloud service rejected the request because of a rate limit"
     )
 
     public class IllegalArgumentException(message: String) : CloudServiceException(message)

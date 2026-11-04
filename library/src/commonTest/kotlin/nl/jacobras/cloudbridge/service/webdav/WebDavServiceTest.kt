@@ -1,3 +1,5 @@
+@file:OptIn(InternalCloudBridgeApi::class)
+
 package nl.jacobras.cloudbridge.service.webdav
 
 import assertk.assertFailure
@@ -6,6 +8,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -17,9 +20,13 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
+import kotlinx.io.RawSource
+import kotlinx.io.buffered
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
@@ -27,10 +34,13 @@ import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
+import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class WebDavServiceTest {
@@ -102,6 +112,148 @@ class WebDavServiceTest {
             HttpMethod("PROPFIND")
         )
         assertThat(engine.requestHistory.last().headers["Depth"]).isEqualTo("0")
+    }
+
+    @Test
+    fun `rate-limited text upload is retried with the same body`() = runTest {
+        val engine = rateLimitOncePutEngine()
+        val service = webDavService(
+            engine = engine,
+            rateLimiter = RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+
+        service.createFile("/Notes for Android/note.txt".asFilePath(), "hello")
+
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Put,
+            HttpMethod.Put,
+            HttpMethod("PROPFIND")
+        )
+        assertThat(engine.requestHistory.take(2).map { it.body.toByteArray().decodeToString() })
+            .containsExactly("hello", "hello")
+    }
+
+    @Test
+    fun `rate-limited source upload is retried and calls source param again`() = runTest {
+        val putBodies = mutableListOf<List<Byte>>()
+        val engine = rateLimitOncePutEngine(putBodies)
+        val service = webDavService(
+            engine,
+            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        var opened = 0
+        val progress = mutableListOf<Pair<Long, Long?>>()
+
+        service.createFile(
+            path = "/Notes for Android/note.txt".asFilePath(),
+            source = {
+                opened++
+                bufferOf(10)
+            },
+            sizeInBytes = 10,
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
+        )
+
+        assertThat(opened).isEqualTo(2)
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Put,
+            HttpMethod.Put,
+            HttpMethod("PROPFIND")
+        )
+        val expected = bufferOf(10).readByteArray().toList()
+        assertThat(putBodies).containsExactly(expected, expected)
+        // Reported once when done, not for the rate-limited attempt
+        assertThat(progress).containsExactly(10L to 10L)
+    }
+
+    @Test
+    fun `source param returning the same Source throws a SourceReadException`() = runTest {
+        val engine = rateLimitOncePutEngine()
+        val service = webDavService(
+            engine,
+            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        val source = bufferOf(10)
+
+        assertFailure {
+            service.createFile(
+                path = "/Notes for Android/note.txt".asFilePath(),
+                source = { source }
+            )
+        }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put)
+    }
+
+    @Test
+    fun `source param returning an already-read source throws SourceReadException`() = runTest {
+        val engine = rateLimitOncePutEngine()
+        val service = webDavService(
+            engine,
+            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        val stream: RawSource = bufferOf(10)
+
+        assertFailure {
+            service.createFile(
+                path = "/Notes for Android/note.txt".asFilePath(),
+                source = { stream.buffered() }
+            )
+        }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put)
+    }
+
+    @Test
+    fun `source with fewer bytes than sizeInBytes throws SourceReadException`() = runTest {
+        val engine = MockEngine { request ->
+            request.body.toByteArray()
+            respond(content = "", status = HttpStatusCode.Created)
+        }
+        val service = webDavService(engine)
+
+        assertFailure {
+            service.createFile(
+                path = "/image.png".asFilePath(),
+                source = { bufferOf(10) },
+                sizeInBytes = 12
+            )
+        }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+    }
+
+    @Test
+    fun `failing source read during upload throws SourceReadException`() = runTest {
+        val engine = MockEngine { request ->
+            request.body.toByteArray()
+            respond(content = "", status = HttpStatusCode.Created)
+        }
+        val service = webDavService(engine)
+
+        assertFailure {
+            service.createFile(
+                path = "/image.png".asFilePath(),
+                source = { failingSource(5) }
+            )
+        }
+            .isInstanceOf<CloudServiceException.SourceReadException>()
+    }
+
+    @Test
+    fun `rate limit exception`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(HttpHeaders.RetryAfter, "5")
+            )
+        }
+        val service = webDavService(engine, rateLimiter = null)
+
+        assertFailure { service.delete(CloudItemId("/note.txt")) }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isEqualTo(5.seconds)
     }
 
     @Test
@@ -286,8 +438,8 @@ class WebDavServiceTest {
         )
 
         val file = service.createFile(
-            "/image.png".asFilePath(),
-            bufferOf(3),
+            path = "/image.png".asFilePath(),
+            source = { bufferOf(3) },
             sizeInBytes = 3,
             mimeType = "image/png"
         )
@@ -555,14 +707,44 @@ private const val WEBDAV_FILE_RESPONSE =
 private const val WEBDAV_FOLDER_RESPONSE =
     """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/server.php/Notes%20for%20Android/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype><d:getlastmodified>Tue, 02 Apr 2024 18:27:06 GMT</d:getlastmodified></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"""
 
-private fun webDavService(engine: MockEngine) = WebDavService(
+private fun webDavService(
+    engine: MockEngine,
+    rateLimiter: RateLimiter? = RateLimiter(10, Double.POSITIVE_INFINITY)
+) = WebDavService(
     credentials = WebDavCredentials(
         serverUrl = "https://webdav.example.com/server.php",
         username = "user",
         password = "pass"
     ),
-    httpClient = HttpClient(engine) { applyDefaults() }
+    httpClient = HttpClient(engine) { applyDefaults() },
+    rateLimiter = rateLimiter
 )
+
+/**
+ * Responds 429 to the first PUT, and success to everything after.
+ *
+ * @param putRequestBodies the PUT request bodies received by the engine
+ */
+private fun rateLimitOncePutEngine(putRequestBodies: MutableList<List<Byte>> = mutableListOf()): MockEngine {
+    var putAttempts = 0
+    return MockEngine { request ->
+        if (request.method == HttpMethod.Put) {
+            putRequestBodies += request.body.toByteArray().toList()
+        }
+        when (request.method) {
+            HttpMethod.Put if putAttempts++ == 0 -> respond(
+                content = "",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(HttpHeaders.RetryAfter, "1")
+            )
+            HttpMethod.Put -> respond(
+                content = "",
+                status = HttpStatusCode.Created
+            )
+            else -> respondMultiStatus(WEBDAV_FILE_RESPONSE)
+        }
+    }
+}
 
 private fun MockRequestHandleScope.respondMultiStatus(content: String) = respond(
     content = content,

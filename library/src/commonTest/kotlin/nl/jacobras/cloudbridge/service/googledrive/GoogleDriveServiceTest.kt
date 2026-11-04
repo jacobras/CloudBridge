@@ -1,3 +1,5 @@
+@file:OptIn(InternalCloudBridgeApi::class)
+
 package nl.jacobras.cloudbridge.service.googledrive
 
 import assertk.assertFailure
@@ -9,6 +11,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -21,22 +24,26 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
+import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class GoogleDriveServiceTest {
@@ -69,7 +76,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("invalid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getUserInfo() }
@@ -78,6 +85,65 @@ class GoogleDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://www.googleapis.com/drive/v3/about?fields=user")
         }
+    }
+
+    @Test
+    fun `rate limit exception`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":429,"message":"Rate Limit Exceeded","errors":[{"message":"Rate Limit Exceeded","domain":"usageLimits","reason":"rateLimitExceeded"}]}}""",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(
+                    HttpHeaders.ContentType to listOf("application/json; charset=UTF-8"),
+                    HttpHeaders.RetryAfter to listOf("30")
+                )
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = null
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isEqualTo(30.seconds)
+    }
+
+    @Test
+    fun `rate limit exception from user limits`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "error": {
+                        "errors": [
+                          {
+                            "domain": "usageLimits",
+                            "reason": "userRateLimitExceeded",
+                            "message": "User Rate Limit Exceeded"
+                          }
+                        ],
+                        "code": 403,
+                        "message": "User Rate Limit Exceeded"
+                      }
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.Forbidden,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+            )
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = null
+        )
+
+        assertFailure { service.getUserInfo() }
+            .isInstanceOf<CloudServiceException.RateLimitException>()
+            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isNull()
     }
 
     @Test
@@ -107,7 +173,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg")) }
@@ -131,7 +197,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val sink = Buffer()
@@ -156,7 +222,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
@@ -174,7 +240,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
@@ -206,7 +272,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure {
@@ -252,7 +318,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.updateFile(
@@ -283,6 +349,56 @@ class GoogleDriveServiceTest {
         assertThat(engine.requestHistory[0].body.contentType.toString()).isEqualTo("text/plain")
         assertThat(engine.requestHistory[1].url.toString())
             .isEqualTo("https://www.googleapis.com/drive/v3/files/appDataFolder?fields=id")
+    }
+
+    @Test
+    fun `rate-limited app data folder lookup after update doesn't repeat the update`() = runTest {
+        var appDataFolderAttempts = 0
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Patch) {
+                respond(
+                    content = """
+                        {
+                          "mimeType": "text/plain",
+                          "parents": ["1THG-A2vXis2oKtcHO7fK6u_1VLRN"],
+                          "size": "8",
+                          "id": "1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg",
+                          "name": "hello.txt",
+                          "trashed": false,
+                          "modifiedTime": "2025-10-12T10:00:00.000Z",
+                          "version": "2"
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+            } else if (appDataFolderAttempts++ == 0) {
+                respond(content = "", status = HttpStatusCode.TooManyRequests)
+            } else {
+                respond(
+                    content = """{"id": "1THG-A2vXis2oKtcHO7fK6u_1VLRN"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+
+        val file = service.updateFile(
+            CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
+            "Updated!"
+        )
+
+        assertThat(file.path).isEqualTo("/hello.txt".asFilePath())
+        assertThat(engine.requestHistory.map { it.method }).containsExactly(
+            HttpMethod.Patch,
+            HttpMethod.Get,
+            HttpMethod.Get
+        )
     }
 
     @Test
@@ -317,7 +433,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("first"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         service.updateFile(CloudItemId("file1"), "Updated!")
@@ -358,7 +474,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.createFile("/hello.txt".asFilePath(), "Hello you!")
@@ -411,7 +527,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.createFolder("/Work".asFolderPath())
@@ -459,7 +575,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.createFolder("/parentId/Sub".asFolderPath())
@@ -478,12 +594,12 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.createFile("/hello.txt".asFilePath(), "Hello") }
             .isInstanceOf<CloudServiceException.ConflictException>()
-        assertFailure { service.createFile("/hello.txt".asFilePath(), bufferOf(3)) }
+        assertFailure { service.createFile("/hello.txt".asFilePath(), { bufferOf(3) }) }
             .isInstanceOf<CloudServiceException.ConflictException>()
         assertFailure { service.createFolder("/hello.txt".asFolderPath()) }
             .isInstanceOf<CloudServiceException.ConflictException>()
@@ -506,7 +622,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.moveFile(
@@ -558,7 +674,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.moveFile(
@@ -597,7 +713,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.moveFolder(
@@ -631,7 +747,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure {
@@ -658,7 +774,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         service.moveFile(
@@ -674,7 +790,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.moveFolder(CloudItemId("1BZWMYkXl"), "/".asFolderPath()) }
@@ -719,14 +835,16 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
+        val progress = mutableListOf<Pair<Long, Long?>>()
 
         val file = service.createFile(
-            "/archive.zip".asFilePath(),
-            bufferOf(10),
-            mimeType = "application/zip"
+            path = "/archive.zip".asFilePath(),
+            source = { bufferOf(10) },
+            mimeType = "application/zip",
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
         )
 
         assertThat(file).isEqualTo(
@@ -761,6 +879,81 @@ class GoogleDriveServiceTest {
             "bytes 4-7/*",
             "bytes 8-9/10"
         )
+        // Without sizeInBytes, the total is only known with the last chunk
+        assertThat(progress).containsExactly(4L to null, 8L to null, 10L to 10L)
+    }
+
+    @Test
+    fun `small binary file upload reports progress once when done`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.isNameCheck()) respondFiles() else respondJson(EXISTING_FILE_JSON)
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+        val progress = mutableListOf<Pair<Long, Long?>>()
+
+        service.createFile(
+            path = "/image.png".asFilePath(),
+            source = { bufferOf(3) },
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
+        )
+
+        assertThat(progress).containsExactly(3L to 3L)
+    }
+
+    @Test
+    fun `rate-limited chunk is retried on its own`() = runTest {
+        val sessionUri = "https://www.googleapis.com/upload/session1"
+        var secondChunkAttempts = 0
+        val engine = MockEngine { request ->
+            val range = request.headers[HttpHeaders.ContentRange]
+            when {
+                request.isNameCheck() -> respondFiles()
+                request.method == HttpMethod.Post -> respond(
+                    content = "",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.Location, sessionUri)
+                )
+                range == "bytes 4-7/*" && secondChunkAttempts++ == 0 -> respond(
+                    content = """{"error":{"code":429,"message":"Rate Limit Exceeded","errors":[{"reason":"rateLimitExceeded"}]}}""",
+                    status = HttpStatusCode.TooManyRequests,
+                    headers = headersOf(
+                        HttpHeaders.ContentType to listOf("application/json; charset=UTF-8"),
+                        HttpHeaders.RetryAfter to listOf("1")
+                    )
+                )
+                range?.endsWith("/10") == true -> respond(
+                    content = """{"id":"file1","name":"archive.zip","mimeType":"application/zip","size":"10","parents":["appDataFolder"],"modifiedTime":"2025-10-11T16:31:27.438Z","version":"1"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json; charset=UTF-8")
+                )
+                else -> respond(content = "", status = HttpStatusCode.PermanentRedirect)
+            }
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+        )
+        service.uploadChunkSize = 4
+
+        val file = service.createFile(
+            path = "/archive.zip".asFilePath(),
+            source = { bufferOf(10) },
+            mimeType = "application/zip"
+        )
+
+        assertThat(file.id).isEqualTo(CloudItemId("file1"))
+        val chunks = engine.requestHistory.filter { it.method == HttpMethod.Put }
+        assertThat(chunks.map { it.headers[HttpHeaders.ContentRange] }).containsExactly(
+            "bytes 0-3/*",
+            "bytes 4-7/*",
+            "bytes 4-7/*",
+            "bytes 8-9/10"
+        )
+        assertThat(engine.requestHistory.count { it.method == HttpMethod.Post }).isEqualTo(1)
     }
 
     @Test
@@ -785,11 +978,15 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
 
-        assertFailure { service.createFile("/archive.zip".asFilePath(), bufferOf(10)) }
+        assertFailure {
+            service.createFile(
+                path = "/archive.zip".asFilePath(),
+                source = { bufferOf(10) })
+        }
             .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
     }
 
@@ -798,10 +995,10 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { error("No request expected") }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.updateFile(CloudItemId("file1"), failingSource()) }
+        assertFailure { service.updateFile(CloudItemId(value = "file1"), { failingSource() }) }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
@@ -828,11 +1025,15 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
 
-        assertFailure { service.createFile("/archive.zip".asFilePath(), failingSource(5)) }
+        assertFailure {
+            service.createFile(
+                path = "/archive.zip".asFilePath(),
+                source = { failingSource(5) })
+        }
             .isInstanceOf<CloudServiceException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Get,
@@ -880,7 +1081,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val items = service.listFiles(FolderPath("/"))
@@ -922,7 +1123,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val file = service.getFileInfo("/1THG-A2vXis2oKtcHO7fK6u_1VLRN/hello.txt".asFilePath())
@@ -946,7 +1147,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondFiles() }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFileInfo("/it's.txt".asFilePath()) }
@@ -970,7 +1171,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         val folder = service.getFolderInfo("/folder1".asFolderPath())
@@ -993,7 +1194,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFolderInfo("/".asFolderPath()) }
@@ -1006,7 +1207,7 @@ class GoogleDriveServiceTest {
         val engine = MockEngine { respondJson(EXISTING_FILE_JSON) }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFolderInfo("/1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg".asFolderPath()) }
@@ -1023,7 +1224,7 @@ class GoogleDriveServiceTest {
         }
         val service = GoogleDriveService(
             token = CloudAccessToken("valid"),
-            httpClient = HttpClient(engine) { applyDefaults() }
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         service.delete(CloudItemId("1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg"))
