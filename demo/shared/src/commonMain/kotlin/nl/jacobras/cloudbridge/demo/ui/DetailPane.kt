@@ -276,22 +276,22 @@ internal fun DetailPane(
 
 @Composable
 private fun UploadProgressRow(progress: UploadProgress) {
+    val totalBytes = progress.totalBytes
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = buildString {
                 append("Uploading ${progress.filesDone}/${progress.fileCount} files")
-                append(" (${HumanReadable.fileSize(progress.bytesRead)}")
-                if (progress.totalBytes != null) {
-                    append(" of ${HumanReadable.fileSize(progress.totalBytes)}")
+                append(" (${HumanReadable.fileSize(progress.bytesSent)}")
+                if (totalBytes != null) {
+                    append(" of ${HumanReadable.fileSize(totalBytes)}")
                 }
                 append(")")
             },
             style = MaterialTheme.typography.bodyMedium
         )
-        val totalBytes = progress.totalBytes
         if (totalBytes != null && totalBytes > 0) {
             LinearProgressIndicator(
-                progress = { (progress.bytesRead.toFloat() / totalBytes).coerceIn(0f, 1f) },
+                progress = { (progress.bytesSent.toFloat() / totalBytes).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth()
             )
         } else {

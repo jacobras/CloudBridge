@@ -176,14 +176,12 @@ internal class ServiceViewModel(
     fun uploadFiles(files: List<LocalFile>) {
         if (files.isEmpty() || uploadProgress.value != null) return
         val targetFolder = path.value
-        val sizes = files.map { it.sizeInBytes }
-        val totalBytes = if (sizes.any { it == null }) null else sizes.sumOf { it ?: 0L }
 
         uploadProgress.update {
             UploadProgress(
-                bytesReadPerFile = List(files.size) { 0L },
-                filesDone = 0,
-                totalBytes = totalBytes
+                bytesSentPerFile = List(files.size) { 0L },
+                totalBytesPerFile = files.map { it.sizeInBytes },
+                filesDone = 0
             )
         }
         error.update { "" }
@@ -193,19 +191,19 @@ internal class ServiceViewModel(
                 try {
                     service.createFile(
                         path = "${targetFolder.toString().trimEnd('/')}/${file.name}".asFilePath(),
-                        source = {
-                            // Re-opened on retry, so bytesRead restarts from 0 for this file.
-                            ProgressSource(file.open()) { bytesRead ->
-                                uploadProgress.update { progress ->
-                                    progress?.copy(
-                                        bytesReadPerFile = progress.bytesReadPerFile.toMutableList()
-                                            .also { it[index] = bytesRead }
-                                    )
-                                }
-                            }.buffered()
-                        },
+                        source = { file.open().buffered() },
                         sizeInBytes = file.sizeInBytes,
-                        mimeType = file.mimeType ?: "application/octet-stream"
+                        mimeType = file.mimeType ?: "application/octet-stream",
+                        onProgress = { bytesSent, totalBytes ->
+                            uploadProgress.update { progress ->
+                                progress?.copy(
+                                    bytesSentPerFile = progress.bytesSentPerFile.toMutableList()
+                                        .also { it[index] = bytesSent },
+                                    totalBytesPerFile = progress.totalBytesPerFile.toMutableList()
+                                        .also { it[index] = totalBytes ?: it[index] }
+                                )
+                            }
+                        }
                     )
                     uploadProgress.update { it?.copy(filesDone = it.filesDone + 1) }
                 } catch (e: CloudServiceException) {
