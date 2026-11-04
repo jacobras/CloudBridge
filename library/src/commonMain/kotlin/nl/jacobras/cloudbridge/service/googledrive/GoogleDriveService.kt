@@ -46,6 +46,7 @@ import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
+import nl.jacobras.cloudbridge.util.reportChunkSent
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
@@ -83,7 +84,8 @@ public class GoogleDriveService internal constructor(
             HttpStatusCode.TooManyRequests -> {
                 CloudServiceException.RateLimitException(response.retryAfter())
             }
-            HttpStatusCode.Forbidden if message?.contains("RateLimitExceeded", ignoreCase = true) == true -> {
+            HttpStatusCode.Forbidden
+                if message?.contains("RateLimitExceeded", ignoreCase = true) == true -> {
                 CloudServiceException.RateLimitException(response.retryAfter())
             }
             HttpStatusCode.Forbidden if message?.contains("storageQuotaExceeded") == true -> {
@@ -203,7 +205,8 @@ public class GoogleDriveService internal constructor(
         path: FilePath,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         val metadata = path.toMetadata(mimeType)
         ensureNameAvailable(parent = metadata.parents.single(), name = metadata.name)
@@ -212,7 +215,8 @@ public class GoogleDriveService internal constructor(
             source = source,
             sizeInBytes = sizeInBytes,
             mimeType = mimeType,
-            uploadSingle = { createSingle(metadata, it) },
+            onProgress = onProgress,
+            uploadSingle = { content -> createSingle(metadata, content) },
             startSession = {
                 clientWithAuth.post("${baseUrl}upload/drive/v3/files") {
                     resumableUploadParams(mimeType, sizeInBytes)
@@ -231,14 +235,16 @@ public class GoogleDriveService internal constructor(
         id: CloudItemId,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         val response = upload(
             itemId = id.value,
             source = source,
             sizeInBytes = sizeInBytes,
             mimeType = mimeType,
-            uploadSingle = { api.updateFile(id.value, mimeType, it) },
+            onProgress = onProgress,
+            uploadSingle = { content -> api.updateFile(id.value, mimeType, content) },
             startSession = {
                 clientWithAuth.patch("${baseUrl}upload/drive/v3/files/${id.value}") {
                     resumableUploadParams(mimeType, sizeInBytes)
@@ -383,6 +389,7 @@ public class GoogleDriveService internal constructor(
         source: suspend () -> Source,
         sizeInBytes: Long?,
         mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?,
         uploadSingle: suspend (ByteArray) -> DriveFile,
         startSession: suspend () -> HttpResponse
     ): DriveFile {
@@ -391,6 +398,7 @@ public class GoogleDriveService internal constructor(
         forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
             if (offset == 0L && isLast) {
                 response = tryCall(itemId) { uploadSingle(chunk) }
+                onProgress?.reportChunkSent(sizeInBytes, offset, chunk.size, isLast)
                 return@forEachChunk
             }
 
@@ -418,6 +426,7 @@ public class GoogleDriveService internal constructor(
                     else -> throw ResponseException(chunkResponse, chunkResponse.bodyAsText())
                 }
             }
+            onProgress?.reportChunkSent(sizeInBytes, offset, chunk.size, isLast)
         }
         return checkNotNull(response)
     }

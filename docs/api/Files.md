@@ -98,6 +98,7 @@ try {
         source = { SystemFileSystem.source(localPath).buffered() },
         sizeInBytes = SystemFileSystem.metadataOrNull(localPath)?.size,
         mimeType = "image/jpeg",
+        onProgress = { bytesSent, totalBytes -> println("Sent $bytesSent of $totalBytes bytes") }
     )
 } catch (e: CloudServiceException) {
     // Handle...
@@ -114,7 +115,10 @@ try {
   that case).
 * `mimeType` defaults to `application/octet-stream`. Dropbox doesn't store MIME types and ignores
   it.
-* WebDAV has no chunked uploads, so the content is streamed in a single request.
+* `onProgress` is optional and useful to track how far uploads are progressing.
+  `totalBytes` is `sizeInBytes` if given, otherwise only known after the last chunk.
+* WebDAV has no chunked uploads, so the content is streamed in a single request and `onProgress`
+  is called once, when done.
 * `updateFile()` has as similar signature as `createFile()`.
 
 ### Using an `InputStream`

@@ -157,9 +157,16 @@ public class WebDavService internal constructor(
         path: FilePath,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
-        return uploadSource(path.toString(), sizeInBytes, ContentType.parse(mimeType), source)
+        return uploadSource(
+            path = path.toString(),
+            sizeInBytes = sizeInBytes,
+            contentType = ContentType.parse(mimeType),
+            source = source,
+            onProgress = onProgress
+        )
     }
 
     override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
@@ -171,20 +178,33 @@ public class WebDavService internal constructor(
         id: CloudItemId,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
-        return uploadSource(id.value, sizeInBytes, ContentType.parse(mimeType), source)
+        return uploadSource(
+            path = id.value,
+            sizeInBytes = sizeInBytes,
+            contentType = ContentType.parse(mimeType),
+            source = source,
+            onProgress = onProgress
+        )
     }
 
     private suspend fun uploadSource(
         path: String,
         sizeInBytes: Long?,
         contentType: ContentType,
-        source: suspend () -> Source
+        source: suspend () -> Source,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         val opener = SafeSourceOpener(source)
         return upload(path) {
-            opener.open().use { put(path, SourceContent(it, sizeInBytes, contentType)) }
+            val bytesSent = opener.open().use {
+                val content = SourceContent(it, sizeInBytes, contentType)
+                put(path, content)
+                content.bytesWritten
+            }
+            onProgress?.invoke(bytesSent, bytesSent)
         }
     }
 
@@ -345,10 +365,11 @@ private class SourceContent(
 ) : OutgoingContent.WriteChannelContent() {
     var failure: CloudServiceException.SourceReadException? = null
         private set
+    var bytesWritten = 0L
+        private set
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
         try {
-            var bytesWritten = 0L
             source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
                 channel.writeFully(chunk)
                 bytesWritten += chunk.size

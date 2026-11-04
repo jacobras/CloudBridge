@@ -164,15 +164,27 @@ class DummyCloudService(
         path: FilePath,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
-    ): CloudFile = createFile(path, source().use { it.readByteArray() })
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        val bytes = source().use { it.readByteArray() }
+        val file = createFile(path, bytes)
+        onProgress?.invoke(bytes.size.toLong(), bytes.size.toLong())
+        return file
+    }
 
     override suspend fun updateFile(
         id: CloudItemId,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
-    ): CloudFile = updateFile(id, source().use { it.readByteArray() })
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
+    ): CloudFile {
+        val bytes = source().use { it.readByteArray() }
+        val file = updateFile(id, bytes)
+        onProgress?.invoke(bytes.size.toLong(), bytes.size.toLong())
+        return file
+    }
 
     override suspend fun downloadFile(id: CloudItemId): String {
         return downloadBytes(id).decodeToString()

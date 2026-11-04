@@ -35,6 +35,7 @@ import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
+import nl.jacobras.cloudbridge.util.reportChunkSent
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
@@ -186,18 +187,16 @@ public class OneDriveService internal constructor(
         path: FilePath,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         return upload(
             itemId = path.toString(),
             source = source,
             sizeInBytes = sizeInBytes,
-            uploadSingle = {
-                api.createFile(
-                    path.toString(withLeadingSlash = false),
-                    mimeType,
-                    it
-                )
+            onProgress = onProgress,
+            uploadSingle = { content ->
+                api.createFile(path.toString(withLeadingSlash = false), mimeType, content)
             },
             createSession = {
                 api.createUploadSession(
@@ -212,13 +211,15 @@ public class OneDriveService internal constructor(
         id: CloudItemId,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         val response = upload(
             itemId = id.value,
             source = source,
             sizeInBytes = sizeInBytes,
-            uploadSingle = { api.updateFile(id.value, mimeType, it) },
+            onProgress = onProgress,
+            uploadSingle = { content -> api.updateFile(id.value, mimeType, content) },
             createSession = {
                 api.createUploadSessionById(id.value, json.encodeToString(CreateUploadSessionArg()))
             }
@@ -302,6 +303,7 @@ public class OneDriveService internal constructor(
         itemId: String,
         source: suspend () -> Source,
         sizeInBytes: Long?,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?,
         uploadSingle: suspend (ByteArray) -> DriveItem,
         createSession: suspend () -> UploadSession
     ): DriveItem {
@@ -310,6 +312,7 @@ public class OneDriveService internal constructor(
         forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
             if (offset == 0L && isLast) {
                 response = tryCall(itemId) { uploadSingle(chunk) }
+                onProgress?.reportChunkSent(sizeInBytes, offset, chunk.size, isLast)
                 return@forEachChunk
             }
 
@@ -341,6 +344,7 @@ public class OneDriveService internal constructor(
                     response = json.decodeFromString<DriveItem>(chunkResponse.bodyAsText())
                 }
             }
+            onProgress?.reportChunkSent(total, offset, chunk.size, isLast)
         }
         return checkNotNull(response)
     }

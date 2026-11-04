@@ -142,6 +142,7 @@ class WebDavServiceTest {
             RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
         )
         var opened = 0
+        val progress = mutableListOf<Pair<Long, Long?>>()
 
         service.createFile(
             path = "/Notes for Android/note.txt".asFilePath(),
@@ -149,7 +150,8 @@ class WebDavServiceTest {
                 opened++
                 bufferOf(10)
             },
-            sizeInBytes = 10
+            sizeInBytes = 10,
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
         )
 
         assertThat(opened).isEqualTo(2)
@@ -160,6 +162,8 @@ class WebDavServiceTest {
         )
         val expected = bufferOf(10).readByteArray().toList()
         assertThat(putBodies).containsExactly(expected, expected)
+        // Reported once when done, not for the rate-limited attempt
+        assertThat(progress).containsExactly(10L to 10L)
     }
 
     @Test

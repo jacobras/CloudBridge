@@ -23,10 +23,10 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
-import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -454,10 +454,12 @@ class DropboxServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
+        val progress = mutableListOf<Pair<Long, Long?>>()
 
         val file = service.createFile(
             path = "/archive.zip".asFilePath(),
-            source = { bufferOf(10) }
+            source = { bufferOf(10) },
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
         )
 
         assertThat(file.revision).isEqualTo("01640e48e7e6a010000000301ae1691")
@@ -476,6 +478,8 @@ class DropboxServiceTest {
             4,
             2
         )
+        // Without sizeInBytes, the total is only known with the last chunk
+        assertThat(progress).containsExactly(4L to null, 8L to null, 10L to 10L)
     }
 
     @Test

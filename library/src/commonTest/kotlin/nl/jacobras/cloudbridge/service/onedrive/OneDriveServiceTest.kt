@@ -24,10 +24,10 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
-import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -805,11 +805,13 @@ class OneDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
+        val progress = mutableListOf<Pair<Long, Long?>>()
 
         val file = service.createFile(
             path = "archive.zip".asFilePath(),
             source = { bufferOf(10) },
-            sizeInBytes = 10
+            sizeInBytes = 10,
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
         )
 
         assertThat(file.id).isEqualTo(CloudItemId("33488461260C4A76!s361fe060efd641f586d9b4af4478f0dc"))
@@ -830,6 +832,7 @@ class OneDriveServiceTest {
             null,
             null
         )
+        assertThat(progress).containsExactly(4L to 10L, 8L to 10L, 10L to 10L)
     }
 
     @Test

@@ -82,6 +82,7 @@ public interface CloudService {
      * Each returned source is read until its end and then closed.
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
+     * @param onProgress Callback with upload progress.
      * @return The created file.
      * @throws CloudServiceException.IllegalArgumentException when uploading >10 MB to OneDrive and
      * [sizeInBytes] is missing or doesn't match the content size.
@@ -92,7 +93,8 @@ public interface CloudService {
         path: FilePath,
         source: suspend () -> Source,
         sizeInBytes: Long? = null,
-        mimeType: String = "application/octet-stream"
+        mimeType: String = "application/octet-stream",
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)? = null
     ): CloudFile
 
     /**
@@ -103,6 +105,7 @@ public interface CloudService {
      * Each returned source is read until its end and then closed.
      * @param sizeInBytes Size of the content, only required for OneDrive if > 10 MB.
      * @param mimeType MIME type of the content. Not used by Dropbox.
+     * @param onProgress Callback with upload progress.
      * @return The updated file.
      * @throws CloudServiceException.IllegalArgumentException when uploading >10 MB to OneDrive and
      * [sizeInBytes] is missing or doesn't match the content size.
@@ -113,7 +116,8 @@ public interface CloudService {
         id: CloudItemId,
         source: suspend () -> Source,
         sizeInBytes: Long? = null,
-        mimeType: String = "application/octet-stream"
+        mimeType: String = "application/octet-stream",
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)? = null
     ): CloudFile
 
     /**

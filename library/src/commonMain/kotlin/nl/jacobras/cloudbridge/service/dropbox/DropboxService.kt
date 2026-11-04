@@ -28,6 +28,7 @@ import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
+import nl.jacobras.cloudbridge.util.reportChunkSent
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
 import kotlin.time.Instant
@@ -165,11 +166,14 @@ public class DropboxService internal constructor(
         path: FilePath,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         return upload(
             arg = DropboxUploadArg(path = path.toString(), mode = Mode.Add),
-            source = source
+            source = source,
+            sizeInBytes = sizeInBytes,
+            onProgress = onProgress
         ).toCloudFile()
     }
 
@@ -177,11 +181,14 @@ public class DropboxService internal constructor(
         id: CloudItemId,
         source: suspend () -> Source,
         sizeInBytes: Long?,
-        mimeType: String
+        mimeType: String,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
         return upload(
             arg = DropboxUploadArg(path = id.value, mode = Mode.Overwrite),
-            source = source
+            source = source,
+            sizeInBytes = sizeInBytes,
+            onProgress = onProgress
         ).toCloudFile()
     }
 
@@ -190,7 +197,9 @@ public class DropboxService internal constructor(
      */
     private suspend fun upload(
         arg: DropboxUploadArg,
-        source: suspend () -> Source
+        source: suspend () -> Source,
+        sizeInBytes: Long?,
+        onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): UploadResponse {
         var sessionId: String? = null
         var response: UploadResponse? = null
@@ -235,6 +244,7 @@ public class DropboxService internal constructor(
                     }
                 }
             }
+            onProgress?.reportChunkSent(sizeInBytes, offset, chunk.size, isLast)
         }
         return checkNotNull(response)
     }

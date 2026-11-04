@@ -27,10 +27,10 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
-import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -838,11 +838,13 @@ class GoogleDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
         service.uploadChunkSize = 4
+        val progress = mutableListOf<Pair<Long, Long?>>()
 
         val file = service.createFile(
             path = "/archive.zip".asFilePath(),
             source = { bufferOf(10) },
-            mimeType = "application/zip"
+            mimeType = "application/zip",
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
         )
 
         assertThat(file).isEqualTo(
@@ -877,6 +879,28 @@ class GoogleDriveServiceTest {
             "bytes 4-7/*",
             "bytes 8-9/10"
         )
+        // Without sizeInBytes, the total is only known with the last chunk
+        assertThat(progress).containsExactly(4L to null, 8L to null, 10L to 10L)
+    }
+
+    @Test
+    fun `small binary file upload reports progress once when done`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.isNameCheck()) respondFiles() else respondJson(EXISTING_FILE_JSON)
+        }
+        val service = GoogleDriveService(
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+        val progress = mutableListOf<Pair<Long, Long?>>()
+
+        service.createFile(
+            path = "/image.png".asFilePath(),
+            source = { bufferOf(3) },
+            onProgress = { bytesSent, totalBytes -> progress += bytesSent to totalBytes }
+        )
+
+        assertThat(progress).containsExactly(3L to 3L)
     }
 
     @Test
