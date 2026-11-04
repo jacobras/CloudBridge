@@ -25,10 +25,13 @@ internal fun setUpLogging() {
     CloudBridge.logger = KermitLogger()
     CloudBridgeInternals.extraHttpClientConfig = {
         install(Logging) {
-            // Not LoggingFormat.OkHttp: although it omits binary bodies, it slows streamed uploads
-            // down so much that large ones hit the CIO engine's request timeout. The default
-            // format does dump binary bodies, so long messages are truncated instead.
-            logger = TruncatingLogger(KermitKtorLogger(severity = Severity.Debug, logger = Logger))
+            // Not LoggingFormat.OkHttp: it slowed down requests too much, causing timeouts.
+            logger = BinaryBodyOmittingLogger(
+                KermitKtorLogger(
+                    severity = Severity.Debug,
+                    logger = Logger
+                )
+            )
             level = LogLevel.BODY
             sanitizeHeader { it == HttpHeaders.Authorization }
         }
@@ -36,18 +39,32 @@ internal fun setUpLogging() {
 }
 
 /**
- * Truncates messages longer than [MAX_LOG_LENGTH], which will usually be binary request bodies.
+ * Replaces bodies with a non-text content type (like file uploads) by a placeholder. Relies on the
+ * default format, which logs a body between "BODY Content-Type: x", "BODY START" and "BODY END".
  */
-private class TruncatingLogger(private val delegate: KtorLogger) : KtorLogger {
+private class BinaryBodyOmittingLogger(private val delegate: KtorLogger) : KtorLogger {
     override fun log(message: String) {
-        delegate.log(
-            if (message.length <= MAX_LOG_LENGTH) {
-                message
+        delegate.log(binaryBodyRegex.replace(message) { match ->
+            val contentType = match.groupValues[1]
+            if (contentType.isText()) {
+                match.value
             } else {
-                message.take(MAX_LOG_LENGTH) + "… (truncated, ${message.length} chars in total)"
+                "BODY Content-Type: $contentType\n" +
+                        "BODY (binary body omitted, ${match.groupValues[2].length} chars)\n" +
+                        "BODY END"
             }
-        )
+        })
+    }
+
+    private fun String.isText(): Boolean {
+        val type = substringBefore(';').trim().lowercase()
+        return type.startsWith("text/") ||
+                type.endsWith("json") ||
+                type.endsWith("xml") ||
+                type == "application/x-www-form-urlencoded"
     }
 }
 
-private const val MAX_LOG_LENGTH = 4_000
+private val binaryBodyRegex = Regex(
+    "BODY Content-Type: ([^\\n]*)\\nBODY START\\n([\\s\\S]*?)\\nBODY END"
+)
