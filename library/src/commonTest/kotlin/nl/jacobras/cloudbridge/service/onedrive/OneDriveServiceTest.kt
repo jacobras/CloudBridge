@@ -1,3 +1,5 @@
+@file:OptIn(InternalCloudBridgeApi::class)
+
 package nl.jacobras.cloudbridge.service.onedrive
 
 import assertk.assertFailure
@@ -22,7 +24,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.model.CloudFile

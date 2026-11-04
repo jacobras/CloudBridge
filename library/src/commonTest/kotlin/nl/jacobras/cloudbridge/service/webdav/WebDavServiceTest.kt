@@ -1,3 +1,5 @@
+@file:OptIn(InternalCloudBridgeApi::class)
+
 package nl.jacobras.cloudbridge.service.webdav
 
 import assertk.assertFailure
@@ -23,7 +25,8 @@ import kotlinx.io.Buffer
 import kotlinx.io.RawSource
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudBridge.applyDefaults
+import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
+import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder

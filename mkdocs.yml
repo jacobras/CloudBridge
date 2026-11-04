@@ -65,3 +65,4 @@ nav:
       - 'Files': 'api/Files.md'
       - 'Error handling': 'api/Errors.md'
       - 'Rate limiting': 'api/RateLimiting.md'
+      - 'Timeouts': 'api/Timeouts.md'
