@@ -54,8 +54,10 @@ kotlin {
         commonMain.dependencies {
             api(libs.ktor.client.core)
             implementation(libs.kotlin.coroutines.core)
+            implementation(libs.kotlin.crypto.md)
             implementation(libs.kotlin.crypto.sha2)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.kotlinx.json)

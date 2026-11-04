@@ -1,7 +1,9 @@
 package nl.jacobras.cloudbridge.service.webdav
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.HttpSend
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.plugin
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.request
@@ -40,6 +42,8 @@ import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.CallDispatcher
+import nl.jacobras.cloudbridge.service.webdav.auth.WebDavBasicAuthProvider
+import nl.jacobras.cloudbridge.service.webdav.auth.WebDavDigestAuthProvider
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavListParser
 import nl.jacobras.cloudbridge.service.webdav.parser.WebDavResource
 import nl.jacobras.cloudbridge.util.SafeSourceOpener
@@ -60,10 +64,35 @@ public class WebDavService internal constructor(
     )
 ) : CloudService {
 
+    private val digestAuth = WebDavDigestAuthProvider { credentials }
+    private val basicAuth = WebDavBasicAuthProvider { credentials }
+
+    /**
+     * Whether a request without credentials succeeded, so the server needs no authentication.
+     */
+    private var isAuthNotRequired = false
+
     private val client by lazy {
         (httpClient ?: defaultHttpClient).config {
-            defaultRequest {
-                header(HttpHeaders.Authorization, credentials.toAuthHeaderValue())
+            // The scheme is detected from the server's 401 challenge. Digest goes first so it's
+            // preferred when a server offers both.
+            install(Auth) {
+                providers += digestAuth
+                providers += basicAuth
+            }
+        }.also { client ->
+            client.plugin(HttpSend).intercept { request ->
+                val call = execute(request)
+                val isUnauthorized = call.response.status == HttpStatusCode.Unauthorized
+                val hasChallenge = call.response.headers.contains(HttpHeaders.WWWAuthenticate)
+                if (isUnauthorized && !hasChallenge && !digestAuth.hasChallenge &&
+                    basicAuth.detectWithoutChallenge()
+                ) {
+                    basicAuth.addRequestHeaders(request, authHeader = null)
+                    execute(request)
+                } else {
+                    call
+                }
             }
         }
     }
@@ -99,6 +128,9 @@ public class WebDavService internal constructor(
      */
     public fun setCredentials(credentials: WebDavCredentials) {
         this.credentials = credentials
+        digestAuth.clear()
+        basicAuth.clear()
+        isAuthNotRequired = false
     }
 
     override fun isAuthenticated(): Boolean {
@@ -197,14 +229,47 @@ public class WebDavService internal constructor(
         source: suspend () -> Source,
         onProgress: ((bytesSent: Long, totalBytes: Long?) -> Unit)?
     ): CloudFile {
+        ensureAuthSchemeKnown()
+
         val opener = SafeSourceOpener(source)
         return upload(path) {
-            val bytesSent = opener.open().use {
-                val content = SourceContent(it, sizeInBytes, contentType)
-                put(path, content)
-                content.bytesWritten
+            var isRetry = false
+            while (true) {
+                try {
+                    val bytesSent = opener.open().use {
+                        val content = SourceContent(it, sizeInBytes, contentType)
+                        put(path, content)
+                        content.bytesWritten
+                    }
+                    onProgress?.invoke(bytesSent, bytesSent)
+                    break
+                } catch (e: ReplayedBodyException) {
+                    // A stale Digest nonce made the auth plugin resend the one-shot body.
+                    // The nonce is renewed now, so send once more with a new source.
+                    if (isRetry) throw CloudServiceException.NotAuthenticatedException()
+                    isRetry = true
+                }
             }
-            onProgress?.invoke(bytesSent, bytesSent)
+        }
+    }
+
+    /**
+     * Streaming bodies can't be resent after a 401 challenge, so learn the auth scheme with
+     * a cheap request before the first streaming upload.
+     */
+    private suspend fun ensureAuthSchemeKnown() {
+        if (digestAuth.hasChallenge || basicAuth.isDetected || isAuthNotRequired) return
+
+        tryCall {
+            client.request(buildUrl("", suffixSlash = true)) {
+                method = HttpMethod("PROPFIND")
+                header("Depth", "0")
+                contentType(ContentType.Application.Xml)
+                setBody(PROPFIND_BODY)
+            }
+        }
+        if (!digestAuth.hasChallenge && !basicAuth.isDetected) {
+            isAuthNotRequired = true
         }
     }
 
@@ -221,15 +286,19 @@ public class WebDavService internal constructor(
     }
 
     private suspend fun put(path: String, content: OutgoingContent) {
+        val sourceContent = content as? SourceContent
         try {
             client.request(buildUrl(path)) {
                 method = HttpMethod.Put
                 setBody(content)
             }
-        } catch (e: IOException) {
-            throw (content as? SourceContent)?.failure ?: e
+        } catch (e: Exception) {
+            if (sourceContent?.isReplayed == true) throw ReplayedBodyException()
+            if (e is IOException) throw sourceContent?.failure ?: e
+            throw e
         }
-        (content as? SourceContent)?.failure?.let { throw it }
+        if (sourceContent?.isReplayed == true) throw ReplayedBodyException()
+        sourceContent?.failure?.let { throw it }
     }
 
     /**
@@ -368,7 +437,22 @@ private class SourceContent(
     var bytesWritten = 0L
         private set
 
+    /**
+     * True when the body was requested a second time, which would send an empty or truncated
+     * file. The request is cancelled instead.
+     */
+    var isReplayed = false
+        private set
+    private var isWritten = false
+
     override suspend fun writeTo(channel: ByteWriteChannel) {
+        if (isWritten) {
+            isReplayed = true
+            channel.cancel(IOException("Streaming body can't be sent twice"))
+            return
+        }
+        isWritten = true
+
         try {
             source.forEachChunk(STREAM_CHUNK_SIZE) { chunk, _, _ ->
                 channel.writeFully(chunk)
@@ -385,6 +469,8 @@ private class SourceContent(
         }
     }
 }
+
+private class ReplayedBodyException : Exception()
 
 private const val TEXT_MIME_TYPE = "text/plain; charset=UTF-8"
 private const val STREAM_CHUNK_SIZE = 64 * 1024

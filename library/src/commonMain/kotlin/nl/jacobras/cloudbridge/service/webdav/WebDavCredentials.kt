@@ -1,9 +1,9 @@
 package nl.jacobras.cloudbridge.service.webdav
 
-import io.ktor.utils.io.core.toByteArray
-import kotlin.io.encoding.Base64
-
 /**
+ * Credentials for a WebDAV server. Basic and Digest authentication are both supported; the
+ * scheme is detected from the server's challenge.
+ *
  * @property serverUrl The server URL, e.g. `https://example.com/remote.php/dav/files/username`.
  */
 public data class WebDavCredentials(
@@ -12,8 +12,4 @@ public data class WebDavCredentials(
     val password: String
 ) {
     override fun toString(): String = "serverUrl=$serverUrl, username=$username, password=***"
-
-    internal fun toAuthHeaderValue(): String {
-        return "Basic " + Base64.encode("$username:$password".toByteArray())
-    }
 }
