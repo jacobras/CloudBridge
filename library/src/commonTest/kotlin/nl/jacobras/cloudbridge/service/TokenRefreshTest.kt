@@ -9,6 +9,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -73,8 +74,9 @@ class TokenRefreshTest {
             "/oauth2/token",
             "/2/users/get_current_account"
         )
-        val refreshParameters = engine.requestHistory[0].url.parameters
-        assertThat(refreshParameters.names().associateWith { refreshParameters[it] }).isEqualTo(
+        // Sent in the body, so the refresh token doesn't end up in request logs.
+        assertThat(engine.requestHistory[0].url.parameters.isEmpty()).isTrue()
+        assertThat(engine.requestHistory[0].formParameters()).isEqualTo(
             mapOf(
                 "grant_type" to "refresh_token",
                 "refresh_token" to "refresh",
