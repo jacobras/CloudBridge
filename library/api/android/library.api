@@ -1,12 +1,12 @@
 public final class nl/jacobras/cloudbridge/CloudBridge {
 	public static final field INSTANCE Lnl/jacobras/cloudbridge/CloudBridge;
-	public final fun dropbox (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;
-	public static synthetic fun dropbox$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;
+	public final fun dropbox (Ljava/lang/String;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Lkotlin/jvm/functions/Function1;)Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;
+	public static synthetic fun dropbox$default (Lnl/jacobras/cloudbridge/CloudBridge;Ljava/lang/String;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;
 	public final fun getLogger ()Lnl/jacobras/cloudbridge/logging/Logger;
-	public final fun googleDrive (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;
-	public static synthetic fun googleDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;
-	public final fun oneDrive (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
-	public static synthetic fun oneDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
+	public final fun googleDrive (Ljava/lang/String;Ljava/lang/String;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Lkotlin/jvm/functions/Function1;)Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;
+	public static synthetic fun googleDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Ljava/lang/String;Ljava/lang/String;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/googledrive/GoogleDriveService;
+	public final fun oneDrive (Ljava/lang/String;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Lkotlin/jvm/functions/Function1;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
+	public static synthetic fun oneDrive$default (Lnl/jacobras/cloudbridge/CloudBridge;Ljava/lang/String;Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;
 	public final fun setLogger (Lnl/jacobras/cloudbridge/logging/Logger;)V
 	public final fun webDav (Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;)Lnl/jacobras/cloudbridge/service/webdav/WebDavService;
 }
@@ -81,16 +81,16 @@ public final class nl/jacobras/cloudbridge/CloudServiceException$Unknown : nl/ja
 }
 
 public final class nl/jacobras/cloudbridge/auth/CloudAccessToken {
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3-FghU774 ()Lkotlin/time/Duration;
-	public final fun copy-moChb0s (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
-	public static synthetic fun copy-moChb0s$default (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
+	public final fun component3 ()Lkotlin/time/Instant;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
+	public static synthetic fun copy$default (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccessToken ()Ljava/lang/String;
-	public final fun getExpiresIn-FghU774 ()Lkotlin/time/Duration;
+	public final fun getExpiresAt ()Lkotlin/time/Instant;
 	public final fun getRefreshToken ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -300,25 +300,15 @@ public final class nl/jacobras/cloudbridge/model/UserInfo {
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract class nl/jacobras/cloudbridge/service/OAuthCloudService : nl/jacobras/cloudbridge/CloudService {
-	protected abstract fun getBaseUrl ()Ljava/lang/String;
-	protected abstract fun getErrorMapper ()Lkotlin/jvm/functions/Function2;
-	protected final fun getKtorfit ()Lde/jensklingenberg/ktorfit/Ktorfit;
-	public fun isAuthenticated ()Z
-	public final fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
-	protected final fun tryCall (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun tryCall$default (Lnl/jacobras/cloudbridge/service/OAuthCloudService;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
 public final class nl/jacobras/cloudbridge/service/dropbox/AuthenticateKt {
-	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class nl/jacobras/cloudbridge/service/dropbox/CompleteAuthenticationKt {
-	public static final fun completeAuthentication (Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;Ljava/lang/String;Ljava/lang/String;Landroid/net/Uri;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun completeAuthentication (Lnl/jacobras/cloudbridge/service/dropbox/DropboxService;Ljava/lang/String;Landroid/net/Uri;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/jacobras/cloudbridge/service/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
+public final class nl/jacobras/cloudbridge/service/dropbox/DropboxService : nl/jacobras/cloudbridge/service/oauth/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFile-anaZp0g (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -341,7 +331,7 @@ public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveAuthen
 	public final fun authenticate ()V
 }
 
-public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/service/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
+public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveService : nl/jacobras/cloudbridge/service/oauth/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFile-anaZp0g (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -359,15 +349,25 @@ public final class nl/jacobras/cloudbridge/service/googledrive/GoogleDriveServic
 	public fun updateFile-u9obNfY (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract class nl/jacobras/cloudbridge/service/oauth/OAuthCloudService : nl/jacobras/cloudbridge/CloudService {
+	protected abstract fun getBaseUrl ()Ljava/lang/String;
+	protected abstract fun getErrorMapper ()Lkotlin/jvm/functions/Function2;
+	protected final fun getKtorfit ()Lde/jensklingenberg/ktorfit/Ktorfit;
+	public fun isAuthenticated ()Z
+	public final fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
+	protected final fun tryCall (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun tryCall$default (Lnl/jacobras/cloudbridge/service/oauth/OAuthCloudService;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class nl/jacobras/cloudbridge/service/onedrive/AuthenticateKt {
-	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static final fun authenticate (Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class nl/jacobras/cloudbridge/service/onedrive/CompleteAuthenticationKt {
-	public static final fun completeAuthentication (Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;Ljava/lang/String;Ljava/lang/String;Landroid/net/Uri;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun completeAuthentication (Lnl/jacobras/cloudbridge/service/onedrive/OneDriveService;Ljava/lang/String;Landroid/net/Uri;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl/jacobras/cloudbridge/service/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
+public final class nl/jacobras/cloudbridge/service/onedrive/OneDriveService : nl/jacobras/cloudbridge/service/oauth/OAuthCloudService, nl/jacobras/cloudbridge/delta/DeltaCloudService {
 	public fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFile-anaZp0g (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun createFolder-Il--ezk (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

@@ -35,6 +35,15 @@ internal interface GoogleDriveApi {
         @Field("grant_type") grantType: String = "authorization_code"
     ): TokenResponse
 
+    @POST("https://oauth2.googleapis.com/token")
+    @FormUrlEncoded
+    suspend fun refreshToken(
+        @Field("client_id") clientId: String,
+        @Field("client_secret") clientSecret: String?,
+        @Field("refresh_token") refreshToken: String,
+        @Field("grant_type") grantType: String = "refresh_token"
+    ): TokenResponse
+
     @GET("drive/v3/about?fields=user")
     suspend fun getUserInfo(): UserResponse
 

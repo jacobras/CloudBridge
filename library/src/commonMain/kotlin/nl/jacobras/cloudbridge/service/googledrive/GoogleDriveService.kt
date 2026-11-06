@@ -27,7 +27,10 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.auth.TokenRefresher
+import nl.jacobras.cloudbridge.auth.TokenResponse
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.delta.DeltaCursor
@@ -43,29 +46,39 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
-import nl.jacobras.cloudbridge.service.OAuthCloudService
+import nl.jacobras.cloudbridge.service.oauth.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
 import nl.jacobras.cloudbridge.util.reportChunkSent
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 public class GoogleDriveService internal constructor(
+    clientInfo: ClientInfo,
     token: CloudAccessToken?,
     httpClientOverride: HttpClient? = null,
     rateLimiter: RateLimiter? = RateLimiter(
         maxConcurrent = 5,
         maxRatePerSecond = 5.0
-    )
+    ),
+    tokenRefresher: TokenRefresher? = googleDriveTokenRefresher(clientInfo),
+    onTokenRefreshed: ((CloudAccessToken) -> Unit)? = null,
+    clock: Clock = Clock.System
 ) : OAuthCloudService(
+    clientInfo = clientInfo,
     startToken = token,
     httpClientOverride = httpClientOverride,
-    rateLimiter = rateLimiter
+    rateLimiter = rateLimiter,
+    tokenRefresher = tokenRefresher,
+    onTokenRefreshed = onTokenRefreshed,
+    clock = clock
 ), DeltaCloudService {
 
     override val baseUrl: String = "https://www.googleapis.com/"
     internal val api = ktorfit.createGoogleDriveApi()
+    private val apiWithoutAuth = ktorfitWithoutAuth.createGoogleDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
     private val appDataFolderId = tokenScopedCache<String>()
     private val json = Json {
@@ -96,6 +109,16 @@ public class GoogleDriveService internal constructor(
             }
         }
     }
+
+    override suspend fun requestTokenRefresh(
+        refreshToken: String,
+        clientId: String,
+        clientSecret: String?
+    ): TokenResponse = apiWithoutAuth.refreshToken(
+        clientId = clientId,
+        clientSecret = clientSecret,
+        refreshToken = refreshToken
+    )
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()

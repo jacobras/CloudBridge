@@ -10,7 +10,6 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
  * Runs the Dropbox PKCE sign-in flow. Opens a web modal to do so.
  */
 public suspend fun DropboxService.authenticate(
-    clientId: String,
     redirectUri: String
 ): CloudAccessToken? {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -20,7 +19,7 @@ public suspend fun DropboxService.authenticate(
     }
     val authenticator = DropboxAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

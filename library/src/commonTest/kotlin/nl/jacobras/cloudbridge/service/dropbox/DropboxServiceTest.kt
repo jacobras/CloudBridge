@@ -38,6 +38,7 @@ import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
+import nl.jacobras.cloudbridge.util.testClientInfo
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -54,6 +55,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("expired"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -79,6 +81,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = null
@@ -100,6 +103,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -125,6 +129,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -150,6 +155,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -168,6 +174,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -186,6 +193,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -208,6 +216,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -240,6 +249,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -273,6 +283,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -309,6 +320,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -336,6 +348,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -348,6 +361,7 @@ class DropboxServiceTest {
     fun `moving a folder to the root throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -367,6 +381,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -396,6 +411,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -418,6 +434,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -450,6 +467,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -509,6 +527,7 @@ class DropboxServiceTest {
             }
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
@@ -545,6 +564,7 @@ class DropboxServiceTest {
     fun `failing source read throws SourceReadException`() = runTest {
         val engine = MockEngine { error("No request expected") }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -569,6 +589,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -625,6 +646,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -662,6 +684,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -696,6 +719,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -714,6 +738,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -732,6 +757,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -761,6 +787,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -773,6 +800,7 @@ class DropboxServiceTest {
     fun `get folder info for root throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -792,6 +820,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )

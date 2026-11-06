@@ -39,6 +39,7 @@ import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
+import nl.jacobras.cloudbridge.util.testClientInfo
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -55,6 +56,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("invalid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -79,6 +81,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -99,6 +102,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -125,6 +129,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -150,6 +155,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -168,6 +174,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -186,6 +193,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -233,6 +241,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -291,6 +300,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -352,6 +362,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -414,6 +425,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
@@ -458,6 +470,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -513,6 +526,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("first"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -541,6 +555,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -577,6 +592,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -620,6 +636,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -645,6 +662,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -669,6 +687,7 @@ class OneDriveServiceTest {
     fun `large binary file without size throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { error("No request expected") }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -688,6 +707,7 @@ class OneDriveServiceTest {
     fun `large binary file larger than size throws IllegalArgumentException`() = runTest {
         val engine = uploadSessionEngine()
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -708,6 +728,7 @@ class OneDriveServiceTest {
     fun `large binary file smaller than size throws IllegalArgumentException`() = runTest {
         val engine = uploadSessionEngine()
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -728,6 +749,7 @@ class OneDriveServiceTest {
     fun `failing source read throws SourceReadException`() = runTest {
         val engine = MockEngine { error("No request expected") }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -745,6 +767,7 @@ class OneDriveServiceTest {
     fun `failing source read during upload session throws SourceReadException`() = runTest {
         val engine = uploadSessionEngine()
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -801,6 +824,7 @@ class OneDriveServiceTest {
             }
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -867,6 +891,7 @@ class OneDriveServiceTest {
             }
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
@@ -937,6 +962,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -983,6 +1009,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1013,6 +1040,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1031,6 +1059,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1049,6 +1078,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1076,6 +1106,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1088,6 +1119,7 @@ class OneDriveServiceTest {
     fun `get folder info for root throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1106,6 +1138,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )

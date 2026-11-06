@@ -36,6 +36,15 @@ internal interface OneDriveApi {
         @Field("grant_type") grantType: String = "authorization_code"
     ): TokenResponse
 
+    @POST("https://login.microsoftonline.com/common/oauth2/v2.0/token")
+    @Headers("Content-Type: application/x-www-form-urlencoded")
+    @FormUrlEncoded
+    suspend fun refreshToken(
+        @Field("client_id") clientId: String,
+        @Field("refresh_token") refreshToken: String,
+        @Field("grant_type") grantType: String = "refresh_token"
+    ): TokenResponse
+
     @GET("oidc/userinfo")
     suspend fun getUserInfo(): OneDriveUserInfo
 

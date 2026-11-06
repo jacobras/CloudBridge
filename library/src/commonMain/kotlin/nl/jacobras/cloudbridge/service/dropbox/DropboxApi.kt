@@ -26,6 +26,13 @@ internal interface DropboxApi {
         @Query("scope") scope: String = "files.metadata.write files.content.write files.content.read"
     ): TokenResponse
 
+    @POST("oauth2/token")
+    suspend fun refreshToken(
+        @Query("client_id") clientId: String,
+        @Query("refresh_token") refreshToken: String,
+        @Query("grant_type") grantType: String = "refresh_token"
+    ): TokenResponse
+
     @POST("2/users/get_current_account")
     suspend fun getUserInfo(): DropboxUserInfo
 

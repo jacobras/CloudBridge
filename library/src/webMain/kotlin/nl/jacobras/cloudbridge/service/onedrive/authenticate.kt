@@ -4,8 +4,7 @@ import nl.jacobras.cloudbridge.persistence.librarySettings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public fun OneDriveService.authenticate(
-    redirectUri: String,
-    clientId: String
+    redirectUri: String
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
@@ -14,7 +13,7 @@ public fun OneDriveService.authenticate(
     }
     val authenticator = OneDriveAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

@@ -13,6 +13,11 @@ internal abstract class CloudAuthenticator(
     protected abstract val responseType: String
 
     /**
+     * Extra query parameters to add to the authorization URI.
+     */
+    protected open val extraParams: Map<String, String> = emptyMap()
+
+    /**
      * Builds an authorization URI. Navigate the user to this URI to
      * start the authorization flow.
      */
@@ -33,6 +38,10 @@ internal abstract class CloudAuthenticator(
             if (codeChallenge.isNotEmpty()) {
                 append("&code_challenge=$codeChallenge")
                 append("&code_challenge_method=S256")
+            }
+
+            for ((key, value) in extraParams) {
+                append("&$key=${UrlEncoderUtil.encode(value)}")
             }
         }
     }

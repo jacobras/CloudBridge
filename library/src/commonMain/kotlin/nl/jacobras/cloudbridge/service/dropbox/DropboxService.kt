@@ -9,7 +9,11 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.auth.OAuthTokenRefresher
+import nl.jacobras.cloudbridge.auth.TokenRefresher
+import nl.jacobras.cloudbridge.auth.TokenResponse
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.delta.DeltaCursor
@@ -25,32 +29,42 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
-import nl.jacobras.cloudbridge.service.OAuthCloudService
+import nl.jacobras.cloudbridge.service.oauth.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
 import nl.jacobras.cloudbridge.util.reportChunkSent
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
  * Instance of the Dropbox API.
  */
 public class DropboxService internal constructor(
+    clientInfo: ClientInfo,
     token: CloudAccessToken?,
     httpClientOverride: HttpClient? = null,
     rateLimiter: RateLimiter? = RateLimiter(
         maxConcurrent = 5,
         maxRatePerSecond = 5.0
-    )
+    ),
+    tokenRefresher: TokenRefresher = OAuthTokenRefresher(clientInfo),
+    onTokenRefreshed: ((CloudAccessToken) -> Unit)? = null,
+    clock: Clock = Clock.System
 ) : OAuthCloudService(
+    clientInfo = clientInfo,
     startToken = token,
     httpClientOverride = httpClientOverride,
-    rateLimiter = rateLimiter
+    rateLimiter = rateLimiter,
+    tokenRefresher = tokenRefresher,
+    onTokenRefreshed = onTokenRefreshed,
+    clock = clock
 ), DeltaCloudService {
 
     override val baseUrl: String = "https://api.dropboxapi.com/"
     internal val api = ktorfit.createDropboxApi()
+    private val apiWithoutAuth = ktorfitWithoutAuth.createDropboxApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
 
     override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
@@ -75,6 +89,15 @@ public class DropboxService internal constructor(
             }
         }
     }
+
+    override suspend fun requestTokenRefresh(
+        refreshToken: String,
+        clientId: String,
+        clientSecret: String?
+    ): TokenResponse = apiWithoutAuth.refreshToken(
+        clientId = clientId,
+        refreshToken = refreshToken
+    )
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()

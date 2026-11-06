@@ -2,7 +2,9 @@ package nl.jacobras.cloudbridge.auth
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 @Serializable
 internal data class TokenResponse(
@@ -17,8 +19,11 @@ internal data class TokenResponse(
     val expiresInSeconds: Int? = null
 )
 
-internal fun TokenResponse.toCloudAccessToken() = CloudAccessToken(
+/**
+ * @param now The moment the token was issued, to calculate [CloudAccessToken.expiresAt].
+ */
+internal fun TokenResponse.toCloudAccessToken(now: Instant = Clock.System.now()) = CloudAccessToken(
     accessToken = accessToken,
     refreshToken = refreshToken,
-    expiresIn = expiresInSeconds?.seconds
+    expiresAt = expiresInSeconds?.let { now + it.seconds }
 )

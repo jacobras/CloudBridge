@@ -51,7 +51,7 @@ public class GoogleDriveAuthenticator(
      */
     public fun authenticate() {
         Identity.getAuthorizationClient(activity)
-            .authorize(buildAuthorizationRequest())
+            .authorize(buildGoogleDriveAuthorizationRequest())
             .addOnSuccessListener { result -> handle(result.toModel()) }
             .addOnFailureListener { onFailure(CloudServiceException.Unknown(it)) }
     }
@@ -64,12 +64,6 @@ public class GoogleDriveAuthenticator(
             )
             GoogleAuthorization.Denied -> onDenied()
         }
-    }
-
-    private fun buildAuthorizationRequest(): AuthorizationRequest {
-        return AuthorizationRequest.builder()
-            .setRequestedScopes(listOf(Scope(DRIVE_APPDATA_SCOPE)))
-            .build()
     }
 
     /**
@@ -101,6 +95,12 @@ public class GoogleDriveAuthenticator(
         val accessToken = accessToken ?: return GoogleAuthorization.Denied
         return GoogleAuthorization.Authorized(CloudAccessToken(accessToken = accessToken))
     }
+}
+
+internal fun buildGoogleDriveAuthorizationRequest(): AuthorizationRequest {
+    return AuthorizationRequest.builder()
+        .setRequestedScopes(listOf(Scope(DRIVE_APPDATA_SCOPE)))
+        .build()
 }
 
 private const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"

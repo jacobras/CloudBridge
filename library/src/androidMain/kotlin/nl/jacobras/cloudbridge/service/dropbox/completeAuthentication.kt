@@ -11,7 +11,6 @@ import nl.jacobras.cloudbridge.persistence.librarySettings
  * @throws CloudServiceException
  */
 public suspend fun DropboxService.completeAuthentication(
-    clientId: String,
     redirectUri: String,
     intentUri: Uri
 ): CloudAccessToken? {
@@ -19,7 +18,7 @@ public suspend fun DropboxService.completeAuthentication(
     val code = intentUri.getQueryParameter("code") ?: return null
     val authenticator = DropboxAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

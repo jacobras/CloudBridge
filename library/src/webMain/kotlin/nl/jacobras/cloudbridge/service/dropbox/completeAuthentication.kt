@@ -9,7 +9,6 @@ import kotlin.js.toJsString
 
 @OptIn(ExperimentalWasmJsInterop::class)
 public suspend fun DropboxService.completeAuthentication(
-    clientId: String,
     redirectUri: String
 ): CloudAccessToken? {
     val params = URLSearchParams(window.location.search.toJsString())
@@ -17,7 +16,7 @@ public suspend fun DropboxService.completeAuthentication(
     val codeVerifier = librarySettings.codeVerifier ?: return null
     val authenticator = DropboxAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
