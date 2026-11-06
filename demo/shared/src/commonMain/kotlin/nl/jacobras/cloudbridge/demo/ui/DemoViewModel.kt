@@ -12,8 +12,8 @@ import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.DummyCloudService
-import nl.jacobras.cloudbridge.demo.setUpLogging
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
+import nl.jacobras.cloudbridge.demo.setUpLogging
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
@@ -21,7 +21,12 @@ import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.webdav.WebDavCredentials
 import nl.jacobras.cloudbridge.service.webdav.WebDavService
 
-class DemoViewModel : ViewModel() {
+class DemoViewModel(
+    private val dropboxClientId: String,
+    private val googleDriveClientId: String,
+    private val googleDriveClientSecret: String? = null,
+    private val oneDriveClientId: String
+) : ViewModel() {
 
     private val dummy = DummyCloudService(CloudAccessToken(accessToken = "fake"))
 
@@ -101,17 +106,47 @@ class DemoViewModel : ViewModel() {
     }
 
     /**
+     * Creates an instance of [service], to authenticate with. Not used for WebDAV.
+     */
+    internal fun createService(service: AvailableService): CloudService {
+        return when (service) {
+            AvailableService.Dropbox -> CloudBridge.dropbox(dropboxClientId)
+            AvailableService.GoogleDrive -> CloudBridge.googleDrive(
+                clientId = googleDriveClientId,
+                desktopClientSecret = googleDriveClientSecret
+            )
+            AvailableService.OneDrive -> CloudBridge.oneDrive(oneDriveClientId)
+            AvailableService.WebDav -> error("WebDAV requires credentials, use CloudBridge.webDav()")
+        }
+    }
+
+    /**
      * Creates an instance of [service] with the stored credentials, or `null` if there are none.
      */
     private fun getConnectedService(service: AvailableService): CloudService? {
         return when (service) {
-            AvailableService.Dropbox -> DemoSettings.dropboxToken?.let { CloudBridge.dropbox(it) }
-            AvailableService.GoogleDrive -> DemoSettings.googleDriveToken?.let {
-                CloudBridge.googleDrive(
-                    it
+            AvailableService.Dropbox -> DemoSettings.dropboxToken?.let {
+                CloudBridge.dropbox(
+                    clientId = dropboxClientId,
+                    token = it,
+                    onTokenRefreshed = { token -> DemoSettings.dropboxToken = token }
                 )
             }
-            AvailableService.OneDrive -> DemoSettings.oneDriveToken?.let { CloudBridge.oneDrive(it) }
+            AvailableService.GoogleDrive -> DemoSettings.googleDriveToken?.let {
+                CloudBridge.googleDrive(
+                    clientId = googleDriveClientId,
+                    desktopClientSecret = googleDriveClientSecret,
+                    token = it,
+                    onTokenRefreshed = { token -> DemoSettings.googleDriveToken = token }
+                )
+            }
+            AvailableService.OneDrive -> DemoSettings.oneDriveToken?.let {
+                CloudBridge.oneDrive(
+                    clientId = oneDriveClientId,
+                    token = it,
+                    onTokenRefreshed = { token -> DemoSettings.oneDriveToken = token }
+                )
+            }
             AvailableService.WebDav -> getWebDavCredentials()?.let { CloudBridge.webDav(it) }
         }
     }

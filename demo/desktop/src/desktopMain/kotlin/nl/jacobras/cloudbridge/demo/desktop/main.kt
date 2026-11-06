@@ -21,7 +21,14 @@ import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 
 fun main() = application {
-    val viewModel = remember { DemoViewModel() }
+    val viewModel = remember {
+        DemoViewModel(
+            dropboxClientId = BuildConfig.DROPBOX_CLIENT_ID,
+            googleDriveClientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
+            googleDriveClientSecret = BuildConfig.GOOGLE_DRIVE_CLIENT_SECRET,
+            oneDriveClientId = BuildConfig.ONEDRIVE_CLIENT_ID
+        )
+    }
     val localServer = remember { LocalAuthenticationServer() }
 
     DisposableEffect(Unit) {
@@ -44,7 +51,6 @@ fun main() = application {
                     is DropboxService -> {
                         val url = service.authenticate(
                             authServer = localServer,
-                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
                             onSuccess = { token ->
                                 DemoSettings.dropboxToken = token
                                 viewModel.refresh()
@@ -55,8 +61,6 @@ fun main() = application {
                     is GoogleDriveService -> {
                         val url = service.authenticate(
                             authServer = localServer,
-                            clientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
-                            clientSecret = BuildConfig.GOOGLE_DRIVE_CLIENT_SECRET,
                             onSuccess = { token ->
                                 DemoSettings.googleDriveToken = token
                                 viewModel.refresh()
@@ -67,7 +71,6 @@ fun main() = application {
                     is OneDriveService -> {
                         val url = service.authenticate(
                             authServer = localServer,
-                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                             onSuccess = { token ->
                                 DemoSettings.oneDriveToken = token
                                 viewModel.refresh()

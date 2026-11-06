@@ -19,7 +19,13 @@ import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.onedrive.authenticate
 
 fun MainViewController() = ComposeUIViewController {
-    val viewModel = remember { DemoViewModel() }
+    val viewModel = remember {
+        DemoViewModel(
+            dropboxClientId = BuildConfig.DROPBOX_CLIENT_ID,
+            googleDriveClientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
+            oneDriveClientId = BuildConfig.ONEDRIVE_CLIENT_ID
+        )
+    }
     val scope = rememberCoroutineScope()
 
     MaterialTheme {
@@ -28,30 +34,21 @@ fun MainViewController() = ComposeUIViewController {
             onAuthenticate = { service ->
                 when (service) {
                     is DropboxService -> scope.launch {
-                        service.authenticate(
-                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
-                            redirectUri = REDIRECT_URI
-                        )?.let { token ->
+                        service.authenticate(redirectUri = REDIRECT_URI)?.let { token ->
                             DemoSettings.dropboxToken = token
                             viewModel.refresh()
                         }
                     }
 
                     is GoogleDriveService -> scope.launch {
-                        service.authenticate(
-                            clientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
-                            redirectUri = REDIRECT_URI
-                        )?.let { token ->
+                        service.authenticate(redirectUri = REDIRECT_URI)?.let { token ->
                             DemoSettings.googleDriveToken = token
                             viewModel.refresh()
                         }
                     }
 
                     is OneDriveService -> scope.launch {
-                        service.authenticate(
-                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
-                            redirectUri = REDIRECT_URI
-                        )?.let { token ->
+                        service.authenticate(redirectUri = REDIRECT_URI)?.let { token ->
                             DemoSettings.oneDriveToken = token
                             viewModel.refresh()
                         }

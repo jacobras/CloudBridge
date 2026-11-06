@@ -52,10 +52,10 @@ fun DemoScreen(
                         // WebDAV will show a dialog to enter credentials
                         connectingWebDav = true
                     } else {
-                        onAuthenticate(availableService.toService())
+                        onAuthenticate(viewModel.createService(availableService))
                     }
                 },
-                onFinishAuthClick = { onFinishAuthOnWeb(it.toService()) }
+                onFinishAuthClick = { onFinishAuthOnWeb(viewModel.createService(it)) }
             )
         },
         detailPane = {

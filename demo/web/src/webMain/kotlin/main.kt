@@ -23,7 +23,13 @@ import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     ComposeViewport {
-        val viewModel = remember { DemoViewModel() }
+        val viewModel = remember {
+            DemoViewModel(
+                dropboxClientId = BuildConfig.DROPBOX_CLIENT_ID,
+                googleDriveClientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
+                oneDriveClientId = BuildConfig.ONEDRIVE_CLIENT_ID
+            )
+        }
         val scope = rememberCoroutineScope()
 
         DemoScreen(
@@ -31,35 +37,20 @@ fun main() {
             onAuthenticate = { service ->
                 when (service) {
                     is DropboxService -> {
-                        val uri = service.authenticate(
-                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
-                            redirectUri = "http://localhost:8080"
-                        )
-                        window.location.href = uri
+                        window.location.href = service.authenticate(redirectUri = REDIRECT_URI)
                     }
                     is GoogleDriveService -> {
-                        val uri = service.authenticate(
-                            clientId = BuildConfig.GOOGLE_DRIVE_CLIENT_ID,
-                            redirectUri = "http://localhost:8080"
-                        )
-                        window.location.href = uri
+                        window.location.href = service.authenticate(redirectUri = REDIRECT_URI)
                     }
                     is OneDriveService -> {
-                        val uri = service.authenticate(
-                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
-                            redirectUri = "http://localhost:8080"
-                        )
-                        window.location.href = uri
+                        window.location.href = service.authenticate(redirectUri = REDIRECT_URI)
                     }
                 }
             },
             onFinishAuthOnWeb = { service ->
                 when (service) {
                     is DropboxService -> scope.launch {
-                        val token = service.completeAuthentication(
-                            clientId = BuildConfig.DROPBOX_CLIENT_ID,
-                            redirectUri = "http://localhost:8080"
-                        )
+                        val token = service.completeAuthentication(redirectUri = REDIRECT_URI)
                         DemoSettings.dropboxToken = token
                         viewModel.refresh()
                     }
@@ -69,10 +60,7 @@ fun main() {
                         viewModel.refresh()
                     }
                     is OneDriveService -> scope.launch {
-                        val token = service.completeAuthentication(
-                            clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
-                            redirectUri = "http://localhost:8080"
-                        )
+                        val token = service.completeAuthentication(redirectUri = REDIRECT_URI)
                         DemoSettings.oneDriveToken = token
                         viewModel.refresh()
                     }
@@ -81,3 +69,5 @@ fun main() {
         )
     }
 }
+
+private const val REDIRECT_URI = "http://localhost:8080"
