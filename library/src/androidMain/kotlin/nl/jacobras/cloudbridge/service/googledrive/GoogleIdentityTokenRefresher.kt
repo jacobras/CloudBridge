@@ -1,8 +1,8 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-import android.content.Context
-import com.google.android.gms.auth.api.identity.AuthorizationResult
+import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.suspendCancellableCoroutine
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -31,25 +31,31 @@ internal class GoogleIdentityTokenRefresher : TokenRefresher {
         // Set at app start by CloudBridgeInitializer; missing if androidx.startup is disabled.
         val context = CloudBridgeContext.applicationContext
             ?: throw CloudServiceException.NotAuthenticatedException()
-        val result = authorize(context)
+        val client = Identity.getAuthorizationClient(context)
+
+        // AuthorizationClient caches tokens, so first clear it so it won't return the token
+        // we already have here.
+        client.clearToken(
+            ClearTokenRequest.builder().setToken(outdated.accessToken).build()
+        ).await()
+
+        val result = client.authorize(buildGoogleDriveAuthorizationRequest()).await()
         val accessToken = result.accessToken
         if (result.hasResolution() || accessToken == null) {
-            // Consent needed (e.g. access revoked), which can't be shown from here.
+            // User action required (re-authentication), can't refresh this token.
             throw CloudServiceException.NotAuthenticatedException()
         }
         if (accessToken == outdated.accessToken) {
-            // Google Identity Services handed back the token that was just rejected.
+            // Shouldn't happen, because it's cleared above, but just in case.
             throw CloudServiceException.NotAuthenticatedException()
         }
         return CloudAccessToken(accessToken = accessToken)
     }
+}
 
-    private suspend fun authorize(context: Context): AuthorizationResult {
-        return suspendCancellableCoroutine { continuation ->
-            Identity.getAuthorizationClient(context)
-                .authorize(buildGoogleDriveAuthorizationRequest())
-                .addOnSuccessListener { continuation.resume(it) }
-                .addOnFailureListener { continuation.resumeWithException(it) }
-        }
+private suspend fun <T> Task<T>.await(): T {
+    return suspendCancellableCoroutine { continuation ->
+        addOnSuccessListener { continuation.resume(it) }
+        addOnFailureListener { continuation.resumeWithException(it) }
     }
 }
