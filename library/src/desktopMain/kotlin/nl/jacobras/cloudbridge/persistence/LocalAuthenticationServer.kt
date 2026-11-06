@@ -15,6 +15,7 @@ import nl.jacobras.cloudbridge.name
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import kotlin.concurrent.thread
 
 /**
  * A simple HTTP server that can handle authentication redirects.
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets
 public class LocalAuthenticationServer(
     private val port: Int = 8080
 ) {
+    @Volatile
     private var server: EmbeddedServer<*, *>? = null
 
     public val url: String
@@ -61,7 +63,7 @@ public class LocalAuthenticationServer(
                     token?.let {
                         call.respondText("Success! You can close this window now.")
                         onSuccess(it)
-                        stop()
+                        stopInBackground()
                         return@get
                     }
 
@@ -85,8 +87,19 @@ public class LocalAuthenticationServer(
      * Safe to call multiple times or without calling [start].
      */
     public fun stop() {
-        server?.stop()
-        server = null
+        val server = server ?: return
+        this.server = null
+        server.stop()
+    }
+
+    /**
+     * Stops the server from a different thread. Needed when stopping from within a request handler,
+     * because Netty waits for its own event loop threads to terminate, which would deadlock.
+     */
+    private fun stopInBackground() {
+        val server = server ?: return
+        this.server = null
+        thread(name = "LocalAuthenticationServer-stop") { server.stop() }
     }
 
     private suspend fun getToken(authenticator: PkceAuthenticator, url: String): CloudAccessToken? {
