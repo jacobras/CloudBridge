@@ -33,7 +33,8 @@ object DemoSettings {
                 CloudAccessToken(
                     accessToken = demoSettings.getStringOrNull(KEY_GOOGLE_DRIVE_TOKEN)!!,
                     refreshToken = demoSettings.getStringOrNull(KEY_GOOGLE_DRIVE_REFRESH_TOKEN),
-                    expiresAt = demoSettings.getLongOrNull(KEY_GOOGLE_DRIVE_EXPIRES_AT)?.let(Instant::fromEpochSeconds)
+                    expiresAt = demoSettings.getLongOrNull(KEY_GOOGLE_DRIVE_EXPIRES_AT)?.let(Instant::fromEpochSeconds),
+                    account = demoSettings.getStringOrNull(KEY_GOOGLE_DRIVE_ACCOUNT)
                 )
             } else null
         }
@@ -42,10 +43,12 @@ object DemoSettings {
                 demoSettings.putString(KEY_GOOGLE_DRIVE_TOKEN, value.accessToken)
                 demoSettings.putStringOrRemove(KEY_GOOGLE_DRIVE_REFRESH_TOKEN, value.refreshToken)
                 demoSettings.putLongOrRemove(KEY_GOOGLE_DRIVE_EXPIRES_AT, value.expiresAt?.epochSeconds)
+                demoSettings.putStringOrRemove(KEY_GOOGLE_DRIVE_ACCOUNT, value.account)
             } else {
                 demoSettings.remove(KEY_GOOGLE_DRIVE_TOKEN)
                 demoSettings.remove(KEY_GOOGLE_DRIVE_REFRESH_TOKEN)
                 demoSettings.remove(KEY_GOOGLE_DRIVE_EXPIRES_AT)
+                demoSettings.remove(KEY_GOOGLE_DRIVE_ACCOUNT)
             }
         }
     var oneDriveToken: CloudAccessToken?
@@ -107,6 +110,7 @@ private const val KEY_DROPBOX_EXPIRES_AT = "dropboxTokenExpiresAt"
 private const val KEY_GOOGLE_DRIVE_TOKEN = "googleDriveToken"
 private const val KEY_GOOGLE_DRIVE_REFRESH_TOKEN = "googleDriveRefreshToken"
 private const val KEY_GOOGLE_DRIVE_EXPIRES_AT = "googleDriveTokenExpiresAt"
+private const val KEY_GOOGLE_DRIVE_ACCOUNT = "googleDriveTokenAccount"
 
 private const val KEY_ONEDRIVE_TOKEN = "oneDriveToken"
 private const val KEY_ONEDRIVE_REFRESH_TOKEN = "oneDriveRefreshToken"

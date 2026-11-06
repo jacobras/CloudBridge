@@ -9,11 +9,13 @@ import kotlin.time.Instant
  * @property accessToken The access token.
  * @property refreshToken The refresh token, to get a fresh [accessToken].
  * @property expiresAt The moment [accessToken] expires, or `null` if unknown.
+ * @property account The account the token belongs to. Only needed for Google Drive on Android.
  */
 public data class CloudAccessToken(
     val accessToken: String,
     val refreshToken: String? = null,
-    val expiresAt: Instant? = null
+    val expiresAt: Instant? = null,
+    val account: String? = null
 )
 
 /**

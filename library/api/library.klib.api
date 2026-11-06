@@ -72,10 +72,12 @@ abstract class nl.jacobras.cloudbridge.service.oauth/OAuthCloudService : nl.jaco
 }
 
 final class nl.jacobras.cloudbridge.auth/CloudAccessToken { // nl.jacobras.cloudbridge.auth/CloudAccessToken|null[0]
-    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin.time/Instant? = ...) // nl.jacobras.cloudbridge.auth/CloudAccessToken.<init>|<init>(kotlin.String;kotlin.String?;kotlin.time.Instant?){}[0]
+    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin.time/Instant? = ..., kotlin/String? = ...) // nl.jacobras.cloudbridge.auth/CloudAccessToken.<init>|<init>(kotlin.String;kotlin.String?;kotlin.time.Instant?;kotlin.String?){}[0]
 
     final val accessToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.accessToken|{}accessToken[0]
         final fun <get-accessToken>(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.accessToken.<get-accessToken>|<get-accessToken>(){}[0]
+    final val account // nl.jacobras.cloudbridge.auth/CloudAccessToken.account|{}account[0]
+        final fun <get-account>(): kotlin/String? // nl.jacobras.cloudbridge.auth/CloudAccessToken.account.<get-account>|<get-account>(){}[0]
     final val expiresAt // nl.jacobras.cloudbridge.auth/CloudAccessToken.expiresAt|{}expiresAt[0]
         final fun <get-expiresAt>(): kotlin.time/Instant? // nl.jacobras.cloudbridge.auth/CloudAccessToken.expiresAt.<get-expiresAt>|<get-expiresAt>(){}[0]
     final val refreshToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.refreshToken|{}refreshToken[0]
@@ -84,7 +86,8 @@ final class nl.jacobras.cloudbridge.auth/CloudAccessToken { // nl.jacobras.cloud
     final fun component1(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.component1|component1(){}[0]
     final fun component2(): kotlin/String? // nl.jacobras.cloudbridge.auth/CloudAccessToken.component2|component2(){}[0]
     final fun component3(): kotlin.time/Instant? // nl.jacobras.cloudbridge.auth/CloudAccessToken.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin.time/Instant? = ...): nl.jacobras.cloudbridge.auth/CloudAccessToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.copy|copy(kotlin.String;kotlin.String?;kotlin.time.Instant?){}[0]
+    final fun component4(): kotlin/String? // nl.jacobras.cloudbridge.auth/CloudAccessToken.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin.time/Instant? = ..., kotlin/String? = ...): nl.jacobras.cloudbridge.auth/CloudAccessToken // nl.jacobras.cloudbridge.auth/CloudAccessToken.copy|copy(kotlin.String;kotlin.String?;kotlin.time.Instant?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.auth/CloudAccessToken.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.auth/CloudAccessToken.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // nl.jacobras.cloudbridge.auth/CloudAccessToken.toString|toString(){}[0]

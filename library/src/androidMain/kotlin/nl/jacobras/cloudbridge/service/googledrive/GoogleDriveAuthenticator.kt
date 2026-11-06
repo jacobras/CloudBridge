@@ -1,16 +1,20 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import android.accounts.Account
 import android.app.Activity
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
+import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
 /**
@@ -46,19 +50,35 @@ public class GoogleDriveAuthenticator(
     }
 
     /**
-     * Starts the authorization flow, showing a consent screen when the user has not granted access
-     * yet. The outcome is passed to [onSuccess], [onDenied] and [onFailure].
+     * Starts the authorization flow. Always shows an account picker, so this can also be used to
+     * add another account, followed by a consent screen when the user has not granted access yet.
+     * The outcome is passed to [onSuccess], [onDenied] and [onFailure].
+     *
+     * The token passed to [onSuccess] has [CloudAccessToken.account] set, which is needed to
+     * refresh it. Persist it together with the token.
      */
     public fun authenticate() {
         Identity.getAuthorizationClient(activity)
-            .authorize(buildGoogleDriveAuthorizationRequest())
+            .authorize(buildGoogleDriveAuthorizationRequest(selectAccount = true))
             .addOnSuccessListener { result -> handle(result.toModel()) }
             .addOnFailureListener { onFailure(CloudServiceException.Unknown(it)) }
     }
 
     private fun handle(authorization: GoogleAuthorization) {
         when (authorization) {
-            is GoogleAuthorization.Authorized -> onSuccess(authorization.token)
+            is GoogleAuthorization.Authorized -> activity.lifecycleScope.launch {
+                val token = try {
+                    val account = fetchGoogleAccount(authorization.token.accessToken)
+                        ?: throw CloudServiceException.Unknown(
+                            IllegalStateException("Google account has no email address")
+                        )
+                    authorization.token.copy(account = account)
+                } catch (e: CloudServiceException) {
+                    onFailure(e)
+                    return@launch
+                }
+                onSuccess(token)
+            }
             is GoogleAuthorization.ConsentRequired -> consentLauncher.launch(
                 IntentSenderRequest.Builder(authorization.pendingIntent.intentSender).build()
             )
@@ -97,10 +117,40 @@ public class GoogleDriveAuthenticator(
     }
 }
 
-internal fun buildGoogleDriveAuthorizationRequest(): AuthorizationRequest {
+/**
+ * @param account The account to authorize, or `null` to let Google Identity Services pick one.
+ * @param selectAccount `true` to always show the account picker.
+ */
+internal fun buildGoogleDriveAuthorizationRequest(
+    account: Account? = null,
+    selectAccount: Boolean = false
+): AuthorizationRequest {
     return AuthorizationRequest.builder()
         .setRequestedScopes(listOf(Scope(DRIVE_APPDATA_SCOPE)))
+        .apply {
+            if (account != null) {
+                setAccount(account)
+            }
+            if (selectAccount) {
+                setPrompt(AuthorizationRequest.Prompt.SELECT_ACCOUNT)
+            }
+        }
         .build()
 }
+
+/**
+ * Looks up the email address of the Google account that [accessToken] belongs to.
+ *
+ * @throws CloudServiceException
+ */
+internal suspend fun fetchGoogleAccount(accessToken: String): String? {
+    return GoogleDriveService(
+        clientInfo = ClientInfo(clientId = ""),
+        token = CloudAccessToken(accessToken = accessToken),
+        tokenRefresher = null
+    ).getUserInfo().emailAddress
+}
+
+internal const val GOOGLE_ACCOUNT_TYPE = "com.google"
 
 private const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"

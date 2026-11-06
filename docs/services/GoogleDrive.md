@@ -65,9 +65,9 @@ the [shared API](../api/Overview.md) is available.
     Google Drive differs per platform:
 
     - **Android**: a new token is requested from Google Identity Services silently. It doesn't
-      tell when a token expires, so this only happens after a token is rejected. If the user needs
-      to grant access again, a `NotAuthenticatedException` is thrown; call
-      `GoogleDriveAuthenticator.authenticate()` then.
+      tell when a token expires, so this only happens after a token is rejected. The new token is
+      requested for the account in `CloudAccessToken.account`. If the user needs to grant access
+      again, a `NotAuthenticatedException` is thrown; call `GoogleDriveAuthenticator.authenticate()` then.
     - **Web**: the implicit flow has no refresh token, so tokens can't be refreshed. Re-authenticate
       when a `NotAuthenticatedException` is thrown.
 
@@ -100,7 +100,13 @@ the [shared API](../api/Overview.md) is available.
     )
     ```
     
-    Securely store the token and pass it to the constructor of the service to use it.
+    Call `googleDriveAuthenticator.authenticate()` to start. It always shows an account picker.
+
+    Securely store the token, including `token.account`, and pass it to the constructor of the
+    service to use it. The account is needed to refresh the token.
+
+    **Multiple accounts**: create one `CloudBridge.googleDrive()` instance per account and call
+    `authenticate()` again to add another one. Each token refreshes for its own account.
 
 === "iOS"
 

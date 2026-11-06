@@ -81,15 +81,17 @@ public final class nl/jacobras/cloudbridge/CloudServiceException$Unknown : nl/ja
 }
 
 public final class nl/jacobras/cloudbridge/auth/CloudAccessToken {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lkotlin/time/Instant;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
-	public static synthetic fun copy$default (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
+	public static synthetic fun copy$default (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;ILjava/lang/Object;)Lnl/jacobras/cloudbridge/auth/CloudAccessToken;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccessToken ()Ljava/lang/String;
+	public final fun getAccount ()Ljava/lang/String;
 	public final fun getExpiresAt ()Lkotlin/time/Instant;
 	public final fun getRefreshToken ()Ljava/lang/String;
 	public fun hashCode ()I

@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import android.accounts.Account
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.tasks.Task
@@ -31,6 +32,8 @@ internal class GoogleIdentityTokenRefresher : TokenRefresher {
         // Set at app start by CloudBridgeInitializer; missing if androidx.startup is disabled.
         val context = CloudBridgeContext.applicationContext
             ?: throw CloudServiceException.NotAuthenticatedException()
+        // Without the account, a silent authorization could return another account's token.
+        val account = outdated.account ?: throw CloudServiceException.NotAuthenticatedException()
         val client = Identity.getAuthorizationClient(context)
 
         // AuthorizationClient caches tokens, so first clear it so it won't return the token
@@ -39,7 +42,11 @@ internal class GoogleIdentityTokenRefresher : TokenRefresher {
             ClearTokenRequest.builder().setToken(outdated.accessToken).build()
         ).await()
 
-        val result = client.authorize(buildGoogleDriveAuthorizationRequest()).await()
+        val result = client.authorize(
+            buildGoogleDriveAuthorizationRequest(
+                account = Account(account, GOOGLE_ACCOUNT_TYPE)
+            )
+        ).await()
         val accessToken = result.accessToken
         if (result.hasResolution() || accessToken == null) {
             // User action required (re-authentication), can't refresh this token.
@@ -49,7 +56,7 @@ internal class GoogleIdentityTokenRefresher : TokenRefresher {
             // Shouldn't happen, because it's cleared above, but just in case.
             throw CloudServiceException.NotAuthenticatedException()
         }
-        return CloudAccessToken(accessToken = accessToken)
+        return CloudAccessToken(accessToken = accessToken, account = account)
     }
 }
 
