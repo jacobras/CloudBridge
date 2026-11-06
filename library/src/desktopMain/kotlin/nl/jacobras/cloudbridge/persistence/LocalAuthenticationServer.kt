@@ -30,6 +30,9 @@ public class LocalAuthenticationServer(
     @Volatile
     private var server: EmbeddedServer<*, *>? = null
 
+    @Volatile
+    private var pendingStop: Thread? = null
+
     public val url: String
         get() = "http://localhost:$port"
 
@@ -54,6 +57,7 @@ public class LocalAuthenticationServer(
         onSuccess: (CloudAccessToken) -> Unit
     ) {
         require(server == null) { "Server is already running; stop it first" }
+        awaitPendingStop()
         val authUrl = authenticator.buildPkceUri()
 
         server = embeddedServer(Netty, port = port) {
@@ -84,12 +88,14 @@ public class LocalAuthenticationServer(
     /**
      * Stops the embedded HTTP server started by [start].
      *
-     * Safe to call multiple times or without calling [start].
+     * Safe to call multiple times or without calling [start]. Also waits for a shutdown that was
+     * triggered from within a request handler to finish, so the port is free when this returns.
      */
     public fun stop() {
-        val server = server ?: return
+        val server = server
         this.server = null
-        server.stop()
+        server?.stop()
+        awaitPendingStop()
     }
 
     /**
@@ -99,7 +105,17 @@ public class LocalAuthenticationServer(
     private fun stopInBackground() {
         val server = server ?: return
         this.server = null
-        thread(name = "LocalAuthenticationServer-stop") { server.stop() }
+        pendingStop = thread(name = "LocalAuthenticationServer-stop") { server.stop() }
+    }
+
+    /**
+     * Waits for a shutdown started by [stopInBackground] to complete. Must not be called from the
+     * server's own request handler, since the shutdown waits for that handler's thread to finish.
+     */
+    private fun awaitPendingStop() {
+        val pendingStop = pendingStop ?: return
+        pendingStop.join()
+        this.pendingStop = null
     }
 
     private suspend fun getToken(authenticator: PkceAuthenticator, url: String): CloudAccessToken? {
