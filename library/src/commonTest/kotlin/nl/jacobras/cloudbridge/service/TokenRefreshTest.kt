@@ -20,6 +20,7 @@ import io.ktor.client.request.forms.FormDataContent
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
@@ -311,6 +312,43 @@ class TokenRefreshTest {
     }
 
     @Test
+    fun `token set while refreshing is not overwritten by refreshed token`() = runTest {
+        val engine = MockEngine { request ->
+            if (request.headers[HttpHeaders.Authorization] == "Bearer other") {
+                respondJson("""{"user":{}}""")
+            } else {
+                respondJson("{}", HttpStatusCode.Unauthorized)
+            }
+        }
+        val refreshStarted = CompletableDeferred<Unit>()
+        val finishRefresh = CompletableDeferred<Unit>()
+        val refreshed = mutableListOf<CloudAccessToken>()
+        val service = GoogleDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("old"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = null,
+            tokenRefresher = FakeTokenRefresher {
+                refreshStarted.complete(Unit)
+                finishRefresh.await()
+                CloudAccessToken("stale")
+            },
+            onTokenRefreshed = { refreshed += it },
+            clock = clock
+        )
+
+        val call = async { service.getUserInfo() }
+        refreshStarted.await()
+        service.setToken(CloudAccessToken("other"))
+        finishRefresh.complete(Unit)
+        call.await()
+
+        assertThat(refreshed).isEmpty()
+        assertThat(engine.requestHistory.map { it.headers[HttpHeaders.Authorization] })
+            .containsExactly("Bearer old", "Bearer other")
+    }
+
+    @Test
     fun `refresher failing throws NotAuthenticatedException`() = runTest {
         val engine = MockEngine { respondJson("{}", HttpStatusCode.Unauthorized) }
         val service = GoogleDriveService(
@@ -364,7 +402,7 @@ class TokenRefreshTest {
      * [TokenRefresher] that doesn't use a refresh token, like `GoogleIdentityTokenRefresher`.
      */
     private class FakeTokenRefresher(
-        private val newToken: (outdated: CloudAccessToken) -> CloudAccessToken
+        private val newToken: suspend (outdated: CloudAccessToken) -> CloudAccessToken
     ) : TokenRefresher {
         override suspend fun refresh(
             outdated: CloudAccessToken,
