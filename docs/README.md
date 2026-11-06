@@ -19,10 +19,10 @@ In general, CloudBridge works as follows:
 
 ```kotlin
 // 1: Instantiate a service
-val service = CloudBridge.dropbox()
+val service = CloudBridge.dropbox(clientId = "yourClientId")
 
 // 2: Authenticate (platform- and service-specific, see docs)
-service.authenticate("clientId", "example://redirect-uri")
+service.authenticate(redirectUri = "example://redirect-uri")
 
 // 3: Ready for use!
 service.listFiles("/".asFolderPath())
@@ -33,8 +33,3 @@ See [Cloud services](services/Overview.md) on how to authenticate each service o
 See [shared API](api/Overview.md) for all available operations.
 
 See the [demo app source](https://github.com/jacobras/CloudBridge/tree/main/demo) for more example code.
-
-!!! warning
-
-    The library doesn't refresh tokens yet, so once a token expires you'll need to re-authenticate.
-    Follow <https://github.com/jacobras/CloudBridge/issues/25> for updates.

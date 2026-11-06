@@ -3,7 +3,7 @@
 Start by instantiating the service:
 
 ```kotlin
-val service = CloudBridge.oneDrive()
+val service = CloudBridge.oneDrive(clientId = "yourClientId")
 ```
 
 Then, authenticate using the platform-specific methods below. Once authenticated,
