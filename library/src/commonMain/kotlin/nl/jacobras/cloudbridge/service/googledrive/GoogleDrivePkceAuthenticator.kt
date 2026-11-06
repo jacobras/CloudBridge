@@ -20,7 +20,10 @@ internal class GoogleDrivePkceAuthenticator(
     override val scope = "https://www.googleapis.com/auth/drive.appdata"
 
     // Needed to receive a refresh token.
-    override val extraParams = mapOf("access_type" to "offline")
+    override val extraParams = mapOf(
+        "access_type" to "offline",
+        "prompt" to "consent"
+    )
 
     override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {
