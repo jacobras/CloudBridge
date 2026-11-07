@@ -17,6 +17,7 @@ import nl.jacobras.cloudbridge.demo.setUpLogging
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
 import nl.jacobras.cloudbridge.service.googledrive.GoogleDriveService
+import nl.jacobras.cloudbridge.service.oauth.OAuthCloudService
 import nl.jacobras.cloudbridge.service.onedrive.OneDriveService
 import nl.jacobras.cloudbridge.service.webdav.WebDavCredentials
 import nl.jacobras.cloudbridge.service.webdav.WebDavService
@@ -38,6 +39,11 @@ class DemoViewModel(
 
     private var loadServiceDetailsJob: Job? = null
 
+    /**
+     * Connected instances in [connectedServices].
+     */
+    private var services = emptyList<CloudService>()
+
     init {
         setUpLogging()
         refresh()
@@ -47,10 +53,11 @@ class DemoViewModel(
      * Rebuilds [connectedServices] from the credentials in [DemoSettings].
      */
     fun refresh() = viewModelScope.launch {
-        val services = AvailableService.entries.mapNotNull(::getConnectedService) + dummy
+        services.forEach { (it as? OAuthCloudService)?.setToken(null) }
+        services = AvailableService.entries.mapNotNull(::getConnectedService)
 
         connectedServices.update {
-            services.associateWith { service ->
+            (services + dummy).associateWith { service ->
                 try {
                     service.getUserInfo()
                 } catch (_: Throwable) {
@@ -69,6 +76,10 @@ class DemoViewModel(
     }
 
     fun disconnect(service: CloudService) {
+        loadServiceDetailsJob?.cancel()
+        loadServiceDetailsJob = null
+        (service as? OAuthCloudService)?.setToken(null)
+
         when (service) {
             is DropboxService -> DemoSettings.dropboxToken = null
             is GoogleDriveService -> DemoSettings.googleDriveToken = null
