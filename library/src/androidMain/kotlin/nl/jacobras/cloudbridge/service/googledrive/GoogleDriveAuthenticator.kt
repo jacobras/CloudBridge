@@ -11,8 +11,11 @@ import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Scope
 import kotlinx.coroutines.launch
+import nl.jacobras.cloudbridge.CloudBridge
+import nl.jacobras.cloudbridge.CloudBridge.logger
 import nl.jacobras.cloudbridge.CloudServiceException
 import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
@@ -37,12 +40,13 @@ public class GoogleDriveAuthenticator(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
         if (result.resultCode != Activity.RESULT_OK) {
-            onDenied()
+            onNotOkResult(result.data)
             return@registerForActivityResult
         }
         val authorization = try {
             completeAuthentication(result.data)
         } catch (e: CloudServiceException) {
+            logger.log("Failed to complete Google Drive authentication: $e")
             onFailure(e)
             return@registerForActivityResult
         }
@@ -61,7 +65,10 @@ public class GoogleDriveAuthenticator(
         Identity.getAuthorizationClient(activity)
             .authorize(buildGoogleDriveAuthorizationRequest(selectAccount = true))
             .addOnSuccessListener { result -> handle(result.toModel()) }
-            .addOnFailureListener { onFailure(CloudServiceException.Unknown(it)) }
+            .addOnFailureListener {
+                logger.log("Google Drive authentication failed: $it")
+                onFailure(CloudServiceException.Unknown(it))
+            }
     }
 
     private fun handle(authorization: GoogleAuthorization) {
@@ -74,6 +81,7 @@ public class GoogleDriveAuthenticator(
                         )
                     authorization.token.copy(account = account)
                 } catch (e: CloudServiceException) {
+                    logger.log("Failed to handle Google Drive authorization: $e")
                     onFailure(e)
                     return@launch
                 }
@@ -83,6 +91,28 @@ public class GoogleDriveAuthenticator(
                 IntentSenderRequest.Builder(authorization.pendingIntent.intentSender).build()
             )
             GoogleAuthorization.Denied -> onDenied()
+        }
+    }
+
+    /**
+     * Handles a flow that didn't finish with [Activity.RESULT_OK], either because of user
+     * dismissing it, or because of an error.
+     */
+    private fun onNotOkResult(intent: Intent?) {
+        if (intent == null) {
+            onDenied()
+            return
+        }
+        try {
+            Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(intent)
+            onDenied()
+        } catch (e: ApiException) {
+            if (e.statusCode == CommonStatusCodes.CANCELED) {
+                onDenied()
+            } else {
+                logger.log("Google Drive not OK: $e")
+                onFailure(CloudServiceException.Unknown(e))
+            }
         }
     }
 
