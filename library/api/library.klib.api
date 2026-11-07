@@ -400,6 +400,10 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
             final fun <get-retryAfter>(): kotlin.time/Duration? // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException.retryAfter.<get-retryAfter>|<get-retryAfter>(){}[0]
     }
 
+    final class SetupException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SetupException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.SetupException.<init>|<init>(kotlin.String){}[0]
+    }
+
     final class SinkWriteException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SinkWriteException|null[0]
         constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudBridgeException.SinkWriteException.<init>|<init>(kotlinx.io.IOException){}[0]
     }
