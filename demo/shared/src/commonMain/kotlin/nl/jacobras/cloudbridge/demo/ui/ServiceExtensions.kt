@@ -7,7 +7,6 @@ import cloudbridge.demo.shared.generated.resources.Res
 import cloudbridge.demo.shared.generated.resources.ic_dropbox
 import cloudbridge.demo.shared.generated.resources.ic_google_drive
 import cloudbridge.demo.shared.generated.resources.ic_one_drive
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
@@ -64,17 +63,3 @@ internal val AvailableService.logo: ServiceLogo
             AvailableService.WebDav -> ServiceLogo.Vector(Icons.Default.Cloud)
         }
     }
-
-/**
- * Creates an unauthenticated instance of this service.
- *
- * Not supported for [AvailableService.WebDav], which requires credentials up front.
- */
-internal fun AvailableService.toService(): CloudService {
-    return when (this) {
-        AvailableService.Dropbox -> CloudBridge.dropbox()
-        AvailableService.GoogleDrive -> CloudBridge.googleDrive()
-        AvailableService.OneDrive -> CloudBridge.oneDrive()
-        AvailableService.WebDav -> error("WebDAV requires credentials, use CloudBridge.webDav()")
-    }
-}

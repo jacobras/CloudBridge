@@ -10,7 +10,6 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
  * Runs the OneDrive PKCE sign-in flow. Opens a web modal to do so.
  */
 public suspend fun OneDriveService.authenticate(
-    clientId: String,
     redirectUri: String
 ): CloudAccessToken? {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -20,7 +19,7 @@ public suspend fun OneDriveService.authenticate(
     }
     val authenticator = OneDriveAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

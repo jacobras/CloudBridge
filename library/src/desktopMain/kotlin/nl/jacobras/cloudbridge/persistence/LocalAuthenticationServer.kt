@@ -15,6 +15,7 @@ import nl.jacobras.cloudbridge.name
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import kotlin.concurrent.thread
 
 /**
  * A simple HTTP server that can handle authentication redirects.
@@ -26,7 +27,11 @@ import java.nio.charset.StandardCharsets
 public class LocalAuthenticationServer(
     private val port: Int = 8080
 ) {
+    @Volatile
     private var server: EmbeddedServer<*, *>? = null
+
+    @Volatile
+    private var pendingStop: Thread? = null
 
     public val url: String
         get() = "http://localhost:$port"
@@ -52,6 +57,7 @@ public class LocalAuthenticationServer(
         onSuccess: (CloudAccessToken) -> Unit
     ) {
         require(server == null) { "Server is already running; stop it first" }
+        awaitPendingStop()
         val authUrl = authenticator.buildPkceUri()
 
         server = embeddedServer(Netty, port = port) {
@@ -61,7 +67,7 @@ public class LocalAuthenticationServer(
                     token?.let {
                         call.respondText("Success! You can close this window now.")
                         onSuccess(it)
-                        stop()
+                        stopInBackground()
                         return@get
                     }
 
@@ -82,11 +88,34 @@ public class LocalAuthenticationServer(
     /**
      * Stops the embedded HTTP server started by [start].
      *
-     * Safe to call multiple times or without calling [start].
+     * Safe to call multiple times or without calling [start]. Also waits for a shutdown that was
+     * triggered from within a request handler to finish, so the port is free when this returns.
      */
     public fun stop() {
+        val server = server
+        this.server = null
         server?.stop()
-        server = null
+        awaitPendingStop()
+    }
+
+    /**
+     * Stops the server from a different thread. Needed when stopping from within a request handler,
+     * because Netty waits for its own event loop threads to terminate, which would deadlock.
+     */
+    private fun stopInBackground() {
+        val server = server ?: return
+        this.server = null
+        pendingStop = thread(name = "LocalAuthenticationServer-stop") { server.stop() }
+    }
+
+    /**
+     * Waits for a shutdown started by [stopInBackground] to complete. Must not be called from the
+     * server's own request handler, since the shutdown waits for that handler's thread to finish.
+     */
+    private fun awaitPendingStop() {
+        val pendingStop = pendingStop ?: return
+        pendingStop.join()
+        this.pendingStop = null
     }
 
     private suspend fun getToken(authenticator: PkceAuthenticator, url: String): CloudAccessToken? {

@@ -3,7 +3,7 @@ package nl.jacobras.cloudbridge.demo.persistence
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.contains
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 object DemoSettings {
     var dropboxToken: CloudAccessToken?
@@ -12,7 +12,7 @@ object DemoSettings {
                 CloudAccessToken(
                     accessToken = demoSettings.getStringOrNull(KEY_DROPBOX_TOKEN)!!,
                     refreshToken = demoSettings.getStringOrNull(KEY_DROPBOX_REFRESH_TOKEN),
-                    expiresIn = demoSettings.getLongOrNull(KEY_DROPBOX_EXPIRES_IN)?.seconds
+                    expiresAt = demoSettings.getLongOrNull(KEY_DROPBOX_EXPIRES_AT)?.let(Instant::fromEpochSeconds)
                 )
             } else null
         }
@@ -20,11 +20,11 @@ object DemoSettings {
             if (value != null) {
                 demoSettings.putString(KEY_DROPBOX_TOKEN, value.accessToken)
                 demoSettings.putStringOrRemove(KEY_DROPBOX_REFRESH_TOKEN, value.refreshToken)
-                demoSettings.putLongOrRemove(KEY_DROPBOX_EXPIRES_IN, value.expiresIn?.inWholeSeconds ?: 0L)
+                demoSettings.putLongOrRemove(KEY_DROPBOX_EXPIRES_AT, value.expiresAt?.epochSeconds)
             } else {
                 demoSettings.remove(KEY_DROPBOX_TOKEN)
                 demoSettings.remove(KEY_DROPBOX_REFRESH_TOKEN)
-                demoSettings.remove(KEY_DROPBOX_EXPIRES_IN)
+                demoSettings.remove(KEY_DROPBOX_EXPIRES_AT)
             }
         }
     var googleDriveToken: CloudAccessToken?
@@ -33,7 +33,8 @@ object DemoSettings {
                 CloudAccessToken(
                     accessToken = demoSettings.getStringOrNull(KEY_GOOGLE_DRIVE_TOKEN)!!,
                     refreshToken = demoSettings.getStringOrNull(KEY_GOOGLE_DRIVE_REFRESH_TOKEN),
-                    expiresIn = demoSettings.getLongOrNull(KEY_GOOGLE_DRIVE_EXPIRES_IN)?.seconds
+                    expiresAt = demoSettings.getLongOrNull(KEY_GOOGLE_DRIVE_EXPIRES_AT)?.let(Instant::fromEpochSeconds),
+                    account = demoSettings.getStringOrNull(KEY_GOOGLE_DRIVE_ACCOUNT)
                 )
             } else null
         }
@@ -41,11 +42,13 @@ object DemoSettings {
             if (value != null) {
                 demoSettings.putString(KEY_GOOGLE_DRIVE_TOKEN, value.accessToken)
                 demoSettings.putStringOrRemove(KEY_GOOGLE_DRIVE_REFRESH_TOKEN, value.refreshToken)
-                demoSettings.putLongOrRemove(KEY_GOOGLE_DRIVE_EXPIRES_IN, value.expiresIn?.inWholeSeconds)
+                demoSettings.putLongOrRemove(KEY_GOOGLE_DRIVE_EXPIRES_AT, value.expiresAt?.epochSeconds)
+                demoSettings.putStringOrRemove(KEY_GOOGLE_DRIVE_ACCOUNT, value.account)
             } else {
                 demoSettings.remove(KEY_GOOGLE_DRIVE_TOKEN)
                 demoSettings.remove(KEY_GOOGLE_DRIVE_REFRESH_TOKEN)
-                demoSettings.remove(KEY_GOOGLE_DRIVE_EXPIRES_IN)
+                demoSettings.remove(KEY_GOOGLE_DRIVE_EXPIRES_AT)
+                demoSettings.remove(KEY_GOOGLE_DRIVE_ACCOUNT)
             }
         }
     var oneDriveToken: CloudAccessToken?
@@ -54,7 +57,7 @@ object DemoSettings {
                 CloudAccessToken(
                     accessToken = demoSettings.getStringOrNull(KEY_ONEDRIVE_TOKEN)!!,
                     refreshToken = demoSettings.getStringOrNull(KEY_ONEDRIVE_REFRESH_TOKEN),
-                    expiresIn = demoSettings.getLongOrNull(KEY_ONEDRIVE_EXPIRES_IN)?.seconds
+                    expiresAt = demoSettings.getLongOrNull(KEY_ONEDRIVE_EXPIRES_AT)?.let(Instant::fromEpochSeconds)
                 )
             } else null
         }
@@ -62,11 +65,11 @@ object DemoSettings {
             if (value != null) {
                 demoSettings.putString(KEY_ONEDRIVE_TOKEN, value.accessToken)
                 demoSettings.putStringOrRemove(KEY_ONEDRIVE_REFRESH_TOKEN, value.refreshToken)
-                demoSettings.putLongOrRemove(KEY_ONEDRIVE_EXPIRES_IN, value.expiresIn?.inWholeSeconds)
+                demoSettings.putLongOrRemove(KEY_ONEDRIVE_EXPIRES_AT, value.expiresAt?.epochSeconds)
             } else {
                 demoSettings.remove(KEY_ONEDRIVE_TOKEN)
                 demoSettings.remove(KEY_ONEDRIVE_REFRESH_TOKEN)
-                demoSettings.remove(KEY_ONEDRIVE_EXPIRES_IN)
+                demoSettings.remove(KEY_ONEDRIVE_EXPIRES_AT)
             }
         }
     var webDavServerUrl: String?
@@ -102,15 +105,16 @@ private fun Settings.putLongOrRemove(key: String, value: Long?) {
 
 private const val KEY_DROPBOX_TOKEN = "dropboxToken"
 private const val KEY_DROPBOX_REFRESH_TOKEN = "dropboxRefreshToken"
-private const val KEY_DROPBOX_EXPIRES_IN = "dropboxTokenExpiresIn"
+private const val KEY_DROPBOX_EXPIRES_AT = "dropboxTokenExpiresAt"
 
 private const val KEY_GOOGLE_DRIVE_TOKEN = "googleDriveToken"
 private const val KEY_GOOGLE_DRIVE_REFRESH_TOKEN = "googleDriveRefreshToken"
-private const val KEY_GOOGLE_DRIVE_EXPIRES_IN = "googleDriveTokenExpiresIn"
+private const val KEY_GOOGLE_DRIVE_EXPIRES_AT = "googleDriveTokenExpiresAt"
+private const val KEY_GOOGLE_DRIVE_ACCOUNT = "googleDriveTokenAccount"
 
 private const val KEY_ONEDRIVE_TOKEN = "oneDriveToken"
 private const val KEY_ONEDRIVE_REFRESH_TOKEN = "oneDriveRefreshToken"
-private const val KEY_ONEDRIVE_EXPIRES_IN = "oneDriveTokenExpiresIn"
+private const val KEY_ONEDRIVE_EXPIRES_AT = "oneDriveTokenExpiresAt"
 
 private const val KEY_WEBDAV_URL = "webDavUrl"
 private const val KEY_WEBDAV_USERNAME = "webDavUsername"

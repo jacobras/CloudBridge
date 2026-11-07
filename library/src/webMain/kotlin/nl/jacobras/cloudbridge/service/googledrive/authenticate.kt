@@ -1,10 +1,8 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
-@Suppress("UnusedReceiverParameter")
 public fun GoogleDriveService.authenticate(
-    redirectUri: String,
-    clientId: String
+    redirectUri: String
 ): String {
-    val authenticator = GoogleDriveImplicitAuthenticator(clientId, redirectUri)
+    val authenticator = GoogleDriveImplicitAuthenticator(clientInfo.clientId, redirectUri)
     return authenticator.buildImplicitFlowUri()
 }

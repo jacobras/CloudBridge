@@ -7,7 +7,6 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public fun DropboxService.authenticate(
     authServer: LocalAuthenticationServer,
-    clientId: String,
     onSuccess: (CloudAccessToken) -> Unit
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -17,7 +16,7 @@ public fun DropboxService.authenticate(
     }
     val authenticator = DropboxAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = authServer.url,
         codeVerifier = codeVerifier
     )

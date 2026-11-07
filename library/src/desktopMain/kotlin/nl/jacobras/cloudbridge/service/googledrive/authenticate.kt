@@ -7,11 +7,10 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 
 public fun GoogleDriveService.authenticate(
     authServer: LocalAuthenticationServer,
-    clientId: String,
-    clientSecret: String,
     onSuccess: (CloudAccessToken) -> Unit
 ): String {
-    require(clientSecret.isNotEmpty()) { "Client secret cannot be empty" }
+    val clientSecret = clientInfo.googleDriveDesktopSecret
+    require(!clientSecret.isNullOrEmpty()) { "Client secret is required for Google Drive on desktop" }
     val codeVerifier = librarySettings.codeVerifier ?: let {
         val verifier = SecurityUtil.createRandomCodeVerifier()
         librarySettings.codeVerifier = verifier
@@ -19,7 +18,7 @@ public fun GoogleDriveService.authenticate(
     }
     val authenticator = GoogleDrivePkceAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         clientSecret = clientSecret,
         redirectUri = authServer.url,
         codeVerifier = codeVerifier

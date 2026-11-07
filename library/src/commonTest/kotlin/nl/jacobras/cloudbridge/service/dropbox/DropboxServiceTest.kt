@@ -23,7 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -38,6 +38,7 @@ import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
+import nl.jacobras.cloudbridge.util.testClientInfo
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -54,12 +55,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("expired"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/users/get_current_account")
@@ -79,14 +81,15 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = null
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isEqualTo(1.seconds)
     }
 
@@ -100,12 +103,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("id:missing")) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
             .hasMessage("The requested item 'id:missing' could not be found")
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
@@ -125,6 +129,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -150,12 +155,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("id:abc"), failingSink()) }
-            .isInstanceOf<CloudServiceException.SinkWriteException>()
+            .isInstanceOf<CloudBridgeException.SinkWriteException>()
     }
 
     @Test
@@ -168,12 +174,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("id:missing"), Buffer()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -186,12 +193,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.createFile("/big.txt".asFilePath(), "content") }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/upload")
@@ -208,6 +216,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -240,6 +249,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -273,6 +283,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -309,6 +320,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -336,18 +348,20 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.moveFile(CloudItemId("id:abc"), "/taken.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
     }
 
     @Test
     fun `moving a folder to the root throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -367,6 +381,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -396,6 +411,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -418,6 +434,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -450,6 +467,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -509,6 +527,7 @@ class DropboxServiceTest {
             }
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
@@ -545,6 +564,7 @@ class DropboxServiceTest {
     fun `failing source read throws SourceReadException`() = runTest {
         val engine = MockEngine { error("No request expected") }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -555,7 +575,7 @@ class DropboxServiceTest {
                 source = { failingSource() }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
 
@@ -569,6 +589,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -580,7 +601,7 @@ class DropboxServiceTest {
                 source = { failingSource(5) }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.url.toString() }).containsExactly(
             "https://content.dropboxapi.com/2/files/upload_session/start"
         )
@@ -625,6 +646,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -662,6 +684,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -696,12 +719,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -714,12 +738,13 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFileInfo("/Notes".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -732,6 +757,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -761,18 +787,20 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFolderInfo("/Welcome.txt".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
     fun `get folder info for root throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -792,6 +820,7 @@ class DropboxServiceTest {
             )
         }
         val service = DropboxService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )

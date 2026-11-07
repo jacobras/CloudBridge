@@ -4,7 +4,7 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaChange
@@ -62,7 +62,7 @@ class DummyCloudService(
 
     override suspend fun getUserInfo(): UserInfo {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         return UserInfo(name = "Dummy", emailAddress = "dummy@example.com")
@@ -70,7 +70,7 @@ class DummyCloudService(
 
     override suspend fun listFiles(path: FolderPath): List<CloudItem> {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         return cloudItems.filter { it.path.startsWith(path) }
@@ -78,26 +78,26 @@ class DummyCloudService(
 
     override suspend fun getFileInfo(path: FilePath): CloudFile {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         return cloudItems.firstOrNull { it is CloudFile && it.path.toString() == path.toString() }
-                as? CloudFile ?: throw CloudServiceException.NotFoundException(path.toString())
+                as? CloudFile ?: throw CloudBridgeException.NotFoundException(path.toString())
     }
 
     override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         require(!path.isRoot) { "Can't get info for the root folder" }
         return cloudItems.firstOrNull { it is CloudFolder && it.path.toString() == path.toString() }
-                as? CloudFolder ?: throw CloudServiceException.NotFoundException(path.toString())
+                as? CloudFolder ?: throw CloudBridgeException.NotFoundException(path.toString())
     }
 
     override suspend fun createFolder(path: FolderPath): CloudFolder {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val folder = CloudFolder(
@@ -118,7 +118,7 @@ class DummyCloudService(
 
     private fun createFile(path: FilePath, content: ByteArray): CloudFile {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val id = CloudItemId(path.hashCode().toString())
@@ -143,11 +143,11 @@ class DummyCloudService(
 
     private fun updateFile(id: CloudItemId, content: ByteArray): CloudFile {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val existing = cloudItems.firstOrNull { it.id == id }
-                as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
+                as? CloudFile ?: throw CloudBridgeException.NotFoundException(id.value)
         val updated = existing.copy(
             sizeInBytes = content.size.toLong(),
             modified = Clock.System.now(),
@@ -197,26 +197,26 @@ class DummyCloudService(
 
     private fun downloadBytes(id: CloudItemId): ByteArray {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
-        return cloudItemContents[id] ?: throw CloudServiceException.NotFoundException(id.value)
+        return cloudItemContents[id] ?: throw CloudBridgeException.NotFoundException(id.value)
     }
 
     override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val existing = cloudItems.firstOrNull { it.id == id }
-                as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
+                as? CloudFile ?: throw CloudBridgeException.NotFoundException(id.value)
         val renamed = existing.copy(
             name = newPath.name,
             path = newPath,
             revision = nextRevision(id)
         )
         if (cloudItems.any { it.path.toString() == newPath.toString() }) {
-            throw CloudServiceException.ConflictException(newPath.toString())
+            throw CloudBridgeException.ConflictException(newPath.toString())
         }
         cloudItems -= existing
         cloudItems += renamed
@@ -228,18 +228,18 @@ class DummyCloudService(
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
 
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val existing = cloudItems.firstOrNull { it.id == id }
-                as? CloudFolder ?: throw CloudServiceException.NotFoundException(id.value)
+                as? CloudFolder ?: throw CloudBridgeException.NotFoundException(id.value)
         require(!newPath.startsWith(existing.path)) { "Can't move a folder into itself" }
         val renamed = existing.copy(
             name = newPath.name,
             path = newPath
         )
         if (cloudItems.any { it.path.toString() == newPath.toString() }) {
-            throw CloudServiceException.ConflictException(newPath.toString())
+            throw CloudBridgeException.ConflictException(newPath.toString())
         }
         cloudItems -= existing
         cloudItems += renamed
@@ -267,11 +267,11 @@ class DummyCloudService(
 
     override suspend fun delete(id: CloudItemId) {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val existing = cloudItems.firstOrNull { it.id == id }
-                as? CloudFile ?: throw CloudServiceException.NotFoundException(id.value)
+                as? CloudFile ?: throw CloudBridgeException.NotFoundException(id.value)
         cloudItems -= existing
         cloudItemContents.remove(id)
         changeLog += DeletedDeltaChange(itemId = id, path = existing.path)
@@ -279,7 +279,7 @@ class DummyCloudService(
 
     override suspend fun getDelta(previousCursor: DeltaCursor): DeltaResult {
         if (!isAuthenticated()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         val changes = if (previousCursor == DeltaCursor.INITIAL) {
@@ -287,7 +287,7 @@ class DummyCloudService(
         } else {
             val index = previousCursor.value.toIntOrNull()
                 ?.takeIf { it in 0..changeLog.size }
-                ?: throw CloudServiceException.NotFoundException(previousCursor.value)
+                ?: throw CloudBridgeException.NotFoundException(previousCursor.value)
 
             // Only report the latest change per item, like real services do.
             changeLog.drop(index).associateBy { it.itemId }.values.toList()

@@ -5,14 +5,14 @@ import kotlinx.io.Buffer
 import kotlinx.io.IOException
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 
 /**
  * Reads this source to the end in chunks of [chunkSizeBytes] bytes and passes each chunk to [block].
  * Every chunk except the last one is exactly [chunkSizeBytes] bytes. An empty source results in a
  * single empty chunk.
  *
- * @throws CloudServiceException.SourceReadException when reading this source fails.
+ * @throws CloudBridgeException.SourceReadException when reading this source fails.
  * @param block Receives the chunk, the offset of its first byte and whether it's the last chunk.
  */
 internal suspend fun Source.forEachChunk(
@@ -31,7 +31,7 @@ internal suspend fun Source.forEachChunk(
                 }
                 buffer.readByteArray() to exhausted()
             } catch (e: IOException) {
-                throw CloudServiceException.SourceReadException(e)
+                throw CloudBridgeException.SourceReadException(e)
             }
         }
         block(chunk, offset, isLast)
@@ -42,7 +42,7 @@ internal suspend fun Source.forEachChunk(
 /**
  * Opens a source with [openSource], reads it with [Source.forEachChunk] and closes it.
  *
- * @throws CloudServiceException.SourceReadException when opening, reading or closing the source
+ * @throws CloudBridgeException.SourceReadException when opening, reading or closing the source
  * fails.
  */
 @Suppress("TooGenericExceptionCaught")
@@ -62,6 +62,6 @@ internal suspend fun forEachChunk(
     try {
         source.close()
     } catch (e: IOException) {
-        throw CloudServiceException.SourceReadException(e)
+        throw CloudBridgeException.SourceReadException(e)
     }
 }

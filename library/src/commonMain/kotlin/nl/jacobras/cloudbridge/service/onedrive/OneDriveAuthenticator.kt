@@ -16,7 +16,9 @@ internal class OneDriveAuthenticator(
     codeVerifier = codeVerifier
 ) {
     override val baseUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
-    override val scope = "files.readwrite openid profile email"
+
+    // `offline_access` is needed to receive a refresh token.
+    override val scope = "files.readwrite openid profile email offline_access"
 
     override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {

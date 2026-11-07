@@ -12,7 +12,7 @@ import kotlinx.io.IOException
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.delta.DeltaCursor
 import nl.jacobras.cloudbridge.delta.DeltaResult
@@ -64,7 +64,7 @@ internal class ServiceViewModel(
             if (clearError) {
                 error.update { "" }
             }
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }
@@ -100,7 +100,7 @@ internal class ServiceViewModel(
                     content.update { loaded }
                 }
                 error.update { "" }
-            } catch (e: CloudServiceException) {
+            } catch (e: CloudBridgeException) {
                 if (selectedItem.value == file) {
                     content.update { FileContent.None }
                     error.update { e.toString() }
@@ -121,7 +121,7 @@ internal class ServiceViewModel(
             val bytes = (content.value as? FileContent.Image)?.bytes ?: downloadBytes(file)
             saveFile(file.name, bytes)
             error.update { "" }
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         } catch (e: IOException) {
             error.update { e.toString() }
@@ -156,7 +156,7 @@ internal class ServiceViewModel(
         try {
             service.createFolder(childPath(name).asFolderPath())
             refresh()
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }
@@ -165,7 +165,7 @@ internal class ServiceViewModel(
         try {
             service.createFile(childPath(name).asFilePath(), content)
             refresh()
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }
@@ -206,7 +206,7 @@ internal class ServiceViewModel(
                         }
                     )
                     uploadProgress.update { it?.copy(filesDone = it.filesDone + 1) }
-                } catch (e: CloudServiceException) {
+                } catch (e: CloudBridgeException) {
                     error.update { "${file.name}: $e" }
                 } catch (e: IllegalArgumentException) {
                     error.update { "${file.name}: $e" }
@@ -232,7 +232,7 @@ internal class ServiceViewModel(
             service.updateFile(id, content)
             deselectItem()
             refresh()
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }
@@ -247,7 +247,7 @@ internal class ServiceViewModel(
                 is CloudFolder -> service.moveFolder(item.id, childPath(newName).asFolderPath())
             }
             refresh()
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }
@@ -257,7 +257,7 @@ internal class ServiceViewModel(
             service.delete(item.id)
             deselectItem()
             refresh()
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }
@@ -271,7 +271,7 @@ internal class ServiceViewModel(
             val result = deltaService.getDelta(deltaCursor.value)
             deltaResult.update { result }
             error.update { "" }
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             error.update { e.toString() }
         }
     }

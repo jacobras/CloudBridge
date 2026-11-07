@@ -33,10 +33,10 @@ See <https://jacobras.github.io/CloudBridge/Vision> for details.
 
 |                                                                                     | Mobile<br>(Android) | Mobile<br>(iOS) | Desktop<br>(JVM) | Web<br>(JS/WASM) |
 |-------------------------------------------------------------------------------------|---------------------|-----------------|------------------|------------------|
-| **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                   | ✅               | ✅                | ✅                |
-| **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                   | ✅               | ✅                | ✅                |
-| **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                   | ✅               | ✅                | ✅                |
-| **[WebDAV](https://jacobras.github.io/CloudBridge/services/WebDAV/)**               | ✅                   | ✅               | ✅                | ✅                |
+| **[Dropbox](https://jacobras.github.io/CloudBridge/services/Dropbox/)**             | ✅                  | ✅              | ✅               | ✅               |
+| **[Google Drive](https://jacobras.github.io/CloudBridge/services/GoogleDrive/)**    | ✅                  | ✅              | ✅               | ✅               |
+| **[Microsoft OneDrive](https://jacobras.github.io/CloudBridge/services/OneDrive/)** | ✅                  | ✅              | ✅               | ✅               |
+| **[WebDAV](https://jacobras.github.io/CloudBridge/services/WebDAV/)**               | ✅                  | ✅              | ✅               | ✅               |
 
 ✅ = Supported.
 
@@ -48,7 +48,7 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.10.0")
+    implementation("nl.jacobras:cloudbridge:0.11.0")
 }
 ```
 
@@ -86,9 +86,14 @@ This library uses:
 * [KotlinX DateTime](https://github.com/Kotlin/kotlinx-datetime) for time parsing.
 * [urlencoder](https://github.com/ethauvin/urlencoder) for URL encoding.
 
-Only on Android:
+On Android and iOS:
 
 * [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) to temporarily
   persist the OAuth code verifier (Dropbox & OneDrive).
+
+Only on Android:
+
+* [AndroidX Startup](https://developer.android.com/jetpack/androidx/releases/startup) to get a
+  `Context` for Google Drive.
 * [Google Identity Services](https://developers.google.com/identity/authorization/android)
   (`play-services-auth`) for Google Drive authorization.

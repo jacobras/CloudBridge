@@ -20,23 +20,23 @@ public interface CloudService {
     /**
      * Fetches the user's info (like name and email address).
      *
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun getUserInfo(): UserInfo
 
     /**
      * Lists all files and folders, one level deep. Does not fetch nested content.
      *
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun listFiles(path: FolderPath): List<CloudItem>
 
     /**
      * Fetches the metadata of the file at [path].
      *
-     * @throws CloudServiceException.NotFoundException when there's no file at [path], or when
+     * @throws CloudBridgeException.NotFoundException when there's no file at [path], or when
      * there's actually a folder at [path].
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun getFileInfo(path: FilePath): CloudFile
 
@@ -44,9 +44,9 @@ public interface CloudService {
      * Fetches the metadata of the folder at [path].
      *
      * @throws IllegalArgumentException when [path] is the root folder.
-     * @throws CloudServiceException.NotFoundException when there's no folder at [path], or when
+     * @throws CloudBridgeException.NotFoundException when there's no folder at [path], or when
      * there's actually a file at [path].
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun getFolderInfo(path: FolderPath): CloudFolder
 
@@ -54,7 +54,7 @@ public interface CloudService {
      * Creates a folder at [path].
      *
      * @return The created folder.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun createFolder(path: FolderPath): CloudFolder
 
@@ -62,7 +62,7 @@ public interface CloudService {
      * Creates a file at path [path] with the text [content].
      *
      * @return The created file.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun createFile(path: FilePath, content: String): CloudFile
 
@@ -70,7 +70,7 @@ public interface CloudService {
      * Updates the file with id [id] to the text [content].
      *
      * @return The updated file.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun updateFile(id: CloudItemId, content: String): CloudFile
 
@@ -84,10 +84,10 @@ public interface CloudService {
      * @param mimeType MIME type of the content. Not used by Dropbox.
      * @param onProgress Callback with upload progress.
      * @return The created file.
-     * @throws CloudServiceException.IllegalArgumentException when uploading >10 MB to OneDrive and
+     * @throws CloudBridgeException.IllegalArgumentException when uploading >10 MB to OneDrive and
      * [sizeInBytes] is missing or doesn't match the content size.
-     * @throws CloudServiceException.SourceReadException when reading [source] fails.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException.SourceReadException when reading [source] fails.
+     * @throws CloudBridgeException
      */
     public suspend fun createFile(
         path: FilePath,
@@ -107,10 +107,10 @@ public interface CloudService {
      * @param mimeType MIME type of the content. Not used by Dropbox.
      * @param onProgress Callback with upload progress.
      * @return The updated file.
-     * @throws CloudServiceException.IllegalArgumentException when uploading >10 MB to OneDrive and
+     * @throws CloudBridgeException.IllegalArgumentException when uploading >10 MB to OneDrive and
      * [sizeInBytes] is missing or doesn't match the content size.
-     * @throws CloudServiceException.SourceReadException when reading [source] fails.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException.SourceReadException when reading [source] fails.
+     * @throws CloudBridgeException
      */
     public suspend fun updateFile(
         id: CloudItemId,
@@ -123,7 +123,7 @@ public interface CloudService {
     /**
      * Retrieves the file with [id].
      *
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun downloadFile(id: CloudItemId): String
 
@@ -133,8 +133,8 @@ public interface CloudService {
      * The content is streamed, so large files aren't held in memory. The sink is flushed,
      * but not closed.
      *
-     * @throws CloudServiceException.SinkWriteException when writing to [sink] fails.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException.SinkWriteException when writing to [sink] fails.
+     * @throws CloudBridgeException
      */
     public suspend fun downloadFile(id: CloudItemId, sink: Sink)
 
@@ -145,8 +145,8 @@ public interface CloudService {
      * On WebDAV, the id is the path, so the returned file has a new id.
      *
      * @return The moved file.
-     * @throws CloudServiceException.ConflictException when an item at [newPath] already exists.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException.ConflictException when an item at [newPath] already exists.
+     * @throws CloudBridgeException
      */
     public suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile
 
@@ -158,15 +158,15 @@ public interface CloudService {
      *
      * @return The moved folder.
      * @throws IllegalArgumentException when [newPath] is the root folder.
-     * @throws CloudServiceException.ConflictException when an item at [newPath] already exists.
-     * @throws CloudServiceException
+     * @throws CloudBridgeException.ConflictException when an item at [newPath] already exists.
+     * @throws CloudBridgeException
      */
     public suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder
 
     /**
      * Deletes the file/folder with [id].
      *
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     public suspend fun delete(id: CloudItemId)
 }

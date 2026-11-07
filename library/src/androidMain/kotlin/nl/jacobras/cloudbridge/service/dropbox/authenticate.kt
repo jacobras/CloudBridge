@@ -8,7 +8,6 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
  * PKCE flow.
  */
 public fun DropboxService.authenticate(
-    clientId: String,
     redirectUri: String
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -18,7 +17,7 @@ public fun DropboxService.authenticate(
     }
     val authenticator = DropboxAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

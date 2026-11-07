@@ -1,7 +1,7 @@
 package nl.jacobras.cloudbridge.auth
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 internal abstract class CloudAuthenticator(
@@ -11,6 +11,11 @@ internal abstract class CloudAuthenticator(
     protected abstract val baseUrl: String
     protected abstract val scope: String
     protected abstract val responseType: String
+
+    /**
+     * Extra query parameters to add to the authorization URI.
+     */
+    protected open val extraParams: Map<String, String> = emptyMap()
 
     /**
      * Builds an authorization URI. Navigate the user to this URI to
@@ -33,6 +38,10 @@ internal abstract class CloudAuthenticator(
             if (codeChallenge.isNotEmpty()) {
                 append("&code_challenge=$codeChallenge")
                 append("&code_challenge_method=S256")
+            }
+
+            for ((key, value) in extraParams) {
+                append("&$key=${UrlEncoderUtil.encode(value)}")
             }
         }
     }
@@ -80,7 +89,7 @@ internal abstract class PkceAuthenticator(
     fun buildPkceUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     abstract suspend fun exchangeCodeForToken(code: String): CloudAccessToken
 }

@@ -3,7 +3,7 @@ package nl.jacobras.cloudbridge.util
 import kotlinx.coroutines.withContext
 import kotlinx.io.IOException
 import kotlinx.io.Source
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 
 /**
  * Opens [source] for each upload attempt, and guards against reused sources, to prevent developers
@@ -16,14 +16,14 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
     /**
      * Opens the source. Caller must close it.
      *
-     * @throws CloudServiceException.SourceReadException when opening fails, or when the source is
+     * @throws CloudBridgeException.SourceReadException when opening fails, or when the source is
      * the same instance as before or is empty while the first one wasn't.
      */
     suspend fun open(): Source {
         val source = try {
             source()
         } catch (e: IOException) {
-            throw CloudServiceException.SourceReadException(e)
+            throw CloudBridgeException.SourceReadException(e)
         }
         val isFirst = previous == null
         if (!isFirst && source === previous) {
@@ -50,13 +50,13 @@ internal class SafeSourceOpener(private val source: suspend () -> Source) {
         withContext(ioDispatcher) { exhausted() }
     } catch (e: IOException) {
         closeSuppressing(e)
-        throw CloudServiceException.SourceReadException(e)
+        throw CloudBridgeException.SourceReadException(e)
     } catch (e: Throwable) {
         closeSuppressing(e)
         throw e
     }
 
-    private fun reusedSourceException() = CloudServiceException.SourceReadException(
+    private fun reusedSourceException() = CloudBridgeException.SourceReadException(
         IOException("The source param should have returned a new Source, but instead was reused")
     )
 }

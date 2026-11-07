@@ -1,15 +1,12 @@
 ```kotlin
 // Always call this:
-val token = service.completeAuthentication()
+val token = service.completeAuthentication(redirectUri = "yourRedirectUri")
 if (token != null) {
     service.setToken(token)
 }
 
 // When user wants to authenticate:
-val uri = service.authenticate(
-    clientId = "yourClientId",
-    redirectUri = "yourRedirectUri"
-)
+val uri = service.authenticate(redirectUri = "yourRedirectUri")
 window.location.href = uri
 ```
 

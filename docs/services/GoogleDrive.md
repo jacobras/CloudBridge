@@ -3,8 +3,21 @@
 Start by instantiating the service:
 
 ```kotlin
-val service = CloudBridge.googleDrive()
+val service = CloudBridge.googleDrive(clientId = "yourClientId")
 ```
+
+On desktop, also pass the client secret. This is provided in the Google Drive API console when you
+create a desktop client.
+
+```kotlin
+CloudBridge.googleDrive(
+    clientId = "yourClientId",
+    desktopClientSecret = "yourSecret"
+)
+```
+
+On Android, the client ID isn't used (Google Identity Services identifies the app by its package
+name and signing certificate), so any value works.
 
 Then, authenticate using the platform-specific methods below. Once authenticated,
 the [shared API](../api/Overview.md) is available.
@@ -47,6 +60,17 @@ the [shared API](../api/Overview.md) is available.
     items. The path of a `DeletedDeltaChange` is therefore `/<fileId>`, so match deletions
     on `itemId`.
 
+=== "Token refresh"
+
+    Google Drive differs per platform:
+
+    - **Android**: a new token is requested from Google Identity Services silently. It doesn't
+      tell when a token expires, so this only happens after a token is rejected. The new token is
+      requested for the account in `CloudAccessToken.account`. If the user needs to grant access
+      again, a `NotAuthenticatedException` is thrown; call `GoogleDriveAuthenticator.authenticate()` then.
+    - **Web**: the implicit flow has no refresh token, so tokens can't be refreshed. Re-authenticate
+      when a `NotAuthenticatedException` is thrown.
+
 ## Registration in Cloud Console
 
 !!! info
@@ -76,7 +100,13 @@ the [shared API](../api/Overview.md) is available.
     )
     ```
     
-    Securely store the token and pass it to the constructor of the service to use it.
+    Call `googleDriveAuthenticator.authenticate()` to start. It always shows an account picker.
+
+    Securely store the token, including `token.account`, and pass it to the constructor of the
+    service to use it. The account is needed to refresh the token.
+
+    **Multiple accounts**: create one `CloudBridge.googleDrive()` instance per account and call
+    `authenticate()` again to add another one. Each token refreshes for its own account.
 
 === "iOS"
 
@@ -85,7 +115,6 @@ the [shared API](../api/Overview.md) is available.
 
     ```kotlin
     service.authenticate(
-        clientId = "yourClientId",
         redirectUri = "com.example.app:/cloudbridge-auth" // change to your app
     )?.let { token ->
         service.setToken(token)
@@ -95,17 +124,12 @@ the [shared API](../api/Overview.md) is available.
 
 === "Desktop"
 
-    Note that Google Drive requires a secret on desktop. This is provided in the Google Drive API console
-    when you create a desktop client.
-    
     ```kotlin
     val authServer = LocalAuthenticationServer()
     
     // Build auth URL and open it in the browser
     val url = service.authenticate(
         authServer = authServer,
-        clientId = "yourClientId",
-        clientSecret = "yourSecret",
         onSuccess = { token ->
             service.setToken(token)
             TODO("Store the token locally")
@@ -129,9 +153,6 @@ the [shared API](../api/Overview.md) is available.
     }
     
     // When user wants to authenticate:
-    val uri = service.authenticate(
-        clientId = "yourClientId",
-        redirectUri = "yourRedirectUri"
-    )
+    val uri = service.authenticate(redirectUri = "yourRedirectUri")
     window.location.href = uri
     ```

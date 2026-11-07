@@ -20,7 +20,6 @@ a token:
 ```kotlin
 // When user wants to authenticate:
 val url = service.authenticate(
-    clientId = "yourClientId",
     redirectUri = "yourRedirectUri" // e.g. a custom scheme like "com.example://cloudbridge-auth"
 )
 CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
@@ -28,7 +27,6 @@ CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
 // In your Activity's onNewIntent (and onCreate), call:
 val uri = intent.data ?: return
 val token = service.completeAuthentication(
-    clientId = "yourClientId",
     redirectUri = "com.example.app://cloudbridge-auth", // Needs to match the uri passed into authenticate()
     intentUri = uri
 )

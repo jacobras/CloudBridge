@@ -11,7 +11,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
@@ -35,7 +33,12 @@ import nl.jacobras.cloudbridge.service.onedrive.completeAuthentication
 
 internal class MainActivity : ComponentActivity() {
 
-    private val viewModel = DemoViewModel()
+    private val viewModel = DemoViewModel(
+        dropboxClientId = BuildConfig.DROPBOX_CLIENT_ID,
+        // Google Drive on Android doesn't need a client ID.
+        googleDriveClientId = "",
+        oneDriveClientId = BuildConfig.ONEDRIVE_CLIENT_ID
+    )
 
     private var authenticatingService: CloudService? = null
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -43,8 +46,7 @@ internal class MainActivity : ComponentActivity() {
     private val googleDriveAuthenticator = GoogleDriveAuthenticator(
         activity = this,
         onSuccess = { token ->
-            DemoSettings.googleDriveToken = token
-            viewModel.refresh()
+            viewModel.connectGoogleDrive(token)
         },
         onDenied = {},
         onFailure = { error ->
@@ -95,22 +97,18 @@ internal class MainActivity : ComponentActivity() {
         when (val service = authenticatingService) {
             is DropboxService -> {
                 val token = service.completeAuthentication(
-                    clientId = BuildConfig.DROPBOX_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
-                DemoSettings.dropboxToken = token
-                viewModel.refresh()
+                viewModel.connectDropbox(token)
             }
 
             is OneDriveService -> {
                 val token = service.completeAuthentication(
-                    clientId = BuildConfig.ONEDRIVE_CLIENT_ID,
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
-                DemoSettings.oneDriveToken = token
-                viewModel.refresh()
+                viewModel.connectOneDrive(token)
             }
 
             else -> Unit
@@ -118,7 +116,6 @@ internal class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DemoApp(
     viewModel: DemoViewModel,
@@ -130,25 +127,13 @@ private fun DemoApp(
         onAuthenticate = { service ->
             when (service) {
                 is DropboxService -> {
-                    launchAuth(
-                        service,
-                        service.authenticate(
-                            BuildConfig.DROPBOX_CLIENT_ID,
-                            REDIRECT_URI
-                        )
-                    )
+                    launchAuth(service, service.authenticate(REDIRECT_URI))
                 }
                 is GoogleDriveService -> {
                     onAuthenticateGoogleDrive()
                 }
                 is OneDriveService -> {
-                    launchAuth(
-                        service,
-                        service.authenticate(
-                            BuildConfig.ONEDRIVE_CLIENT_ID,
-                            REDIRECT_URI
-                        )
-                    )
+                    launchAuth(service, service.authenticate(REDIRECT_URI))
                 }
             }
         },

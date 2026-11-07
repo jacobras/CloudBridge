@@ -10,7 +10,7 @@ import kotlinx.io.IOException
 import kotlinx.io.RawSource
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import kotlin.test.Test
 
 class SafeSourceOpenerTest {
@@ -37,7 +37,7 @@ class SafeSourceOpenerTest {
         val opener = SafeSourceOpener { source }
 
         opener.open()
-        assertFailure { opener.open() }.isInstanceOf<CloudServiceException.SourceReadException>()
+        assertFailure { opener.open() }.isInstanceOf<CloudBridgeException.SourceReadException>()
     }
 
     @Test
@@ -46,13 +46,13 @@ class SafeSourceOpenerTest {
         val opener = SafeSourceOpener { stream.buffered() }
 
         opener.open().readByteArray()
-        assertFailure { opener.open() }.isInstanceOf<CloudServiceException.SourceReadException>()
+        assertFailure { opener.open() }.isInstanceOf<CloudBridgeException.SourceReadException>()
     }
 
     @Test
     fun `failing factory throws SourceReadException`() = runTest {
         val opener = SafeSourceOpener { throw IOException("Can't open") }
 
-        assertFailure { opener.open() }.isInstanceOf<CloudServiceException.SourceReadException>()
+        assertFailure { opener.open() }.isInstanceOf<CloudBridgeException.SourceReadException>()
     }
 }

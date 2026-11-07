@@ -1,16 +1,22 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import android.accounts.Account
 import android.app.Activity
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Scope
-import nl.jacobras.cloudbridge.CloudServiceException
+import kotlinx.coroutines.launch
+import nl.jacobras.cloudbridge.CloudBridge.logger
+import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
 /**
@@ -33,12 +39,13 @@ public class GoogleDriveAuthenticator(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
         if (result.resultCode != Activity.RESULT_OK) {
-            onDenied()
+            onNotOkResult(result.data)
             return@registerForActivityResult
         }
         val authorization = try {
             completeAuthentication(result.data)
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
+            logger.log("Failed to complete Google Drive authentication: $e")
             onFailure(e)
             return@registerForActivityResult
         }
@@ -46,19 +53,39 @@ public class GoogleDriveAuthenticator(
     }
 
     /**
-     * Starts the authorization flow, showing a consent screen when the user has not granted access
-     * yet. The outcome is passed to [onSuccess], [onDenied] and [onFailure].
+     * Starts the authorization flow. Always shows an account picker, so this can also be used to
+     * add another account, followed by a consent screen when the user has not granted access yet.
+     * The outcome is passed to [onSuccess], [onDenied] and [onFailure].
+     *
+     * The token passed to [onSuccess] has [CloudAccessToken.account] set, which is needed to
+     * refresh it. Persist it together with the token.
      */
     public fun authenticate() {
         Identity.getAuthorizationClient(activity)
-            .authorize(buildAuthorizationRequest())
+            .authorize(buildGoogleDriveAuthorizationRequest(selectAccount = true))
             .addOnSuccessListener { result -> handle(result.toModel()) }
-            .addOnFailureListener { onFailure(CloudServiceException.Unknown(it)) }
+            .addOnFailureListener {
+                logger.log("Google Drive authentication failed: $it")
+                onFailure(CloudBridgeException.Unknown(it))
+            }
     }
 
     private fun handle(authorization: GoogleAuthorization) {
         when (authorization) {
-            is GoogleAuthorization.Authorized -> onSuccess(authorization.token)
+            is GoogleAuthorization.Authorized -> activity.lifecycleScope.launch {
+                val token = try {
+                    val account = fetchGoogleAccount(authorization.token.accessToken)
+                        ?: throw CloudBridgeException.Unknown(
+                            IllegalStateException("Google account has no email address")
+                        )
+                    authorization.token.copy(account = account)
+                } catch (e: CloudBridgeException) {
+                    logger.log("Failed to handle Google Drive authorization: $e")
+                    onFailure(e)
+                    return@launch
+                }
+                onSuccess(token)
+            }
             is GoogleAuthorization.ConsentRequired -> consentLauncher.launch(
                 IntentSenderRequest.Builder(authorization.pendingIntent.intentSender).build()
             )
@@ -66,17 +93,44 @@ public class GoogleDriveAuthenticator(
         }
     }
 
-    private fun buildAuthorizationRequest(): AuthorizationRequest {
-        return AuthorizationRequest.builder()
-            .setRequestedScopes(listOf(Scope(DRIVE_APPDATA_SCOPE)))
-            .build()
+    /**
+     * Handles a flow that didn't finish with [Activity.RESULT_OK], either because of user
+     * dismissing it, or because of an error.
+     */
+    private fun onNotOkResult(intent: Intent?) {
+        if (intent == null) {
+            onDenied()
+            return
+        }
+        try {
+            Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(intent)
+            onDenied()
+        } catch (e: ApiException) {
+            logger.log("Google Drive not OK: $e")
+            when {
+                e.statusCode == CommonStatusCodes.CANCELED -> onDenied()
+                e.isSetupError() -> {
+                    onFailure(
+                        CloudBridgeException.SetupException(
+                            message = "The app is not registered in the Google Cloud Console (${e.message})"
+                        )
+                    )
+                }
+                else -> onFailure(CloudBridgeException.Unknown(e))
+            }
+        }
+    }
+
+    private fun ApiException.isSetupError(): Boolean {
+        return statusCode == CommonStatusCodes.DEVELOPER_ERROR ||
+                message?.contains("UNREGISTERED_ON_API_CONSOLE") == true
     }
 
     /**
      * Parses the [intent] returned to the activity after the authorization consent screen and
      * returns the resulting [GoogleAuthorization].
      *
-     * @throws CloudServiceException when the authorization result could not be read.
+     * @throws CloudBridgeException when the authorization result could not be read.
      */
     private fun completeAuthentication(
         intent: Intent?
@@ -84,7 +138,7 @@ public class GoogleDriveAuthenticator(
         val result = try {
             Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(intent)
         } catch (e: ApiException) {
-            throw CloudServiceException.Unknown(e)
+            throw CloudBridgeException.Unknown(e)
         }
         return result.toModel()
     }
@@ -102,5 +156,41 @@ public class GoogleDriveAuthenticator(
         return GoogleAuthorization.Authorized(CloudAccessToken(accessToken = accessToken))
     }
 }
+
+/**
+ * @param account The account to authorize, or `null` to let Google Identity Services pick one.
+ * @param selectAccount `true` to always show the account picker.
+ */
+internal fun buildGoogleDriveAuthorizationRequest(
+    account: Account? = null,
+    selectAccount: Boolean = false
+): AuthorizationRequest {
+    return AuthorizationRequest.builder()
+        .setRequestedScopes(listOf(Scope(DRIVE_APPDATA_SCOPE)))
+        .apply {
+            if (account != null) {
+                setAccount(account)
+            }
+            if (selectAccount) {
+                setPrompt(AuthorizationRequest.Prompt.SELECT_ACCOUNT)
+            }
+        }
+        .build()
+}
+
+/**
+ * Looks up the email address of the Google account that [accessToken] belongs to.
+ *
+ * @throws CloudBridgeException
+ */
+internal suspend fun fetchGoogleAccount(accessToken: String): String? {
+    return GoogleDriveService(
+        clientInfo = ClientInfo(clientId = ""),
+        token = CloudAccessToken(accessToken = accessToken),
+        tokenRefresher = null
+    ).getUserInfo().emailAddress
+}
+
+internal const val GOOGLE_ACCOUNT_TYPE = "com.google"
 
 private const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"

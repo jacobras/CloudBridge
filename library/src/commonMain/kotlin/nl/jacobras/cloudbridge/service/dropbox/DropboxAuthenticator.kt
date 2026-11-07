@@ -18,6 +18,9 @@ internal class DropboxAuthenticator(
     override val baseUrl = "https://www.dropbox.com/oauth2/authorize"
     override val scope = ""
 
+    // Needed to receive a refresh token.
+    override val extraParams = mapOf("token_access_type" to "offline")
+
     override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {
             val token = api.getToken(

@@ -8,7 +8,6 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
  * PKCE flow.
  */
 public fun OneDriveService.authenticate(
-    clientId: String,
     redirectUri: String
 ): String {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -18,7 +17,7 @@ public fun OneDriveService.authenticate(
     }
     val authenticator = OneDriveAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )

@@ -24,7 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -39,6 +39,7 @@ import nl.jacobras.cloudbridge.util.bufferOf
 import nl.jacobras.cloudbridge.util.examplePngBytes
 import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
+import nl.jacobras.cloudbridge.util.testClientInfo
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -55,11 +56,12 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("invalid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.getUserInfo() }.isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+        assertFailure { service.getUserInfo() }.isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/oidc/userinfo")
@@ -79,13 +81,14 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isEqualTo(120.seconds)
     }
 
@@ -99,12 +102,13 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a")) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
             .hasMessage("The requested item '33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a' could not be found")
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
@@ -125,6 +129,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -150,12 +155,13 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
-            .isInstanceOf<CloudServiceException.SinkWriteException>()
+            .isInstanceOf<CloudBridgeException.SinkWriteException>()
     }
 
     @Test
@@ -168,12 +174,13 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -186,6 +193,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -196,7 +204,7 @@ class OneDriveServiceTest {
                 "content"
             )
         }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Put)
             assertThat(it.url.toString()).isEqualTo(
@@ -233,6 +241,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -291,6 +300,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -352,6 +362,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -414,6 +425,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
@@ -458,6 +470,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -513,6 +526,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("first"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -541,12 +555,13 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.moveFile(CloudItemId("file1"), "/Notes/taken.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
     }
 
     @Test
@@ -577,6 +592,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -620,6 +636,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -645,6 +662,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -669,6 +687,7 @@ class OneDriveServiceTest {
     fun `large binary file without size throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { error("No request expected") }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -679,7 +698,7 @@ class OneDriveServiceTest {
                 path = "archive.zip".asFilePath(),
                 source = { bufferOf(10) })
         }
-            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .isInstanceOf<CloudBridgeException.IllegalArgumentException>()
             .hasMessage("sizeInBytes is required for OneDrive uploads larger than 4 bytes, but it was null")
         assertThat(engine.requestHistory).isEmpty()
     }
@@ -688,6 +707,7 @@ class OneDriveServiceTest {
     fun `large binary file larger than size throws IllegalArgumentException`() = runTest {
         val engine = uploadSessionEngine()
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -700,7 +720,7 @@ class OneDriveServiceTest {
                 sizeInBytes = 6
             )
         }
-            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .isInstanceOf<CloudBridgeException.IllegalArgumentException>()
             .hasMessage("Content is larger than sizeInBytes (6 bytes)")
     }
 
@@ -708,6 +728,7 @@ class OneDriveServiceTest {
     fun `large binary file smaller than size throws IllegalArgumentException`() = runTest {
         val engine = uploadSessionEngine()
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -720,7 +741,7 @@ class OneDriveServiceTest {
                 sizeInBytes = 12
             )
         }
-            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .isInstanceOf<CloudBridgeException.IllegalArgumentException>()
             .hasMessage("Content size (10 bytes) doesn't match sizeInBytes (12 bytes)")
     }
 
@@ -728,6 +749,7 @@ class OneDriveServiceTest {
     fun `failing source read throws SourceReadException`() = runTest {
         val engine = MockEngine { error("No request expected") }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -737,7 +759,7 @@ class OneDriveServiceTest {
                 path = "image.png".asFilePath(),
                 source = { failingSource() })
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
 
@@ -745,6 +767,7 @@ class OneDriveServiceTest {
     fun `failing source read during upload session throws SourceReadException`() = runTest {
         val engine = uploadSessionEngine()
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -756,7 +779,7 @@ class OneDriveServiceTest {
                 source = { failingSource(5) },
                 sizeInBytes = 10
             )
-        }.isInstanceOf<CloudServiceException.SourceReadException>()
+        }.isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Post,
             HttpMethod.Put
@@ -801,6 +824,7 @@ class OneDriveServiceTest {
             }
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -867,6 +891,7 @@ class OneDriveServiceTest {
             }
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
@@ -937,6 +962,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -983,6 +1009,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1013,12 +1040,13 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -1031,12 +1059,13 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFileInfo("/Notes".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -1049,6 +1078,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1076,18 +1106,20 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
         assertFailure { service.getFolderInfo("/Welcome.txt".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
     fun `get folder info for root throws IllegalArgumentException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
@@ -1106,6 +1138,7 @@ class OneDriveServiceTest {
             )
         }
         val service = OneDriveService(
+            clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )

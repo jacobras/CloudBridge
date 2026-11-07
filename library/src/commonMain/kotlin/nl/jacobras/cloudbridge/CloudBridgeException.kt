@@ -3,7 +3,7 @@ package nl.jacobras.cloudbridge
 import kotlinx.io.IOException
 import kotlin.time.Duration
 
-public open class CloudServiceException : Exception {
+public open class CloudBridgeException : Exception {
 
     private constructor(
         message: String
@@ -18,44 +18,49 @@ public open class CloudServiceException : Exception {
         cause: Throwable
     ) : super(message, cause)
 
-    public class NotAuthenticatedException : CloudServiceException(
+    public class NotAuthenticatedException : CloudBridgeException(
         "The cloud service is not (yet) authenticated"
     )
 
-    public class NotFoundException(itemId: String) : CloudServiceException(
+    public class NotFoundException(itemId: String) : CloudBridgeException(
         "The requested item '$itemId' could not be found"
     )
 
-    public class ConflictException(itemId: String) : CloudServiceException(
+    public class ConflictException(itemId: String) : CloudBridgeException(
         "The item '$itemId' conflicts with an existing item"
     )
 
-    public class InsufficientSpaceException : CloudServiceException(
+    public class InsufficientSpaceException : CloudBridgeException(
         "The cloud account doesn't have enough available storage space left"
     )
 
     /**
      * @param retryAfter How long the service asked to wait before trying again, if it told.
      */
-    public class RateLimitException(public val retryAfter: Duration?) : CloudServiceException(
+    public class RateLimitException(public val retryAfter: Duration?) : CloudBridgeException(
         "The cloud service rejected the request because of a rate limit"
     )
 
-    public class IllegalArgumentException(message: String) : CloudServiceException(message)
+    public class IllegalArgumentException(message: String) : CloudBridgeException(message)
 
-    public class ConnectionException(cause: IOException) : CloudServiceException(
+    /**
+     * Indicates an issue with service setup (usually in the service's cloud console/admin panel).
+     */
+    public class SetupException(message: String) : CloudBridgeException(message)
+
+    public class ConnectionException(cause: IOException) : CloudBridgeException(
         cause = cause
     )
 
-    public class SourceReadException(cause: IOException) : CloudServiceException(
+    public class SourceReadException(cause: IOException) : CloudBridgeException(
         message = "Failed to read the content to upload from the source",
         cause = cause
     )
 
-    public class SinkWriteException(cause: IOException) : CloudServiceException(
+    public class SinkWriteException(cause: IOException) : CloudBridgeException(
         message = "Failed to write the downloaded content to the sink",
         cause = cause
     )
 
-    public class Unknown(cause: Throwable) : CloudServiceException(cause)
+    public class Unknown(cause: Throwable) : CloudBridgeException(cause)
 }

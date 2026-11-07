@@ -1,10 +1,11 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
 import de.jensklingenberg.ktorfit.http.Body
+import de.jensklingenberg.ktorfit.http.Field
+import de.jensklingenberg.ktorfit.http.FormUrlEncoded
 import de.jensklingenberg.ktorfit.http.Header
 import de.jensklingenberg.ktorfit.http.Headers
 import de.jensklingenberg.ktorfit.http.POST
-import de.jensklingenberg.ktorfit.http.Query
 import de.jensklingenberg.ktorfit.http.Streaming
 import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
@@ -16,14 +17,23 @@ import nl.jacobras.cloudbridge.auth.TokenResponse
  */
 internal interface DropboxApi {
 
+    @FormUrlEncoded
     @POST("oauth2/token")
     suspend fun getToken(
-        @Query("client_id") clientId: String,
-        @Query("code") code: String,
-        @Query("grant_type") grantType: String = "authorization_code",
-        @Query("redirect_uri") redirectUri: String,
-        @Query("code_verifier") codeVerifier: String,
-        @Query("scope") scope: String = "files.metadata.write files.content.write files.content.read"
+        @Field("client_id") clientId: String,
+        @Field("code") code: String,
+        @Field("grant_type") grantType: String = "authorization_code",
+        @Field("redirect_uri") redirectUri: String,
+        @Field("code_verifier") codeVerifier: String,
+        @Field("scope") scope: String = "files.metadata.write files.content.write files.content.read"
+    ): TokenResponse
+
+    @FormUrlEncoded
+    @POST("oauth2/token")
+    suspend fun refreshToken(
+        @Field("client_id") clientId: String,
+        @Field("refresh_token") refreshToken: String,
+        @Field("grant_type") grantType: String = "refresh_token"
     ): TokenResponse
 
     @POST("2/users/get_current_account")

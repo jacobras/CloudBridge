@@ -27,7 +27,7 @@ import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -63,7 +63,7 @@ class WebDavServiceTest {
         )
 
         assertFailure { service.createFile("/Notes for Android/big.txt".asFilePath(), "content") }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Put)
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/big.txt")
@@ -181,7 +181,7 @@ class WebDavServiceTest {
                 source = { source }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put)
     }
 
@@ -200,7 +200,7 @@ class WebDavServiceTest {
                 source = { stream.buffered() }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(HttpMethod.Put)
     }
 
@@ -219,7 +219,7 @@ class WebDavServiceTest {
                 sizeInBytes = 12
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
     }
 
     @Test
@@ -236,7 +236,7 @@ class WebDavServiceTest {
                 source = { failingSource(5) }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
     }
 
     @Test
@@ -251,8 +251,8 @@ class WebDavServiceTest {
         val service = webDavService(engine, rateLimiter = null)
 
         assertFailure { service.delete(CloudItemId("/note.txt")) }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isEqualTo(5.seconds)
     }
 
@@ -408,7 +408,7 @@ class WebDavServiceTest {
         )
 
         assertFailure { service.moveFile(CloudItemId("/note.txt"), "/taken.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
         assertThat(engine.requestHistory).single()
     }
 
@@ -569,7 +569,7 @@ class WebDavServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("/Photos/cat.png"), failingSink()) }
-            .isInstanceOf<CloudServiceException.SinkWriteException>()
+            .isInstanceOf<CloudBridgeException.SinkWriteException>()
     }
 
     @Test
@@ -591,7 +591,7 @@ class WebDavServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("/missing.png"), Buffer()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -624,7 +624,7 @@ class WebDavServiceTest {
         val service = webDavService(engine)
 
         assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -633,7 +633,7 @@ class WebDavServiceTest {
         val service = webDavService(engine)
 
         assertFailure { service.getFileInfo("/Notes for Android".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -662,7 +662,7 @@ class WebDavServiceTest {
         val service = webDavService(engine)
 
         assertFailure { service.getFolderInfo("/Notes for Android/note.txt".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test

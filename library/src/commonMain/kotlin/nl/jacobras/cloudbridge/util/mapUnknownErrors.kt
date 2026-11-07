@@ -1,14 +1,14 @@
 package nl.jacobras.cloudbridge.util
 
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 
 @Suppress("TooGenericExceptionCaught")
 internal inline fun <T> mapUnknownErrors(block: () -> T): T {
     return try {
         block()
-    } catch (e: CloudServiceException) {
+    } catch (e: CloudBridgeException) {
         throw e
     } catch (e: Exception) {
-        throw CloudServiceException.Unknown(e)
+        throw CloudBridgeException.Unknown(e)
     }
 }

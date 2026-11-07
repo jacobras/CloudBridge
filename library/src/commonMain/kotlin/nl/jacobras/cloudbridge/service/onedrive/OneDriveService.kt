@@ -15,8 +15,12 @@ import io.ktor.http.decodeURLPart
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
+import nl.jacobras.cloudbridge.auth.OAuthTokenRefresher
+import nl.jacobras.cloudbridge.auth.TokenRefresher
+import nl.jacobras.cloudbridge.auth.TokenResponse
 import nl.jacobras.cloudbridge.delta.DeletedDeltaChange
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.delta.DeltaCursor
@@ -32,29 +36,39 @@ import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
-import nl.jacobras.cloudbridge.service.OAuthCloudService
+import nl.jacobras.cloudbridge.service.oauth.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
 import nl.jacobras.cloudbridge.util.reportChunkSent
 import nl.jacobras.cloudbridge.util.retryAfter
 import nl.jacobras.cloudbridge.util.transferTo
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 public class OneDriveService internal constructor(
+    clientInfo: ClientInfo,
     token: CloudAccessToken?,
     httpClientOverride: HttpClient? = null,
     rateLimiter: RateLimiter? = RateLimiter(
         maxConcurrent = 5,
         maxRatePerSecond = 5.0
-    )
+    ),
+    tokenRefresher: TokenRefresher = OAuthTokenRefresher(clientInfo),
+    onTokenRefreshed: ((CloudAccessToken) -> Unit)? = null,
+    clock: Clock = Clock.System
 ) : OAuthCloudService(
+    clientInfo = clientInfo,
     startToken = token,
     httpClientOverride = httpClientOverride,
-    rateLimiter = rateLimiter
+    rateLimiter = rateLimiter,
+    tokenRefresher = tokenRefresher,
+    onTokenRefreshed = onTokenRefreshed,
+    clock = clock
 ), DeltaCloudService {
 
     override val baseUrl: String = "https://graph.microsoft.com/"
     internal val api = ktorfit.createOneDriveApi()
+    private val apiWithoutAuth = ktorfitWithoutAuth.createOneDriveApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
     private val appRoot = tokenScopedCache<DriveItemId>()
     private val json = Json {
@@ -62,28 +76,37 @@ public class OneDriveService internal constructor(
         ignoreUnknownKeys = true
     }
 
-    override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
+    override val errorMapper: ResponseException.(String) -> CloudBridgeException = { itemId ->
         when (response.status) {
             HttpStatusCode.NotFound -> {
-                CloudServiceException.NotFoundException(itemId)
+                CloudBridgeException.NotFoundException(itemId)
             }
             HttpStatusCode.Unauthorized -> {
-                CloudServiceException.NotAuthenticatedException()
+                CloudBridgeException.NotAuthenticatedException()
             }
             HttpStatusCode.InsufficientStorage -> {
-                CloudServiceException.InsufficientSpaceException()
+                CloudBridgeException.InsufficientSpaceException()
             }
             HttpStatusCode.Conflict -> {
-                CloudServiceException.ConflictException(itemId)
+                CloudBridgeException.ConflictException(itemId)
             }
             HttpStatusCode.TooManyRequests -> {
-                CloudServiceException.RateLimitException(response.retryAfter())
+                CloudBridgeException.RateLimitException(response.retryAfter())
             }
             else -> {
-                CloudServiceException.Unknown(this)
+                CloudBridgeException.Unknown(this)
             }
         }
     }
+
+    override suspend fun requestTokenRefresh(
+        refreshToken: String,
+        clientId: String,
+        clientSecret: String?
+    ): TokenResponse = apiWithoutAuth.refreshToken(
+        clientId = clientId,
+        refreshToken = refreshToken
+    )
 
     override suspend fun getUserInfo(): UserInfo = tryCall {
         val response = api.getUserInfo()
@@ -96,7 +119,7 @@ public class OneDriveService internal constructor(
     override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
         val item = api.getItemByPath(path.toString(withLeadingSlash = false))
         if (item.folder != null) {
-            throw CloudServiceException.NotFoundException(path.toString())
+            throw CloudBridgeException.NotFoundException(path.toString())
         }
         item.toCloudFile(path)
     }
@@ -107,7 +130,7 @@ public class OneDriveService internal constructor(
         return tryCall(path.toString()) {
             val item = api.getItemByPath(path.toString(withLeadingSlash = false))
             if (item.folder == null) {
-                throw CloudServiceException.NotFoundException(path.toString())
+                throw CloudBridgeException.NotFoundException(path.toString())
             }
             CloudFolder(id = CloudItemId(item.id), path = path, name = item.name)
         }
@@ -316,17 +339,17 @@ public class OneDriveService internal constructor(
                 return@forEachChunk
             }
 
-            val total = sizeInBytes ?: throw CloudServiceException.IllegalArgumentException(
+            val total = sizeInBytes ?: throw CloudBridgeException.IllegalArgumentException(
                 "sizeInBytes is required for OneDrive uploads larger than $uploadChunkSize bytes, but it was null"
             )
             val end = offset + chunk.size - 1
             if (!isLast && end >= total) {
-                throw CloudServiceException.IllegalArgumentException(
+                throw CloudBridgeException.IllegalArgumentException(
                     "Content is larger than sizeInBytes ($total bytes)"
                 )
             }
             if (isLast && end + 1 != total) {
-                throw CloudServiceException.IllegalArgumentException(
+                throw CloudBridgeException.IllegalArgumentException(
                     "Content size (${end + 1} bytes) doesn't match sizeInBytes ($total bytes)"
                 )
             }
@@ -385,7 +408,7 @@ public class OneDriveService internal constructor(
         val items = response.items.toMutableList()
         while (response.deltaLink == null) {
             val nextLink = response.nextLink
-                ?: throw CloudServiceException.Unknown(IllegalStateException("Missing next link"))
+                ?: throw CloudBridgeException.Unknown(IllegalStateException("Missing next link"))
             response = tryCall { api.getDeltaByUrl(nextLink) }
             items += response.items
         }

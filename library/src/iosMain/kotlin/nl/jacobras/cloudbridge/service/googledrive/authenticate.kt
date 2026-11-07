@@ -10,7 +10,6 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
  * Runs the Google Drive PKCE sign-in flow. Opens a web modal to do so.
  */
 public suspend fun GoogleDriveService.authenticate(
-    clientId: String,
     redirectUri: String
 ): CloudAccessToken? {
     val codeVerifier = librarySettings.codeVerifier ?: let {
@@ -21,7 +20,7 @@ public suspend fun GoogleDriveService.authenticate(
     val updatedRedirectUri = redirectUri.replace("://", ":/")
     val authenticator = GoogleDrivePkceAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         clientSecret = null,
         redirectUri = updatedRedirectUri,
         codeVerifier = codeVerifier

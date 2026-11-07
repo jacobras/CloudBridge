@@ -3,7 +3,7 @@
 Start by instantiating the service:
 
 ```kotlin
-val service = CloudBridge.dropbox()
+val service = CloudBridge.dropbox(clientId = "yourClientId")
 ```
 
 Then, authenticate using the platform-specific methods below. Once authenticated,

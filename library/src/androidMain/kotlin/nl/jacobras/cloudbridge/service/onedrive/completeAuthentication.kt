@@ -7,10 +7,9 @@ import nl.jacobras.cloudbridge.persistence.librarySettings
 /**
  * Exchanges the authorization [code], parsed from [intentUri], for an access token.
  *
- * @throws nl.jacobras.cloudbridge.CloudServiceException
+ * @throws nl.jacobras.cloudbridge.CloudBridgeException
  */
 public suspend fun OneDriveService.completeAuthentication(
-    clientId: String,
     redirectUri: String,
     intentUri: Uri
 ): CloudAccessToken? {
@@ -18,7 +17,7 @@ public suspend fun OneDriveService.completeAuthentication(
     val code = intentUri.getQueryParameter("code") ?: return null
     val authenticator = OneDriveAuthenticator(
         api = api,
-        clientId = clientId,
+        clientId = clientInfo.clientId,
         redirectUri = redirectUri,
         codeVerifier = codeVerifier
     )
