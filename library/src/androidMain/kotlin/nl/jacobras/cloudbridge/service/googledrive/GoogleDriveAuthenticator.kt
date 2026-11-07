@@ -106,13 +106,24 @@ public class GoogleDriveAuthenticator(
             Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(intent)
             onDenied()
         } catch (e: ApiException) {
-            if (e.statusCode == CommonStatusCodes.CANCELED) {
-                onDenied()
-            } else {
-                logger.log("Google Drive not OK: $e")
-                onFailure(CloudBridgeException.Unknown(e))
+            logger.log("Google Drive not OK: $e")
+            when {
+                e.statusCode == CommonStatusCodes.CANCELED -> onDenied()
+                e.isSetupError() -> {
+                    onFailure(
+                        CloudBridgeException.SetupException(
+                            message = "The app is not registered in the Google Cloud Console (${e.message})"
+                        )
+                    )
+                }
+                else -> onFailure(CloudBridgeException.Unknown(e))
             }
         }
+    }
+
+    private fun ApiException.isSetupError(): Boolean {
+        return statusCode == CommonStatusCodes.DEVELOPER_ERROR ||
+                message?.contains("UNREGISTERED_ON_API_CONSOLE") == true
     }
 
     /**

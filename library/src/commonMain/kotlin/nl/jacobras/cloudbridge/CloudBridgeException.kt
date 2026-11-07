@@ -43,6 +43,11 @@ public open class CloudBridgeException : Exception {
 
     public class IllegalArgumentException(message: String) : CloudBridgeException(message)
 
+    /**
+     * Indicates an issue with service setup (usually in the service's cloud console/admin panel).
+     */
+    public class SetupException(message: String) : CloudBridgeException(message)
+
     public class ConnectionException(cause: IOException) : CloudBridgeException(
         cause = cause
     )
