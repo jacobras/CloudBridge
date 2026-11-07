@@ -1,14 +1,14 @@
 package nl.jacobras.cloudbridge.service.dropbox
 
 import android.net.Uri
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.persistence.librarySettings
 
 /**
  * Exchanges the authorization [code], parsed from [intentUri], for an access token.
  *
- * @throws CloudServiceException
+ * @throws CloudBridgeException
  */
 public suspend fun DropboxService.completeAuthentication(
     redirectUri: String,

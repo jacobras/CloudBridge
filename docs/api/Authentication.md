@@ -46,7 +46,7 @@ try {
     val userInfo = service.getUserInfo()
     println(userInfo.name)
     println(userInfo.emailAddress)
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```

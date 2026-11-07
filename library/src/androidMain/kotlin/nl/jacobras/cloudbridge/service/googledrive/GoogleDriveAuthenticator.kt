@@ -14,9 +14,8 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Scope
 import kotlinx.coroutines.launch
-import nl.jacobras.cloudbridge.CloudBridge
 import nl.jacobras.cloudbridge.CloudBridge.logger
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 
@@ -45,7 +44,7 @@ public class GoogleDriveAuthenticator(
         }
         val authorization = try {
             completeAuthentication(result.data)
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             logger.log("Failed to complete Google Drive authentication: $e")
             onFailure(e)
             return@registerForActivityResult
@@ -67,7 +66,7 @@ public class GoogleDriveAuthenticator(
             .addOnSuccessListener { result -> handle(result.toModel()) }
             .addOnFailureListener {
                 logger.log("Google Drive authentication failed: $it")
-                onFailure(CloudServiceException.Unknown(it))
+                onFailure(CloudBridgeException.Unknown(it))
             }
     }
 
@@ -76,11 +75,11 @@ public class GoogleDriveAuthenticator(
             is GoogleAuthorization.Authorized -> activity.lifecycleScope.launch {
                 val token = try {
                     val account = fetchGoogleAccount(authorization.token.accessToken)
-                        ?: throw CloudServiceException.Unknown(
+                        ?: throw CloudBridgeException.Unknown(
                             IllegalStateException("Google account has no email address")
                         )
                     authorization.token.copy(account = account)
-                } catch (e: CloudServiceException) {
+                } catch (e: CloudBridgeException) {
                     logger.log("Failed to handle Google Drive authorization: $e")
                     onFailure(e)
                     return@launch
@@ -111,7 +110,7 @@ public class GoogleDriveAuthenticator(
                 onDenied()
             } else {
                 logger.log("Google Drive not OK: $e")
-                onFailure(CloudServiceException.Unknown(e))
+                onFailure(CloudBridgeException.Unknown(e))
             }
         }
     }
@@ -120,7 +119,7 @@ public class GoogleDriveAuthenticator(
      * Parses the [intent] returned to the activity after the authorization consent screen and
      * returns the resulting [GoogleAuthorization].
      *
-     * @throws CloudServiceException when the authorization result could not be read.
+     * @throws CloudBridgeException when the authorization result could not be read.
      */
     private fun completeAuthentication(
         intent: Intent?
@@ -128,7 +127,7 @@ public class GoogleDriveAuthenticator(
         val result = try {
             Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(intent)
         } catch (e: ApiException) {
-            throw CloudServiceException.Unknown(e)
+            throw CloudBridgeException.Unknown(e)
         }
         return result.toModel()
     }
@@ -171,7 +170,7 @@ internal fun buildGoogleDriveAuthorizationRequest(
 /**
  * Looks up the email address of the Google account that [accessToken] belongs to.
  *
- * @throws CloudServiceException
+ * @throws CloudBridgeException
  */
 internal suspend fun fetchGoogleAccount(accessToken: String): String? {
     return GoogleDriveService(

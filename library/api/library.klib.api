@@ -62,7 +62,7 @@ abstract class nl.jacobras.cloudbridge.service.oauth/OAuthCloudService : nl.jaco
     abstract val baseUrl // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.baseUrl|{}baseUrl[0]
         abstract fun <get-baseUrl>(): kotlin/String // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.baseUrl.<get-baseUrl>|<get-baseUrl>(){}[0]
     abstract val errorMapper // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.errorMapper|{}errorMapper[0]
-        abstract fun <get-errorMapper>(): kotlin/Function2<io.ktor.client.plugins/ResponseException, kotlin/String, nl.jacobras.cloudbridge/CloudServiceException> // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.errorMapper.<get-errorMapper>|<get-errorMapper>(){}[0]
+        abstract fun <get-errorMapper>(): kotlin/Function2<io.ktor.client.plugins/ResponseException, kotlin/String, nl.jacobras.cloudbridge/CloudBridgeException> // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.errorMapper.<get-errorMapper>|<get-errorMapper>(){}[0]
     final val ktorfit // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.ktorfit|{}ktorfit[0]
         final fun <get-ktorfit>(): de.jensklingenberg.ktorfit/Ktorfit // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.ktorfit.<get-ktorfit>|<get-ktorfit>(){}[0]
 
@@ -368,48 +368,48 @@ final value class nl.jacobras.cloudbridge.model/FolderPath : nl.jacobras.cloudbr
     final fun toString(kotlin/Boolean): kotlin/String // nl.jacobras.cloudbridge.model/FolderPath.toString|toString(kotlin.Boolean){}[0]
 }
 
-open class nl.jacobras.cloudbridge/CloudServiceException : kotlin/Exception { // nl.jacobras.cloudbridge/CloudServiceException|null[0]
-    final class ConflictException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.ConflictException|null[0]
-        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudServiceException.ConflictException.<init>|<init>(kotlin.String){}[0]
+open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // nl.jacobras.cloudbridge/CloudBridgeException|null[0]
+    final class ConflictException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.ConflictException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.ConflictException.<init>|<init>(kotlin.String){}[0]
     }
 
-    final class ConnectionException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.ConnectionException|null[0]
-        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudServiceException.ConnectionException.<init>|<init>(kotlinx.io.IOException){}[0]
+    final class ConnectionException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.ConnectionException|null[0]
+        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudBridgeException.ConnectionException.<init>|<init>(kotlinx.io.IOException){}[0]
     }
 
-    final class IllegalArgumentException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.IllegalArgumentException|null[0]
-        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudServiceException.IllegalArgumentException.<init>|<init>(kotlin.String){}[0]
+    final class IllegalArgumentException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.IllegalArgumentException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.IllegalArgumentException.<init>|<init>(kotlin.String){}[0]
     }
 
-    final class InsufficientSpaceException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.InsufficientSpaceException|null[0]
-        constructor <init>() // nl.jacobras.cloudbridge/CloudServiceException.InsufficientSpaceException.<init>|<init>(){}[0]
+    final class InsufficientSpaceException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.InsufficientSpaceException|null[0]
+        constructor <init>() // nl.jacobras.cloudbridge/CloudBridgeException.InsufficientSpaceException.<init>|<init>(){}[0]
     }
 
-    final class NotAuthenticatedException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.NotAuthenticatedException|null[0]
-        constructor <init>() // nl.jacobras.cloudbridge/CloudServiceException.NotAuthenticatedException.<init>|<init>(){}[0]
+    final class NotAuthenticatedException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException|null[0]
+        constructor <init>() // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException.<init>|<init>(){}[0]
     }
 
-    final class NotFoundException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.NotFoundException|null[0]
-        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudServiceException.NotFoundException.<init>|<init>(kotlin.String){}[0]
+    final class NotFoundException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.NotFoundException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.NotFoundException.<init>|<init>(kotlin.String){}[0]
     }
 
-    final class RateLimitException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.RateLimitException|null[0]
-        constructor <init>(kotlin.time/Duration?) // nl.jacobras.cloudbridge/CloudServiceException.RateLimitException.<init>|<init>(kotlin.time.Duration?){}[0]
+    final class RateLimitException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException|null[0]
+        constructor <init>(kotlin.time/Duration?) // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException.<init>|<init>(kotlin.time.Duration?){}[0]
 
-        final val retryAfter // nl.jacobras.cloudbridge/CloudServiceException.RateLimitException.retryAfter|{}retryAfter[0]
-            final fun <get-retryAfter>(): kotlin.time/Duration? // nl.jacobras.cloudbridge/CloudServiceException.RateLimitException.retryAfter.<get-retryAfter>|<get-retryAfter>(){}[0]
+        final val retryAfter // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException.retryAfter|{}retryAfter[0]
+            final fun <get-retryAfter>(): kotlin.time/Duration? // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException.retryAfter.<get-retryAfter>|<get-retryAfter>(){}[0]
     }
 
-    final class SinkWriteException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.SinkWriteException|null[0]
-        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudServiceException.SinkWriteException.<init>|<init>(kotlinx.io.IOException){}[0]
+    final class SinkWriteException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SinkWriteException|null[0]
+        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudBridgeException.SinkWriteException.<init>|<init>(kotlinx.io.IOException){}[0]
     }
 
-    final class SourceReadException : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.SourceReadException|null[0]
-        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudServiceException.SourceReadException.<init>|<init>(kotlinx.io.IOException){}[0]
+    final class SourceReadException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SourceReadException|null[0]
+        constructor <init>(kotlinx.io/IOException) // nl.jacobras.cloudbridge/CloudBridgeException.SourceReadException.<init>|<init>(kotlinx.io.IOException){}[0]
     }
 
-    final class Unknown : nl.jacobras.cloudbridge/CloudServiceException { // nl.jacobras.cloudbridge/CloudServiceException.Unknown|null[0]
-        constructor <init>(kotlin/Throwable) // nl.jacobras.cloudbridge/CloudServiceException.Unknown.<init>|<init>(kotlin.Throwable){}[0]
+    final class Unknown : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.Unknown|null[0]
+        constructor <init>(kotlin/Throwable) // nl.jacobras.cloudbridge/CloudBridgeException.Unknown.<init>|<init>(kotlin.Throwable){}[0]
     }
 }
 

@@ -17,7 +17,7 @@ service, so, for example, multiple accounts to Dropbox will together do max 5 co
 A service can still respond with a rate limit, depending on internal rules at the cloud providers.
 Requests are automatically retried up to 3 times, backing off exponentially.
 
-A `CloudServiceException.RateLimitException` is thrown, with `retryAfter` (if provided), when:
+A `CloudBridgeException.RateLimitException` is thrown, with `retryAfter` (if provided), when:
 
 * The retries are exhausted.
 * The service asks to wait longer than 30 seconds.

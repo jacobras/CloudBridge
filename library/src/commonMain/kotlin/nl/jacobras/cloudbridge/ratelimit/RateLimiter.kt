@@ -4,7 +4,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -15,7 +15,7 @@ import kotlin.time.TimeSource
  * @param maxConcurrent Maximum number of concurrent network requests.
  * @param maxRatePerSecond Maximum number of network requests per second. Requests are spaced evenly.
  * @param maxRetries Maximum number of retries of a single request that gets rate-limited.
- * @param maxRetryDelay Max delay to wait for before rethrowing the [CloudServiceException.RateLimitException].
+ * @param maxRetryDelay Max delay to wait for before rethrowing the [CloudBridgeException.RateLimitException].
  */
 internal class RateLimiter internal constructor(
     val maxConcurrent: Int,

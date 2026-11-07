@@ -7,7 +7,7 @@ import nl.jacobras.cloudbridge.persistence.librarySettings
 /**
  * Exchanges the authorization [code], parsed from [intentUri], for an access token.
  *
- * @throws nl.jacobras.cloudbridge.CloudServiceException
+ * @throws nl.jacobras.cloudbridge.CloudBridgeException
  */
 public suspend fun OneDriveService.completeAuthentication(
     redirectUri: String,

@@ -26,7 +26,7 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.TokenRefresher
@@ -86,26 +86,26 @@ public class GoogleDriveService internal constructor(
         ignoreUnknownKeys = true
     }
 
-    override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
+    override val errorMapper: ResponseException.(String) -> CloudBridgeException = { itemId ->
         when (response.status) {
             HttpStatusCode.NotFound -> {
-                CloudServiceException.NotFoundException(itemId)
+                CloudBridgeException.NotFoundException(itemId)
             }
             HttpStatusCode.Unauthorized -> {
-                CloudServiceException.NotAuthenticatedException()
+                CloudBridgeException.NotAuthenticatedException()
             }
             HttpStatusCode.TooManyRequests -> {
-                CloudServiceException.RateLimitException(response.retryAfter())
+                CloudBridgeException.RateLimitException(response.retryAfter())
             }
             HttpStatusCode.Forbidden
                 if message?.contains("RateLimitExceeded", ignoreCase = true) == true -> {
-                CloudServiceException.RateLimitException(response.retryAfter())
+                CloudBridgeException.RateLimitException(response.retryAfter())
             }
             HttpStatusCode.Forbidden if message?.contains("storageQuotaExceeded") == true -> {
-                CloudServiceException.InsufficientSpaceException()
+                CloudBridgeException.InsufficientSpaceException()
             }
             else -> {
-                CloudServiceException.Unknown(this)
+                CloudBridgeException.Unknown(this)
             }
         }
     }
@@ -132,7 +132,7 @@ public class GoogleDriveService internal constructor(
         val folderPath = path.toFolderPath()
         val file = findByName(parent = folderPath.toParentId(), name = path.name)
             .firstOrNull { !it.isFolder }
-            ?: throw CloudServiceException.NotFoundException(path.toString())
+            ?: throw CloudBridgeException.NotFoundException(path.toString())
         file.toCloudFile(isRoot = folderPath.isRoot)
     }
 
@@ -144,7 +144,7 @@ public class GoogleDriveService internal constructor(
 
         val folder = tryCall(path.toString()) { api.getFile(path.name) }
         if (!folder.isFolder || folder.trashed) {
-            throw CloudServiceException.NotFoundException(path.toString())
+            throw CloudBridgeException.NotFoundException(path.toString())
         }
         val isRoot = folder.isInRoot()
         return mapUnknownErrors {
@@ -324,11 +324,11 @@ public class GoogleDriveService internal constructor(
      *
      * Must not be called from within [tryCall], as this fires off a request.
      *
-     * @throws CloudServiceException.ConflictException
+     * @throws CloudBridgeException.ConflictException
      */
     private suspend fun ensureNameAvailable(parent: String, name: String, ownId: String? = null) {
         if (tryCall(name) { findByName(parent, name) }.any { it.id != ownId }) {
-            throw CloudServiceException.ConflictException(name)
+            throw CloudBridgeException.ConflictException(name)
         }
     }
 

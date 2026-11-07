@@ -28,7 +28,7 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -73,22 +73,22 @@ public class WebDavService internal constructor(
         responseErrorMapper = { itemId ->
             when (response.status) {
                 HttpStatusCode.Unauthorized -> {
-                    CloudServiceException.NotAuthenticatedException()
+                    CloudBridgeException.NotAuthenticatedException()
                 }
                 HttpStatusCode.NotFound -> {
-                    CloudServiceException.NotFoundException(itemId)
+                    CloudBridgeException.NotFoundException(itemId)
                 }
                 HttpStatusCode.InsufficientStorage -> {
-                    CloudServiceException.InsufficientSpaceException()
+                    CloudBridgeException.InsufficientSpaceException()
                 }
                 HttpStatusCode.PreconditionFailed -> {
-                    CloudServiceException.ConflictException(itemId)
+                    CloudBridgeException.ConflictException(itemId)
                 }
                 HttpStatusCode.TooManyRequests -> {
-                    CloudServiceException.RateLimitException(response.retryAfter())
+                    CloudBridgeException.RateLimitException(response.retryAfter())
                 }
                 else -> {
-                    CloudServiceException.Unknown(this)
+                    CloudBridgeException.Unknown(this)
                 }
             }
         }
@@ -114,7 +114,7 @@ public class WebDavService internal constructor(
 
     override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
         propfind(path.toString(), depth = 0).single().toCloudItem() as? CloudFile
-            ?: throw CloudServiceException.NotFoundException(path.toString())
+            ?: throw CloudBridgeException.NotFoundException(path.toString())
     }
 
     override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
@@ -123,7 +123,7 @@ public class WebDavService internal constructor(
         return tryCall(path.toString()) {
             propfind(path.toString(), depth = 0, suffixSlash = true).single()
                 .toCloudItem() as? CloudFolder
-                ?: throw CloudServiceException.NotFoundException(path.toString())
+                ?: throw CloudBridgeException.NotFoundException(path.toString())
         }
     }
 
@@ -363,7 +363,7 @@ private class SourceContent(
     override val contentLength: Long?,
     override val contentType: ContentType
 ) : OutgoingContent.WriteChannelContent() {
-    var failure: CloudServiceException.SourceReadException? = null
+    var failure: CloudBridgeException.SourceReadException? = null
         private set
     var bytesWritten = 0L
         private set
@@ -375,11 +375,11 @@ private class SourceContent(
                 bytesWritten += chunk.size
             }
             if (contentLength != null && bytesWritten != contentLength) {
-                throw CloudServiceException.SourceReadException(
+                throw CloudBridgeException.SourceReadException(
                     IOException("Expected $contentLength bytes, but the source held $bytesWritten bytes")
                 )
             }
-        } catch (e: CloudServiceException.SourceReadException) {
+        } catch (e: CloudBridgeException.SourceReadException) {
             failure = e
             channel.cancel(e)
         }

@@ -12,7 +12,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.TokenRefresher
@@ -97,7 +97,7 @@ public abstract class OAuthCloudService internal constructor(
         responseErrorMapper = { itemId -> errorMapper(itemId) }
     )
 
-    protected abstract val errorMapper: ResponseException.(itemId: String) -> CloudServiceException
+    protected abstract val errorMapper: ResponseException.(itemId: String) -> CloudBridgeException
 
     /**
      * Authenticated client, for requests that are not convenient to use Ktorfit for.

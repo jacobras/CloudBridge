@@ -24,7 +24,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.OAuthTokenRefresher
@@ -145,7 +145,7 @@ class TokenRefreshTest {
         val service = dropbox(token = CloudAccessToken("old", "refresh"), engine = engine)
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory.map { it.url.encodedPath }).containsExactly(
             "/2/users/get_current_account",
             "/oauth2/token",
@@ -174,7 +174,7 @@ class TokenRefreshTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(refreshed).isEmpty()
     }
 
@@ -194,7 +194,7 @@ class TokenRefreshTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory.map { it.url.encodedPath }).containsExactly(
             "/drive/v3/about"
         )
@@ -206,7 +206,7 @@ class TokenRefreshTest {
         val service = dropbox(token = CloudAccessToken("old", expiresAt = now), engine = engine)
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory.map { it.url.encodedPath }).containsExactly(
             "/2/users/get_current_account"
         )
@@ -357,13 +357,13 @@ class TokenRefreshTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() },
             rateLimiter = null,
             tokenRefresher = FakeTokenRefresher {
-                throw CloudServiceException.NotAuthenticatedException()
+                throw CloudBridgeException.NotAuthenticatedException()
             },
             clock = clock
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory.size).isEqualTo(1)
     }
 

@@ -4,7 +4,7 @@ import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import nl.jacobras.cloudbridge.CloudBridge.logger
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.oauth.TokenHolder
 import kotlin.math.pow
@@ -15,7 +15,7 @@ internal class CallDispatcher(
     private val rateLimiter: RateLimiter?,
     private val authCheck: () -> Boolean,
     private val tokenHolder: TokenHolder? = null,
-    private val responseErrorMapper: ResponseException.(itemId: String) -> CloudServiceException
+    private val responseErrorMapper: ResponseException.(itemId: String) -> CloudBridgeException
 ) {
 
     /**
@@ -31,7 +31,7 @@ internal class CallDispatcher(
         call: suspend () -> T
     ): T {
         if (!authCheck()) {
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
 
         if (tokenHolder != null) {
@@ -48,7 +48,7 @@ internal class CallDispatcher(
             val usedToken = tokenHolder?.token
             try {
                 return mapError(itemId, call)
-            } catch (e: CloudServiceException.NotAuthenticatedException) {
+            } catch (e: CloudBridgeException.NotAuthenticatedException) {
                 if (tokenHolder == null || usedToken == null || refreshedAfterUnauthorized) {
                     throw e
                 }
@@ -62,7 +62,7 @@ internal class CallDispatcher(
                 }
 
                 logger.log("Token refreshed after authentication failure on $itemId, retrying call")
-            } catch (e: CloudServiceException.RateLimitException) {
+            } catch (e: CloudBridgeException.RateLimitException) {
                 val retryDelay = calculateRetryDelay(e, attempt) ?: throw e
                 permit?.release()
                 attempt++
@@ -80,7 +80,7 @@ internal class CallDispatcher(
      * @return the delay duration or `null` if not needed.
      */
     private fun calculateRetryDelay(
-        rateLimitException: CloudServiceException.RateLimitException,
+        rateLimitException: CloudBridgeException.RateLimitException,
         attempt: Int
     ): Duration? {
         val limiter = rateLimiter ?: return null
@@ -98,13 +98,13 @@ internal class CallDispatcher(
         } catch (e: ResponseException) {
             throw e.responseErrorMapper(itemId)
         } catch (e: IOException) {
-            throw CloudServiceException.ConnectionException(e)
-        } catch (e: CloudServiceException) {
+            throw CloudBridgeException.ConnectionException(e)
+        } catch (e: CloudBridgeException) {
             throw e
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            throw CloudServiceException.Unknown(e)
+            throw CloudBridgeException.Unknown(e)
         }
     }
 }

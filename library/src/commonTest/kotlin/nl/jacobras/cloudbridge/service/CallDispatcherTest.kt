@@ -11,7 +11,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.OAuthTokenRefresher
 import nl.jacobras.cloudbridge.auth.TokenResponse
@@ -36,7 +36,7 @@ class CallDispatcherTest {
         var attempts = 0
 
         val result = dispatcher.tryCall("item") {
-            if (attempts++ < 2) throw CloudServiceException.RateLimitException(null)
+            if (attempts++ < 2) throw CloudBridgeException.RateLimitException(null)
             "ok"
         }
 
@@ -52,9 +52,9 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attempts++
-                throw CloudServiceException.RateLimitException(null)
+                throw CloudBridgeException.RateLimitException(null)
             }
-        }.isInstanceOf<CloudServiceException.RateLimitException>()
+        }.isInstanceOf<CloudBridgeException.RateLimitException>()
         assertThat(attempts).isEqualTo(4)
     }
 
@@ -66,9 +66,9 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attempts++
-                throw CloudServiceException.RateLimitException(null)
+                throw CloudBridgeException.RateLimitException(null)
             }
-        }.isInstanceOf<CloudServiceException.RateLimitException>()
+        }.isInstanceOf<CloudBridgeException.RateLimitException>()
         assertThat(attempts).isEqualTo(1)
     }
 
@@ -80,9 +80,9 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attempts++
-                throw CloudServiceException.RateLimitException(null)
+                throw CloudBridgeException.RateLimitException(null)
             }
-        }.isInstanceOf<CloudServiceException.RateLimitException>()
+        }.isInstanceOf<CloudBridgeException.RateLimitException>()
         assertThat(attempts).isEqualTo(1)
     }
 
@@ -94,7 +94,7 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attemptTimes += currentTime
-                throw CloudServiceException.RateLimitException(null)
+                throw CloudBridgeException.RateLimitException(null)
             }
         }
         assertThat(attemptTimes).containsExactly(0L, 1_000L, 3_000L, 7_000L)
@@ -107,7 +107,7 @@ class CallDispatcherTest {
 
         dispatcher.tryCall("item") {
             attemptTimes += currentTime
-            if (attemptTimes.size == 1) throw CloudServiceException.RateLimitException(10.seconds)
+            if (attemptTimes.size == 1) throw CloudBridgeException.RateLimitException(10.seconds)
         }
 
         assertThat(attemptTimes).containsExactly(0L, 10_000L)
@@ -121,9 +121,9 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attempts++
-                throw CloudServiceException.RateLimitException(2.minutes)
+                throw CloudBridgeException.RateLimitException(2.minutes)
             }
-        }.isInstanceOf<CloudServiceException.RateLimitException>()
+        }.isInstanceOf<CloudBridgeException.RateLimitException>()
         assertThat(attempts).isEqualTo(1)
         assertThat(currentTime).isEqualTo(0L)
     }
@@ -135,11 +135,11 @@ class CallDispatcherTest {
         repeat(5) {
             dispatcher.tryCall("item") { }
             assertFailure {
-                dispatcher.tryCall("item") { throw CloudServiceException.RateLimitException(null) }
+                dispatcher.tryCall("item") { throw CloudBridgeException.RateLimitException(null) }
             }
             assertFailure {
                 dispatcher.tryCall("item") { error("Boom") }
-            }.isInstanceOf<CloudServiceException.Unknown>()
+            }.isInstanceOf<CloudBridgeException.Unknown>()
         }
     }
 
@@ -170,7 +170,7 @@ class CallDispatcherTest {
         var attempts = 0
 
         val result = dispatcher.tryCall("item") {
-            if (attempts++ == 0) throw CloudServiceException.NotAuthenticatedException()
+            if (attempts++ == 0) throw CloudBridgeException.NotAuthenticatedException()
             "ok"
         }
 
@@ -187,9 +187,9 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attempts++
-                throw CloudServiceException.NotAuthenticatedException()
+                throw CloudBridgeException.NotAuthenticatedException()
             }
-        }.isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+        }.isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(attempts).isEqualTo(2)
     }
 
@@ -201,9 +201,9 @@ class CallDispatcherTest {
         assertFailure {
             dispatcher.tryCall("item") {
                 attempts++
-                throw CloudServiceException.NotAuthenticatedException()
+                throw CloudBridgeException.NotAuthenticatedException()
             }
-        }.isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+        }.isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(attempts).isEqualTo(1)
     }
 
@@ -255,6 +255,6 @@ class CallDispatcherTest {
         rateLimiter = rateLimiter,
         authCheck = { true },
         tokenHolder = tokenHolder?.holder,
-        responseErrorMapper = { CloudServiceException.Unknown(this) }
+        responseErrorMapper = { CloudBridgeException.Unknown(this) }
     )
 }

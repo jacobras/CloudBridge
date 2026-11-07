@@ -2,7 +2,7 @@ package nl.jacobras.cloudbridge.auth
 
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import kotlin.time.Clock
 
 /**
@@ -15,7 +15,7 @@ internal interface TokenRefresher {
      * @param endpoint The token endpoint of the service.
      * @param clock Clock to calculate when the new token expires.
      * @return a new token, or `null` if [outdated] can't be refreshed.
-     * @throws CloudServiceException.NotAuthenticatedException if the user needs to
+     * @throws CloudBridgeException.NotAuthenticatedException if the user needs to
      * re-authenticate.
      */
     suspend fun refresh(
@@ -44,8 +44,8 @@ internal class OAuthTokenRefresher(private val clientInfo: ClientInfo) : TokenRe
             throw when (e.response.status) {
                 // Refresh token revoked or expired: user needs to re-authenticate.
                 HttpStatusCode.BadRequest,
-                HttpStatusCode.Unauthorized -> CloudServiceException.NotAuthenticatedException()
-                else -> CloudServiceException.Unknown(e)
+                HttpStatusCode.Unauthorized -> CloudBridgeException.NotAuthenticatedException()
+                else -> CloudBridgeException.Unknown(e)
             }
         }
 

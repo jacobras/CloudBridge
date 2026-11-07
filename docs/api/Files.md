@@ -16,7 +16,7 @@ Lists all files and folders one level deep; nested content is not fetched.
 ```kotlin
 try {
     val items = service.listFiles("/".asFolderPath())
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -31,7 +31,7 @@ try {
     val result = service.getDelta(previousCursor)
     val previouCursor = result.newCursor
     val changes = result.changes
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -46,7 +46,7 @@ thrown.
 try {
     val file: CloudFile = service.getFileInfo("/Projects/Welcome.txt".asFilePath())
     val folder: CloudFolder = service.getFolderInfo("/Projects".asFolderPath())
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -58,7 +58,7 @@ Calling `getFolderInfo()` for the root folder (`/`) throws an `IllegalArgumentEx
 ```kotlin
 try {
     service.createFolder("/Projects".asFolderPath())
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -69,7 +69,7 @@ try {
 try {
     val file: CloudFile = service.createFile("/Projects/Welcome.txt".asFilePath(), "Hello world!")
     println("Created ${file.id} at revision ${file.revision}")
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -80,7 +80,7 @@ try {
 try {
     val file: CloudFile = service.updateFile(fileId, "Updated content")
     println("Updated ${file.id} to revision ${file.revision}")
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -100,18 +100,18 @@ try {
         mimeType = "image/jpeg",
         onProgress = { bytesSent, totalBytes -> println("Sent $bytesSent of $totalBytes bytes") }
     )
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
 
 * The function is called once per attempt, so an upload can be [retried](RateLimiting.md#retries)
   after rate limiting. It must return a **new** `Source` at the start of the content each time. A
-  `CloudServiceException.SourceReadException` is thrown if it returns a source that was already
+  `CloudBridgeException.SourceReadException` is thrown if it returns a source that was already
   read.
 * Each source is read until its end and then closed by the library.
 * `sizeInBytes` is optional, except for OneDrive files larger than 10 MB (throws a
-  `CloudServiceException.IllegalArgumentException` if missing or not matching the content size in
+  `CloudBridgeException.IllegalArgumentException` if missing or not matching the content size in
   that case).
 * `mimeType` defaults to `application/octet-stream`. Dropbox doesn't store MIME types and ignores
   it.
@@ -134,7 +134,7 @@ try {
         sizeInBytes = file.length(),
         mimeType = "image/jpeg"
     )
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -144,7 +144,7 @@ try {
 ```kotlin
 try {
     val content: String = service.downloadFile(fileId)
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -159,7 +159,7 @@ try {
     SystemFileSystem.sink(Path("photo.jpg")).buffered().use { sink ->
         service.downloadFile(fileId, sink)
     }
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -175,7 +175,7 @@ val bytes = buffer.readByteArray()
 ## Moving or renaming a file or folder
 
 To rename an item, move it within the same folder. If an item already exists at the new path, a
-`CloudServiceException.ConflictException` is thrown.
+`CloudBridgeException.ConflictException` is thrown.
 
 ```kotlin
 try {
@@ -184,7 +184,7 @@ try {
 
     // Or a folder
     service.moveFolder(folderId, "/Projects2".asFolderPath())
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
@@ -196,7 +196,7 @@ On WebDAV, the id of an item is its path, so the returned item has a new id.
 ```kotlin
 try {
     service.delete(itemId)
-} catch (e: CloudServiceException) {
+} catch (e: CloudBridgeException) {
     // Handle...
 }
 ```

@@ -24,7 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -61,7 +61,7 @@ class OneDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        assertFailure { service.getUserInfo() }.isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+        assertFailure { service.getUserInfo() }.isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/oidc/userinfo")
@@ -87,8 +87,8 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isEqualTo(120.seconds)
     }
 
@@ -108,7 +108,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a")) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
             .hasMessage("The requested item '33488461260C4A76!s5f2c8e1a9b7d4c3e8f6a2b1d0c9e7f4a' could not be found")
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
@@ -161,7 +161,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
-            .isInstanceOf<CloudServiceException.SinkWriteException>()
+            .isInstanceOf<CloudBridgeException.SinkWriteException>()
     }
 
     @Test
@@ -180,7 +180,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -204,7 +204,7 @@ class OneDriveServiceTest {
                 "content"
             )
         }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Put)
             assertThat(it.url.toString()).isEqualTo(
@@ -561,7 +561,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.moveFile(CloudItemId("file1"), "/Notes/taken.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
     }
 
     @Test
@@ -698,7 +698,7 @@ class OneDriveServiceTest {
                 path = "archive.zip".asFilePath(),
                 source = { bufferOf(10) })
         }
-            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .isInstanceOf<CloudBridgeException.IllegalArgumentException>()
             .hasMessage("sizeInBytes is required for OneDrive uploads larger than 4 bytes, but it was null")
         assertThat(engine.requestHistory).isEmpty()
     }
@@ -720,7 +720,7 @@ class OneDriveServiceTest {
                 sizeInBytes = 6
             )
         }
-            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .isInstanceOf<CloudBridgeException.IllegalArgumentException>()
             .hasMessage("Content is larger than sizeInBytes (6 bytes)")
     }
 
@@ -741,7 +741,7 @@ class OneDriveServiceTest {
                 sizeInBytes = 12
             )
         }
-            .isInstanceOf<CloudServiceException.IllegalArgumentException>()
+            .isInstanceOf<CloudBridgeException.IllegalArgumentException>()
             .hasMessage("Content size (10 bytes) doesn't match sizeInBytes (12 bytes)")
     }
 
@@ -759,7 +759,7 @@ class OneDriveServiceTest {
                 path = "image.png".asFilePath(),
                 source = { failingSource() })
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
 
@@ -779,7 +779,7 @@ class OneDriveServiceTest {
                 source = { failingSource(5) },
                 sizeInBytes = 10
             )
-        }.isInstanceOf<CloudServiceException.SourceReadException>()
+        }.isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Post,
             HttpMethod.Put
@@ -1046,7 +1046,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -1065,7 +1065,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.getFileInfo("/Notes".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -1112,7 +1112,7 @@ class OneDriveServiceTest {
         )
 
         assertFailure { service.getFolderInfo("/Welcome.txt".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test

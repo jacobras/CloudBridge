@@ -27,7 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -82,7 +82,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo("https://www.googleapis.com/drive/v3/about?fields=user")
@@ -109,8 +109,8 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isEqualTo(30.seconds)
     }
 
@@ -145,8 +145,8 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isNull()
     }
 
@@ -182,7 +182,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg")) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
             .hasMessage("The requested item '1mVq7Rk2XwTz9LpHc4Ns8DfJy3Gb6Ue5Ao0Ki1WrQxSdZtYhPg' could not be found")
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
@@ -233,7 +233,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("file1"), failingSink()) }
-            .isInstanceOf<CloudServiceException.SinkWriteException>()
+            .isInstanceOf<CloudBridgeException.SinkWriteException>()
     }
 
     @Test
@@ -252,7 +252,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("missing"), Buffer()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -290,7 +290,7 @@ class GoogleDriveServiceTest {
                 "content"
             )
         }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Patch)
             assertThat(it.url.toString()).isEqualTo(
@@ -614,11 +614,11 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.createFile("/hello.txt".asFilePath(), "Hello") }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
         assertFailure { service.createFile("/hello.txt".asFilePath(), { bufferOf(3) }) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
         assertFailure { service.createFolder("/hello.txt".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
 
         // Only the name checks, nothing was created
         assertThat(engine.requestHistory.map { it.method })
@@ -775,7 +775,7 @@ class GoogleDriveServiceTest {
                 CloudItemId("1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg"),
                 "/hello.txt".asFilePath()
             )
-        }.isInstanceOf<CloudServiceException.ConflictException>()
+        }.isInstanceOf<CloudBridgeException.ConflictException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Get,
             HttpMethod.Get
@@ -982,7 +982,7 @@ class GoogleDriveServiceTest {
     }
 
     @Test
-    fun `failed chunk upload throws CloudServiceException`() = runTest {
+    fun `failed chunk upload throws CloudBridgeException`() = runTest {
         val engine = MockEngine { request ->
             if (request.method == HttpMethod.Post) {
                 respond(
@@ -1013,7 +1013,7 @@ class GoogleDriveServiceTest {
                 path = "/archive.zip".asFilePath(),
                 source = { bufferOf(10) })
         }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
     }
 
     @Test
@@ -1026,7 +1026,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.updateFile(CloudItemId(value = "file1"), { failingSource() }) }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
 
@@ -1062,7 +1062,7 @@ class GoogleDriveServiceTest {
                 path = "/archive.zip".asFilePath(),
                 source = { failingSource(5) })
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.method }).containsExactly(
             HttpMethod.Get,
             HttpMethod.Post,
@@ -1182,7 +1182,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.getFileInfo("/it's.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
         assertThat(engine.requestHistory.single().url.parameters["q"])
             .isEqualTo("name = 'it\\'s.txt' and 'appDataFolder' in parents and trashed = false")
     }
@@ -1245,7 +1245,7 @@ class GoogleDriveServiceTest {
         )
 
         assertFailure { service.getFolderInfo("/1BZWMYkXl-wYxRa-R1VzoJAmGyPrpO9zpxBeOHeb272OJ2hslPg".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test

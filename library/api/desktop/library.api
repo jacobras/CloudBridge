@@ -11,6 +11,50 @@ public final class nl/jacobras/cloudbridge/CloudBridge {
 	public final fun webDav (Lnl/jacobras/cloudbridge/service/webdav/WebDavCredentials;)Lnl/jacobras/cloudbridge/service/webdav/WebDavService;
 }
 
+public class nl/jacobras/cloudbridge/CloudBridgeException : java/lang/Exception {
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$ConflictException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$ConnectionException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/io/IOException;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$IllegalArgumentException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$InsufficientSpaceException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> ()V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$NotAuthenticatedException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> ()V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$NotFoundException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$RateLimitException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public synthetic fun <init> (Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getRetryAfter-FghU774 ()Lkotlin/time/Duration;
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$SinkWriteException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/io/IOException;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$SourceReadException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/io/IOException;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$Unknown : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> (Ljava/lang/Throwable;)V
+}
+
 public abstract interface class nl/jacobras/cloudbridge/CloudService {
 	public abstract fun createFile-a2ZTdo4 (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun createFile-anaZp0g (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -34,50 +78,6 @@ public abstract interface class nl/jacobras/cloudbridge/CloudService {
 public final class nl/jacobras/cloudbridge/CloudService$DefaultImpls {
 	public static synthetic fun createFile-anaZp0g$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public static synthetic fun updateFile-u9obNfY$default (Lnl/jacobras/cloudbridge/CloudService;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/Long;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
-public class nl/jacobras/cloudbridge/CloudServiceException : java/lang/Exception {
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$ConflictException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/lang/String;)V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$ConnectionException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/io/IOException;)V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$IllegalArgumentException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/lang/String;)V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$InsufficientSpaceException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> ()V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$NotAuthenticatedException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> ()V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$NotFoundException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/lang/String;)V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$RateLimitException : nl/jacobras/cloudbridge/CloudServiceException {
-	public synthetic fun <init> (Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getRetryAfter-FghU774 ()Lkotlin/time/Duration;
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$SinkWriteException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/io/IOException;)V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$SourceReadException : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/io/IOException;)V
-}
-
-public final class nl/jacobras/cloudbridge/CloudServiceException$Unknown : nl/jacobras/cloudbridge/CloudServiceException {
-	public fun <init> (Ljava/lang/Throwable;)V
 }
 
 public final class nl/jacobras/cloudbridge/auth/CloudAccessToken {

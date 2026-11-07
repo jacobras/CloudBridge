@@ -8,7 +8,7 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import kotlinx.serialization.json.Json
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.ClientInfo
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.OAuthTokenRefresher
@@ -67,25 +67,25 @@ public class DropboxService internal constructor(
     private val apiWithoutAuth = ktorfitWithoutAuth.createDropboxApi()
     internal var uploadChunkSize = DEFAULT_CHUNK_SIZE
 
-    override val errorMapper: ResponseException.(String) -> CloudServiceException = { itemId ->
+    override val errorMapper: ResponseException.(String) -> CloudBridgeException = { itemId ->
         when (response.status) {
             HttpStatusCode.Conflict if message?.contains("not_found") == true -> {
-                CloudServiceException.NotFoundException(itemId)
+                CloudBridgeException.NotFoundException(itemId)
             }
             HttpStatusCode.Conflict if message?.contains("insufficient_space") == true -> {
-                CloudServiceException.InsufficientSpaceException()
+                CloudBridgeException.InsufficientSpaceException()
             }
             HttpStatusCode.Conflict if message?.contains("conflict") == true -> {
-                CloudServiceException.ConflictException(itemId)
+                CloudBridgeException.ConflictException(itemId)
             }
             HttpStatusCode.TooManyRequests -> {
-                CloudServiceException.RateLimitException(response.retryAfter())
+                CloudBridgeException.RateLimitException(response.retryAfter())
             }
             HttpStatusCode.Unauthorized -> {
-                CloudServiceException.NotAuthenticatedException()
+                CloudBridgeException.NotAuthenticatedException()
             }
             else -> {
-                CloudServiceException.Unknown(this)
+                CloudBridgeException.Unknown(this)
             }
         }
     }
@@ -116,7 +116,7 @@ public class DropboxService internal constructor(
 
     override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {
         api.getMetadata(Json.encodeToString(GetMetadataArg(path.toString()))).toCloudItem()
-                as? CloudFile ?: throw CloudServiceException.NotFoundException(path.toString())
+                as? CloudFile ?: throw CloudBridgeException.NotFoundException(path.toString())
     }
 
     override suspend fun getFolderInfo(path: FolderPath): CloudFolder {
@@ -125,7 +125,7 @@ public class DropboxService internal constructor(
         return tryCall(path.toString()) {
             val arg = Json.encodeToString(GetMetadataArg(path.toString()))
             api.getMetadata(arg).toCloudItem() as? CloudFolder
-                ?: throw CloudServiceException.NotFoundException(path.toString())
+                ?: throw CloudBridgeException.NotFoundException(path.toString())
         }
     }
 

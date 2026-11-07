@@ -5,7 +5,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import nl.jacobras.cloudbridge.CloudBridge.logger
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PREEMPTIVE_REFRESH_PERIOD
 import nl.jacobras.cloudbridge.auth.TokenRefreshEndpoint
@@ -52,7 +52,7 @@ internal class TokenHolder(
      *
      * @return `true` if a new token is available (refreshed by this or a concurrent call),
      * `false` if it can't be refreshed.
-     * @throws CloudServiceException if refreshing failed.
+     * @throws CloudBridgeException if refreshing failed.
      */
     suspend fun refresh(outdated: CloudAccessToken): Boolean {
         val tokenRefresher = tokenRefresher ?: return false
@@ -83,18 +83,18 @@ internal class TokenHolder(
     private inline fun <T> mapErrors(block: () -> T): T {
         return try {
             block()
-        } catch (e: CloudServiceException) {
+        } catch (e: CloudBridgeException) {
             logger.log("Failed to refresh access token: $e")
             throw e
         } catch (e: IOException) {
             logger.log("Failed to refresh access token: $e")
-            throw CloudServiceException.ConnectionException(e)
+            throw CloudBridgeException.ConnectionException(e)
         } catch (e: CancellationException) {
             logger.log("Failed to refresh access token: $e")
             throw e
         } catch (e: Throwable) {
             logger.log("Failed to refresh access token: $e")
-            throw CloudServiceException.Unknown(e)
+            throw CloudBridgeException.Unknown(e)
         }
     }
 }

@@ -1,7 +1,7 @@
 package nl.jacobras.cloudbridge.auth
 
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 internal abstract class CloudAuthenticator(
@@ -89,7 +89,7 @@ internal abstract class PkceAuthenticator(
     fun buildPkceUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
-     * @throws CloudServiceException
+     * @throws CloudBridgeException
      */
     abstract suspend fun exchangeCodeForToken(code: String): CloudAccessToken
 }

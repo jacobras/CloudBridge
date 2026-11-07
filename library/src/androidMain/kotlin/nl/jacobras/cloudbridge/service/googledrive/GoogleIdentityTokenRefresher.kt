@@ -5,7 +5,7 @@ import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.suspendCancellableCoroutine
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.TokenRefreshEndpoint
 import nl.jacobras.cloudbridge.auth.TokenRefresher
@@ -17,7 +17,7 @@ import kotlin.time.Clock
 /**
  * Gets a new Google Drive access token from Google Identity Services, for tokens obtained through
  * [GoogleDriveAuthenticator]. Works as long as the user has granted access before, otherwise,
- * a [CloudServiceException.NotAuthenticatedException] is thrown and the user needs to
+ * a [CloudBridgeException.NotAuthenticatedException] is thrown and the user needs to
  * re-authenticate through [GoogleDriveAuthenticator.authenticate].
  *
  * Doesn't do preemptive refresh, because expiration time is not returned by Google Drive.
@@ -31,9 +31,9 @@ internal class GoogleIdentityTokenRefresher : TokenRefresher {
     ): CloudAccessToken {
         // Set at app start by CloudBridgeInitializer; missing if androidx.startup is disabled.
         val context = CloudBridgeContext.applicationContext
-            ?: throw CloudServiceException.NotAuthenticatedException()
+            ?: throw CloudBridgeException.NotAuthenticatedException()
         // Without the account, a silent authorization could return another account's token.
-        val account = outdated.account ?: throw CloudServiceException.NotAuthenticatedException()
+        val account = outdated.account ?: throw CloudBridgeException.NotAuthenticatedException()
         val client = Identity.getAuthorizationClient(context)
 
         // AuthorizationClient caches tokens, so first clear it so it won't return the token
@@ -50,11 +50,11 @@ internal class GoogleIdentityTokenRefresher : TokenRefresher {
         val accessToken = result.accessToken
         if (result.hasResolution() || accessToken == null) {
             // User action required (re-authentication), can't refresh this token.
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
         if (accessToken == outdated.accessToken) {
             // Shouldn't happen, because it's cleared above, but just in case.
-            throw CloudServiceException.NotAuthenticatedException()
+            throw CloudBridgeException.NotAuthenticatedException()
         }
         return CloudAccessToken(accessToken = accessToken, account = account)
     }

@@ -23,7 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudServiceException
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
@@ -61,7 +61,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.NotAuthenticatedException>()
+            .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://api.dropboxapi.com/2/users/get_current_account")
@@ -88,8 +88,8 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.getUserInfo() }
-            .isInstanceOf<CloudServiceException.RateLimitException>()
-            .prop(CloudServiceException.RateLimitException::retryAfter)
+            .isInstanceOf<CloudBridgeException.RateLimitException>()
+            .prop(CloudBridgeException.RateLimitException::retryAfter)
             .isEqualTo(1.seconds)
     }
 
@@ -109,7 +109,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("id:missing")) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
             .hasMessage("The requested item 'id:missing' could not be found")
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
@@ -161,7 +161,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("id:abc"), failingSink()) }
-            .isInstanceOf<CloudServiceException.SinkWriteException>()
+            .isInstanceOf<CloudBridgeException.SinkWriteException>()
     }
 
     @Test
@@ -180,7 +180,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.downloadFile(CloudItemId("id:missing"), Buffer()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -199,7 +199,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.createFile("/big.txt".asFilePath(), "content") }
-            .isInstanceOf<CloudServiceException.InsufficientSpaceException>()
+            .isInstanceOf<CloudBridgeException.InsufficientSpaceException>()
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Post)
             assertThat(it.url.toString()).isEqualTo("https://content.dropboxapi.com/2/files/upload")
@@ -354,7 +354,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.moveFile(CloudItemId("id:abc"), "/taken.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.ConflictException>()
+            .isInstanceOf<CloudBridgeException.ConflictException>()
     }
 
     @Test
@@ -575,7 +575,7 @@ class DropboxServiceTest {
                 source = { failingSource() }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory).isEmpty()
     }
 
@@ -601,7 +601,7 @@ class DropboxServiceTest {
                 source = { failingSource(5) }
             )
         }
-            .isInstanceOf<CloudServiceException.SourceReadException>()
+            .isInstanceOf<CloudBridgeException.SourceReadException>()
         assertThat(engine.requestHistory.map { it.url.toString() }).containsExactly(
             "https://content.dropboxapi.com/2/files/upload_session/start"
         )
@@ -725,7 +725,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.getFileInfo("/missing.txt".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -744,7 +744,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.getFileInfo("/Notes".asFilePath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
@@ -793,7 +793,7 @@ class DropboxServiceTest {
         )
 
         assertFailure { service.getFolderInfo("/Welcome.txt".asFolderPath()) }
-            .isInstanceOf<CloudServiceException.NotFoundException>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
     }
 
     @Test
