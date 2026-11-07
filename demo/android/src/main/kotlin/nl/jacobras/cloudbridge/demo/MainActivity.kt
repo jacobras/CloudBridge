@@ -20,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudService
-import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
@@ -47,8 +46,7 @@ internal class MainActivity : ComponentActivity() {
     private val googleDriveAuthenticator = GoogleDriveAuthenticator(
         activity = this,
         onSuccess = { token ->
-            DemoSettings.googleDriveToken = token
-            viewModel.refresh()
+            viewModel.connectGoogleDrive(token)
         },
         onDenied = {},
         onFailure = { error ->
@@ -102,8 +100,7 @@ internal class MainActivity : ComponentActivity() {
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
-                DemoSettings.dropboxToken = token
-                viewModel.refresh()
+                viewModel.connectDropbox(token)
             }
 
             is OneDriveService -> {
@@ -111,8 +108,7 @@ internal class MainActivity : ComponentActivity() {
                     redirectUri = REDIRECT_URI,
                     intentUri = uri
                 ) ?: return@launch
-                DemoSettings.oneDriveToken = token
-                viewModel.refresh()
+                viewModel.connectOneDrive(token)
             }
 
             else -> Unit

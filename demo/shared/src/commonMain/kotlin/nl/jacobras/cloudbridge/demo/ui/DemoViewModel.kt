@@ -2,14 +2,13 @@ package nl.jacobras.cloudbridge.demo.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.CloudBridge
-import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.demo.DummyCloudService
 import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
@@ -32,54 +31,78 @@ class DemoViewModel(
     private val dummy = DummyCloudService(CloudAccessToken(accessToken = "fake"))
 
     val connectedServices: StateFlow<Map<CloudService, UserInfo?>>
-        field = MutableStateFlow(emptyMap<CloudService, UserInfo?>())
+        field = MutableStateFlow(mapOf<CloudService, UserInfo?>(dummy to null))
 
     internal val selectedService: StateFlow<CloudService?>
         field = MutableStateFlow<CloudService?>(null)
 
-    private var loadServiceDetailsJob: Job? = null
-
     /**
      * Connected instances in [connectedServices].
      */
-    private var services = emptyList<CloudService>()
+    private val services = mutableMapOf<AvailableService, CloudService>()
 
     init {
         setUpLogging()
-        refresh()
+        AvailableService.entries.forEach { type ->
+            getConnectedService(type)?.let { setService(type, it) }
+        }
+        viewModelScope.launch { loadUserInfo(dummy) }
     }
 
     /**
-     * Rebuilds [connectedServices] from the credentials in [DemoSettings].
+     * Sets [service] as the connected instance of [type], or removes it if `null`. The previous
+     * instance gets its token cleared, so a late token refresh can't restore deleted credentials
+     * or overwrite a newer login.
      */
-    fun refresh() = viewModelScope.launch {
-        services.forEach { (it as? OAuthCloudService)?.setToken(null) }
-        services = AvailableService.entries.mapNotNull(::getConnectedService)
-
-        connectedServices.update {
-            (services + dummy).associateWith { service ->
-                try {
-                    service.getUserInfo()
-                } catch (_: Throwable) {
-                    null
-                }
-            }
+    private fun setService(type: AvailableService, service: CloudService?) = viewModelScope.launch {
+        val previous = if (service != null) {
+            services.put(type, service)
+        } else {
+            services.remove(type)
         }
-        selectedService.update { null }
+        (previous as? OAuthCloudService)?.setToken(null)
+
+        val current = AvailableService.entries.mapNotNull(services::get) + dummy
+        connectedServices.value = current.associateWith { connectedServices.value[it] }
+        if (selectedService.value == previous) {
+            selectedService.value = null
+        }
+        service?.let { loadUserInfo(it) }
+    }
+
+    private suspend fun loadUserInfo(service: CloudService) {
+        val userInfo = try {
+            service.getUserInfo()
+        } catch (_: CloudBridgeException) {
+            return
+        }
+        connectedServices.update { if (service in it) it + (service to userInfo) else it }
+    }
+
+    fun connectDropbox(token: CloudAccessToken) {
+        DemoSettings.dropboxToken = token
+        setService(AvailableService.Dropbox, dropbox(token))
+    }
+
+    fun connectGoogleDrive(token: CloudAccessToken) {
+        DemoSettings.googleDriveToken = token
+        setService(AvailableService.GoogleDrive, googleDrive(token))
+    }
+
+    fun connectOneDrive(token: CloudAccessToken) {
+        DemoSettings.oneDriveToken = token
+        setService(AvailableService.OneDrive, oneDrive(token))
     }
 
     fun connectWebDav(serverUrl: String, username: String, password: String) {
         DemoSettings.webDavServerUrl = serverUrl
         DemoSettings.webDavUsername = username
         DemoSettings.webDavPassword = password
-        refresh()
+        val credentials = WebDavCredentials(serverUrl, username, password)
+        setService(AvailableService.WebDav, CloudBridge.webDav(credentials))
     }
 
     fun disconnect(service: CloudService) {
-        loadServiceDetailsJob?.cancel()
-        loadServiceDetailsJob = null
-        (service as? OAuthCloudService)?.setToken(null)
-
         when (service) {
             is DropboxService -> DemoSettings.dropboxToken = null
             is GoogleDriveService -> DemoSettings.googleDriveToken = null
@@ -90,30 +113,16 @@ class DemoViewModel(
                 DemoSettings.webDavPassword = null
             }
         }
-        refresh()
+        services.entries.find { it.value == service }?.key?.let { setService(it, null) }
     }
 
     internal fun select(service: CloudService) {
-        loadServiceDetailsJob?.cancel()
-        loadServiceDetailsJob = null
-        selectedService.update { service }
-
-        loadServiceDetailsJob = viewModelScope.launch {
-            try {
-                val userInfo = service.getUserInfo()
-                connectedServices.update {
-                    val map = it.toMutableMap()
-                    map[service] = userInfo
-                    map
-                }
-            } catch (_: CloudBridgeException) {
-                // NOOP
-            }
-        }
+        selectedService.value = service
+        viewModelScope.launch { loadUserInfo(service) }
     }
 
     internal fun deselect() {
-        selectedService.update { null }
+        selectedService.value = null
     }
 
     /**
@@ -136,40 +145,37 @@ class DemoViewModel(
      */
     private fun getConnectedService(service: AvailableService): CloudService? {
         return when (service) {
-            AvailableService.Dropbox -> DemoSettings.dropboxToken?.let {
-                CloudBridge.dropbox(
-                    clientId = dropboxClientId,
-                    token = it,
-                    onTokenRefreshed = { token -> DemoSettings.dropboxToken = token }
-                )
-            }
-            AvailableService.GoogleDrive -> DemoSettings.googleDriveToken?.let {
-                CloudBridge.googleDrive(
-                    clientId = googleDriveClientId,
-                    desktopClientSecret = googleDriveClientSecret,
-                    token = it,
-                    onTokenRefreshed = { token -> DemoSettings.googleDriveToken = token }
-                )
-            }
-            AvailableService.OneDrive -> DemoSettings.oneDriveToken?.let {
-                CloudBridge.oneDrive(
-                    clientId = oneDriveClientId,
-                    token = it,
-                    onTokenRefreshed = { token -> DemoSettings.oneDriveToken = token }
-                )
-            }
+            AvailableService.Dropbox -> DemoSettings.dropboxToken?.let(::dropbox)
+            AvailableService.GoogleDrive -> DemoSettings.googleDriveToken?.let(::googleDrive)
+            AvailableService.OneDrive -> DemoSettings.oneDriveToken?.let(::oneDrive)
             AvailableService.WebDav -> getWebDavCredentials()?.let { CloudBridge.webDav(it) }
         }
     }
 
+    private fun dropbox(token: CloudAccessToken) = CloudBridge.dropbox(
+        clientId = dropboxClientId,
+        token = token,
+        onTokenRefreshed = { DemoSettings.dropboxToken = it }
+    )
+
+    private fun googleDrive(token: CloudAccessToken) = CloudBridge.googleDrive(
+        clientId = googleDriveClientId,
+        desktopClientSecret = googleDriveClientSecret,
+        token = token,
+        onTokenRefreshed = { DemoSettings.googleDriveToken = it }
+    )
+
+    private fun oneDrive(token: CloudAccessToken) = CloudBridge.oneDrive(
+        clientId = oneDriveClientId,
+        token = token,
+        onTokenRefreshed = { DemoSettings.oneDriveToken = it }
+    )
+
     private fun getWebDavCredentials(): WebDavCredentials? {
-        val serverUrl = DemoSettings.webDavServerUrl ?: return null
-        val username = DemoSettings.webDavUsername ?: return null
-        val password = DemoSettings.webDavPassword ?: return null
         return WebDavCredentials(
-            serverUrl = serverUrl,
-            username = username,
-            password = password
+            serverUrl = DemoSettings.webDavServerUrl ?: return null,
+            username = DemoSettings.webDavUsername ?: return null,
+            password = DemoSettings.webDavPassword ?: return null
         )
     }
 }

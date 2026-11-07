@@ -5,7 +5,6 @@ import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import nl.jacobras.cloudbridge.demo.BuildConfig
-import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.service.dropbox.DropboxService
@@ -48,19 +47,16 @@ fun main() {
             onFinishAuthOnWeb = { service ->
                 when (service) {
                     is DropboxService -> scope.launch {
-                        val token = service.completeAuthentication(redirectUri = REDIRECT_URI)
-                        DemoSettings.dropboxToken = token
-                        viewModel.refresh()
+                        service.completeAuthentication(redirectUri = REDIRECT_URI)
+                            ?.let(viewModel::connectDropbox)
                     }
                     is GoogleDriveService -> {
-                        val token = service.completeAuthentication()
-                        DemoSettings.googleDriveToken = token
-                        viewModel.refresh()
+                        service.completeAuthentication()
+                            ?.let(viewModel::connectGoogleDrive)
                     }
                     is OneDriveService -> scope.launch {
-                        val token = service.completeAuthentication(redirectUri = REDIRECT_URI)
-                        DemoSettings.oneDriveToken = token
-                        viewModel.refresh()
+                        service.completeAuthentication(redirectUri = REDIRECT_URI)
+                            ?.let(viewModel::connectOneDrive)
                     }
                 }
             }

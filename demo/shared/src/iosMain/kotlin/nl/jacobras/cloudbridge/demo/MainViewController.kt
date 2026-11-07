@@ -7,7 +7,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
 import kotlinx.coroutines.launch
-import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.shared.BuildConfig
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -35,22 +34,19 @@ fun MainViewController() = ComposeUIViewController {
                 when (service) {
                     is DropboxService -> scope.launch {
                         service.authenticate(redirectUri = REDIRECT_URI)?.let { token ->
-                            DemoSettings.dropboxToken = token
-                            viewModel.refresh()
+                            viewModel.connectDropbox(token)
                         }
                     }
 
                     is GoogleDriveService -> scope.launch {
                         service.authenticate(redirectUri = REDIRECT_URI)?.let { token ->
-                            DemoSettings.googleDriveToken = token
-                            viewModel.refresh()
+                            viewModel.connectGoogleDrive(token)
                         }
                     }
 
                     is OneDriveService -> scope.launch {
                         service.authenticate(redirectUri = REDIRECT_URI)?.let { token ->
-                            DemoSettings.oneDriveToken = token
-                            viewModel.refresh()
+                            viewModel.connectOneDrive(token)
                         }
                     }
 

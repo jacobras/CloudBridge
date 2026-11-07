@@ -9,7 +9,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import nl.jacobras.cloudbridge.demo.BuildConfig
-import nl.jacobras.cloudbridge.demo.persistence.DemoSettings
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
 import nl.jacobras.cloudbridge.persistence.LocalAuthenticationServer
@@ -52,8 +51,7 @@ fun main() = application {
                         val url = service.authenticate(
                             authServer = localServer,
                             onSuccess = { token ->
-                                DemoSettings.dropboxToken = token
-                                viewModel.refresh()
+                                viewModel.connectDropbox(token)
                             }
                         )
                         uriHandler.openUri(url)
@@ -62,8 +60,7 @@ fun main() = application {
                         val url = service.authenticate(
                             authServer = localServer,
                             onSuccess = { token ->
-                                DemoSettings.googleDriveToken = token
-                                viewModel.refresh()
+                                viewModel.connectGoogleDrive(token)
                             }
                         )
                         uriHandler.openUri(url)
@@ -72,8 +69,7 @@ fun main() = application {
                         val url = service.authenticate(
                             authServer = localServer,
                             onSuccess = { token ->
-                                DemoSettings.oneDriveToken = token
-                                viewModel.refresh()
+                                viewModel.connectOneDrive(token)
                             }
                         )
                         uriHandler.openUri(url)
