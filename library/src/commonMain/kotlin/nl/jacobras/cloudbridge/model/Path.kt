@@ -12,6 +12,8 @@ import kotlin.jvm.JvmInline
 public sealed interface Path {
     public fun startsWith(path: FolderPath): Boolean
     public fun toFolderPath(): FolderPath
+
+    public val name: String
 }
 
 /**
@@ -25,7 +27,7 @@ public value class FilePath(internal val value: String) : Path {
      * Last part of the path.
      * For example: "/A.txt" returns "A.txt" and "/A/B.txt" returns "B.txt".
      */
-    public val name: String
+    public override val name: String
         get() {
             return value.substringAfterLast('/')
         }
@@ -86,7 +88,7 @@ public value class FolderPath(internal val value: String) : Path {
      * Returns the name of the folder, which is the last part of the path.
      * For example: "/" returns "", "/A" returns "A" and "/A/B" returns "B".
      */
-    public val name: String
+    public override val name: String
         get() {
             return value.substringAfterLast('/')
         }
