@@ -84,4 +84,11 @@ class PathsTest {
         assertThat("/Parent/File.txt".asFilePath().startsWith("Parent".asFolderPath())).isTrue()
         assertThat("A/B/file.txt".asFilePath().startsWith("A/B".asFolderPath())).isTrue()
     }
+
+    @Test
+    fun childConstructors() {
+        val parent = "/A".asFolderPath()
+        assertThat(FolderPath(parent, "B").value).isEqualTo("/A/B")
+        assertThat(FilePath(parent, "file.txt").value).isEqualTo("/A/file.txt")
+    }
 }
