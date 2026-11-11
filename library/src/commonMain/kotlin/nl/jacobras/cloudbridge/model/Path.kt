@@ -14,6 +14,7 @@ public sealed interface Path {
     public fun toFolderPath(): FolderPath
 
     public val name: String
+    public val parent: FolderPath
 }
 
 /**
@@ -31,6 +32,13 @@ public value class FilePath(internal val value: String) : Path {
         get() {
             return value.substringAfterLast('/')
         }
+
+    /**
+     * Path of parent folder.
+     * For example: "/A.txt" returns "/" and "/A/B.txt" returns "/A".
+     */
+    public override val parent: FolderPath
+        get() = toFolderPath()
 
     /**
      * Name without extension.
@@ -107,7 +115,7 @@ public value class FolderPath(internal val value: String) : Path {
      * Path of parent folder.
      * For example: "/" returns "/", "/A" returns "/" and "/A/B" returns "/A".
      */
-    public val parent: FolderPath
+    public override val parent: FolderPath
         get() {
             return if (isRoot) {
                 this

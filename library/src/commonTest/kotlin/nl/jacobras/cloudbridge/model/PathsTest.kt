@@ -40,6 +40,14 @@ class PathsTest {
     }
 
     @Test
+    fun fileParent() {
+        assertThat("".asFilePath().parent.value).isEqualTo("/")
+        assertThat("myFile.txt".asFilePath().parent.value).isEqualTo("/")
+        assertThat("/myFile.txt".asFilePath().parent.value).isEqualTo("/")
+        assertThat("/A/myFile.txt".asFilePath().parent.value).isEqualTo("/A")
+    }
+
+    @Test
     fun folderParent() {
         assertThat("".asFolderPath().parent.value).isEqualTo("/")
         assertThat("/".asFolderPath().parent.value).isEqualTo("/")
