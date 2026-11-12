@@ -89,6 +89,9 @@ class PathsTest {
     fun childConstructors() {
         val parent = "/A".asFolderPath()
         assertThat(FolderPath(parent, "B").value).isEqualTo("/A/B")
+        assertThat(FolderPath("/".asFolderPath(), "A").value).isEqualTo("/A")
+
         assertThat(FilePath(parent, "file.txt").value).isEqualTo("/A/file.txt")
+        assertThat(FilePath("/".asFolderPath(), "file.txt").value).isEqualTo("/file.txt")
     }
 }

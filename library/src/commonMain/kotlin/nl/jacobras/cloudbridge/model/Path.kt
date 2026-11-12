@@ -1,6 +1,5 @@
 package nl.jacobras.cloudbridge.model
 
-import nl.jacobras.cloudbridge.model.FolderPath
 import nl.jacobras.cloudbridge.util.ensurePrefix
 import kotlin.jvm.JvmInline
 
@@ -28,7 +27,9 @@ public value class FilePath(internal val value: String) : Path {
     /**
      * A file inside [parent].
      */
-    public constructor(parent: FolderPath, name: String) : this("${parent.value}/$name")
+    public constructor(parent: FolderPath, name: String) : this(
+        if (parent.isRoot) "/$name" else "${parent.value}/$name"
+    )
 
     /**
      * Last part of the path.
@@ -98,7 +99,9 @@ public value class FolderPath(internal val value: String) : Path {
     /**
      * A folder inside [parent].
      */
-    public constructor(parent: FolderPath, name: String) : this("${parent.value}/$name")
+    public constructor(parent: FolderPath, name: String) : this(
+        if (parent.isRoot) "/$name" else "${parent.value}/$name"
+    )
 
     /**
      * Returns the name of the folder, which is the last part of the path.
