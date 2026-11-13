@@ -40,6 +40,14 @@ class PathsTest {
     }
 
     @Test
+    fun fileParent() {
+        assertThat("".asFilePath().parent.value).isEqualTo("/")
+        assertThat("myFile.txt".asFilePath().parent.value).isEqualTo("/")
+        assertThat("/myFile.txt".asFilePath().parent.value).isEqualTo("/")
+        assertThat("/A/myFile.txt".asFilePath().parent.value).isEqualTo("/A")
+    }
+
+    @Test
     fun folderParent() {
         assertThat("".asFolderPath().parent.value).isEqualTo("/")
         assertThat("/".asFolderPath().parent.value).isEqualTo("/")
@@ -75,5 +83,15 @@ class PathsTest {
         assertThat("File.txt".asFilePath().startsWith("Parent".asFolderPath())).isFalse()
         assertThat("/Parent/File.txt".asFilePath().startsWith("Parent".asFolderPath())).isTrue()
         assertThat("A/B/file.txt".asFilePath().startsWith("A/B".asFolderPath())).isTrue()
+    }
+
+    @Test
+    fun childConstructors() {
+        val parent = "/A".asFolderPath()
+        assertThat(FolderPath(parent, "B").value).isEqualTo("/A/B")
+        assertThat(FolderPath("/".asFolderPath(), "A").value).isEqualTo("/A")
+
+        assertThat(FilePath(parent, "file.txt").value).isEqualTo("/A/file.txt")
+        assertThat(FilePath("/".asFolderPath(), "file.txt").value).isEqualTo("/file.txt")
     }
 }

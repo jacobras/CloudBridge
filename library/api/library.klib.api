@@ -54,6 +54,11 @@ sealed interface nl.jacobras.cloudbridge.model/CloudItem { // nl.jacobras.cloudb
 }
 
 sealed interface nl.jacobras.cloudbridge.model/Path { // nl.jacobras.cloudbridge.model/Path|null[0]
+    abstract val name // nl.jacobras.cloudbridge.model/Path.name|{}name[0]
+        abstract fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/Path.name.<get-name>|<get-name>(){}[0]
+    abstract val parent // nl.jacobras.cloudbridge.model/Path.parent|{}parent[0]
+        abstract fun <get-parent>(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/Path.parent.<get-parent>|<get-parent>(){}[0]
+
     abstract fun startsWith(nl.jacobras.cloudbridge.model/FolderPath): kotlin/Boolean // nl.jacobras.cloudbridge.model/Path.startsWith|startsWith(nl.jacobras.cloudbridge.model.FolderPath){}[0]
     abstract fun toFolderPath(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/Path.toFolderPath|toFolderPath(){}[0]
 }
@@ -334,11 +339,14 @@ final value class nl.jacobras.cloudbridge.model/CloudItemId { // nl.jacobras.clo
 
 final value class nl.jacobras.cloudbridge.model/FilePath : nl.jacobras.cloudbridge.model/Path { // nl.jacobras.cloudbridge.model/FilePath|null[0]
     constructor <init>(kotlin/String) // nl.jacobras.cloudbridge.model/FilePath.<init>|<init>(kotlin.String){}[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/FolderPath, kotlin/String) // nl.jacobras.cloudbridge.model/FilePath.<init>|<init>(nl.jacobras.cloudbridge.model.FolderPath;kotlin.String){}[0]
 
     final val name // nl.jacobras.cloudbridge.model/FilePath.name|{}name[0]
         final fun <get-name>(): kotlin/String // nl.jacobras.cloudbridge.model/FilePath.name.<get-name>|<get-name>(){}[0]
     final val nameWithoutExtension // nl.jacobras.cloudbridge.model/FilePath.nameWithoutExtension|{}nameWithoutExtension[0]
         final fun <get-nameWithoutExtension>(): kotlin/String // nl.jacobras.cloudbridge.model/FilePath.nameWithoutExtension.<get-nameWithoutExtension>|<get-nameWithoutExtension>(){}[0]
+    final val parent // nl.jacobras.cloudbridge.model/FilePath.parent|{}parent[0]
+        final fun <get-parent>(): nl.jacobras.cloudbridge.model/FolderPath // nl.jacobras.cloudbridge.model/FilePath.parent.<get-parent>|<get-parent>(){}[0]
 
     final fun equals(kotlin/Any?): kotlin/Boolean // nl.jacobras.cloudbridge.model/FilePath.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // nl.jacobras.cloudbridge.model/FilePath.hashCode|hashCode(){}[0]
@@ -350,6 +358,7 @@ final value class nl.jacobras.cloudbridge.model/FilePath : nl.jacobras.cloudbrid
 
 final value class nl.jacobras.cloudbridge.model/FolderPath : nl.jacobras.cloudbridge.model/Path { // nl.jacobras.cloudbridge.model/FolderPath|null[0]
     constructor <init>(kotlin/String) // nl.jacobras.cloudbridge.model/FolderPath.<init>|<init>(kotlin.String){}[0]
+    constructor <init>(nl.jacobras.cloudbridge.model/FolderPath, kotlin/String) // nl.jacobras.cloudbridge.model/FolderPath.<init>|<init>(nl.jacobras.cloudbridge.model.FolderPath;kotlin.String){}[0]
 
     final val isRoot // nl.jacobras.cloudbridge.model/FolderPath.isRoot|{}isRoot[0]
         final fun <get-isRoot>(): kotlin/Boolean // nl.jacobras.cloudbridge.model/FolderPath.isRoot.<get-isRoot>|<get-isRoot>(){}[0]

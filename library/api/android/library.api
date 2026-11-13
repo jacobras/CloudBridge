@@ -244,11 +244,15 @@ public final class nl/jacobras/cloudbridge/model/CloudItemId {
 public final class nl/jacobras/cloudbridge/model/FilePath : nl/jacobras/cloudbridge/model/Path {
 	public static final synthetic fun box-impl (Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/FilePath;
 	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public static fun constructor-impl (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public fun equals (Ljava/lang/Object;)Z
 	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
 	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
-	public static final fun getName-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
+	public static fun getName-impl (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun getNameWithoutExtension-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun getParent-vklnrsc ()Ljava/lang/String;
+	public static fun getParent-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
 	public fun hashCode ()I
 	public static fun hashCode-impl (Ljava/lang/String;)I
 	public fun startsWith-j2zfG0w (Ljava/lang/String;)Z
@@ -264,12 +268,15 @@ public final class nl/jacobras/cloudbridge/model/FilePath : nl/jacobras/cloudbri
 public final class nl/jacobras/cloudbridge/model/FolderPath : nl/jacobras/cloudbridge/model/Path {
 	public static final synthetic fun box-impl (Ljava/lang/String;)Lnl/jacobras/cloudbridge/model/FolderPath;
 	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public static fun constructor-impl (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public fun equals (Ljava/lang/Object;)Z
 	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
 	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
 	public static final fun getLevelCount-impl (Ljava/lang/String;)I
-	public static final fun getName-impl (Ljava/lang/String;)Ljava/lang/String;
-	public static final fun getParent-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
+	public static fun getName-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun getParent-vklnrsc ()Ljava/lang/String;
+	public static fun getParent-vklnrsc (Ljava/lang/String;)Ljava/lang/String;
 	public fun hashCode ()I
 	public static fun hashCode-impl (Ljava/lang/String;)I
 	public static final fun isRoot-impl (Ljava/lang/String;)Z
@@ -284,6 +291,8 @@ public final class nl/jacobras/cloudbridge/model/FolderPath : nl/jacobras/cloudb
 }
 
 public abstract interface class nl/jacobras/cloudbridge/model/Path {
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getParent-vklnrsc ()Ljava/lang/String;
 	public abstract fun startsWith-j2zfG0w (Ljava/lang/String;)Z
 	public abstract fun toFolderPath-vklnrsc ()Ljava/lang/String;
 }

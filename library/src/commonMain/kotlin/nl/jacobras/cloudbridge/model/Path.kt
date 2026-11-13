@@ -12,6 +12,9 @@ import kotlin.jvm.JvmInline
 public sealed interface Path {
     public fun startsWith(path: FolderPath): Boolean
     public fun toFolderPath(): FolderPath
+
+    public val name: String
+    public val parent: FolderPath
 }
 
 /**
@@ -22,13 +25,27 @@ public sealed interface Path {
 public value class FilePath(internal val value: String) : Path {
 
     /**
+     * A file inside [parent].
+     */
+    public constructor(parent: FolderPath, name: String) : this(
+        if (parent.isRoot) "/$name" else "${parent.value}/$name"
+    )
+
+    /**
      * Last part of the path.
      * For example: "/A.txt" returns "A.txt" and "/A/B.txt" returns "B.txt".
      */
-    public val name: String
+    public override val name: String
         get() {
             return value.substringAfterLast('/')
         }
+
+    /**
+     * Path of parent folder.
+     * For example: "/A.txt" returns "/" and "/A/B.txt" returns "/A".
+     */
+    public override val parent: FolderPath
+        get() = toFolderPath()
 
     /**
      * Name without extension.
@@ -44,10 +61,7 @@ public value class FilePath(internal val value: String) : Path {
     }
 
     override fun startsWith(path: FolderPath): Boolean {
-        if (path.isRoot) {
-            return true
-        }
-        return value.startsWith("${path.value}/")
+        return path.isRoot || value.startsWith("${path.value}/")
     }
 
     /**
@@ -83,10 +97,17 @@ public fun String.asFilePath(): FilePath {
 public value class FolderPath(internal val value: String) : Path {
 
     /**
+     * A folder inside [parent].
+     */
+    public constructor(parent: FolderPath, name: String) : this(
+        if (parent.isRoot) "/$name" else "${parent.value}/$name"
+    )
+
+    /**
      * Returns the name of the folder, which is the last part of the path.
      * For example: "/" returns "", "/A" returns "A" and "/A/B" returns "B".
      */
-    public val name: String
+    public override val name: String
         get() {
             return value.substringAfterLast('/')
         }
@@ -108,7 +129,7 @@ public value class FolderPath(internal val value: String) : Path {
      * Path of parent folder.
      * For example: "/" returns "/", "/A" returns "/" and "/A/B" returns "/A".
      */
-    public val parent: FolderPath
+    public override val parent: FolderPath
         get() {
             return if (isRoot) {
                 this
@@ -129,10 +150,7 @@ public value class FolderPath(internal val value: String) : Path {
     }
 
     override fun startsWith(path: FolderPath): Boolean {
-        if (path.isRoot) {
-            return true
-        }
-        return value.startsWith("${path.value}/")
+        return path.isRoot || value.startsWith("${path.value}/")
     }
 
     /**
