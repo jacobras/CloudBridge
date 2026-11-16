@@ -69,3 +69,4 @@ kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.11" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktorfit = { id = "de.jensklingenberg.ktorfit", version.ref = "ktorfit" }
 maven-publish = { id = "com.vanniktech.maven.publish", version = "0.37.0" }
+tapmoc = { id = "com.gradleup.tapmoc", version = "0.5.0" }

@@ -11,7 +11,13 @@ plugins {
     alias(libs.plugins.ktorfit)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.maven.publish)
+    alias(libs.plugins.tapmoc)
     signing
+}
+
+tapmoc {
+    java(17)
+    kotlin("2.2.0")
 }
 
 group = "nl.jacobras"
