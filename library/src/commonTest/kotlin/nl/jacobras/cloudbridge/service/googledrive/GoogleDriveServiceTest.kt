@@ -1271,6 +1271,59 @@ class GoogleDriveServiceTest {
             )
         }
     }
+
+    @Test
+    fun `get file app properties`() = runTest {
+        val engine = MockEngine {
+            respondJson("""{"appProperties": {"legacyId": "42", "color": "blue"}}""")
+        }
+        val service = GoogleDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val properties = service.getFileAppProperties(CloudItemId("file1"))
+
+        assertThat(properties).isEqualTo(mapOf("legacyId" to "42", "color" to "blue"))
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.toString()).isEqualTo(
+                "https://www.googleapis.com/drive/v3/files/file1?fields=appProperties"
+            )
+        }
+    }
+
+    @Test
+    fun `get file app properties returns empty map when there are none`() = runTest {
+        val engine = MockEngine { respondJson("{}") }
+        val service = GoogleDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertThat(service.getFileAppProperties(CloudItemId("file1"))).isEmpty()
+    }
+
+    @Test
+    fun `get file app properties throws NotFoundException when missing`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":404,"message":"File not found: missing.","errors":[{"message":"File not found: missing.","domain":"global","reason":"notFound","location":"fileId","locationType":"parameter"}]}}""",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = GoogleDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.getFileAppProperties(CloudItemId("missing")) }
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
+    }
 }
 
 private val EXISTING_FILE_JSON = """

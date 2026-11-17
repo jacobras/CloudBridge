@@ -473,6 +473,18 @@ public class GoogleDriveService internal constructor(
         api.downloadFileStreaming(id = id.value).execute { it.bodyAsChannel().transferTo(sink) }
     }
 
+    /**
+     * Returns the Google Drive `appProperties` of the file with [id], or an empty map if it has none.
+     *
+     * This is only meant to help migrate apps that stored data in these properties. CloudBridge
+     * offers a unified API across services, so it doesn't support managing these properties.
+     *
+     * Docs: https://developers.google.com/workspace/drive/api/guides/properties
+     */
+    public suspend fun getFileAppProperties(id: CloudItemId): Map<String, String> = tryCall(id.value) {
+        api.getFileAppProperties(id.value).appProperties
+    }
+
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
         api.deleteById(id.value)
     }

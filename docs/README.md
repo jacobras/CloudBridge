@@ -9,7 +9,7 @@ The library is published to Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("nl.jacobras:cloudbridge:0.12.1")
+    implementation("nl.jacobras:cloudbridge:0.13.0")
 }
 ```
 

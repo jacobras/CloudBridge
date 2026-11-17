@@ -97,6 +97,9 @@ internal interface GoogleDriveApi {
         @Query("fields") fields: String = FILE_FIELDS
     ): DriveFile
 
+    @GET("drive/v3/files/{fileId}?fields=appProperties")
+    suspend fun getFileAppProperties(@Path("fileId") id: String): AppPropertiesResponse
+
     @PATCH("drive/v3/files/{fileId}")
     @Headers("Content-Type: application/json")
     suspend fun move(
@@ -212,6 +215,15 @@ internal data class DriveFile(
 
     @SerialName("trashed")
     val trashed: Boolean = false
+)
+
+@Serializable
+internal data class AppPropertiesResponse(
+    /**
+     * Absent when the file has no app properties.
+     */
+    @SerialName("appProperties")
+    val appProperties: Map<String, String> = emptyMap()
 )
 
 @Serializable
