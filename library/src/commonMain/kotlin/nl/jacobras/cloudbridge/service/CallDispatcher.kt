@@ -8,6 +8,7 @@ import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.oauth.TokenHolder
 import kotlin.math.pow
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -15,6 +16,7 @@ internal class CallDispatcher(
     private val rateLimiter: RateLimiter?,
     private val authCheck: () -> Boolean,
     private val tokenHolder: TokenHolder? = null,
+    private val random: Random = Random.Default,
     private val responseErrorMapper: ResponseException.(itemId: String) -> CloudBridgeException
 ) {
 
@@ -24,10 +26,12 @@ internal class CallDispatcher(
      * Refreshes the token before the call if it's about to expire, and retries once
      * after refreshing.
      *
+     * @param isWrite Whether [call] writes, so it's limited by [RateLimiter.maxConcurrentWrites].
      * @param call The call to execute, must be safe to execute multiple times.
      */
     suspend fun <T> tryCall(
         itemId: String,
+        isWrite: Boolean = false,
         call: suspend () -> T
     ): T {
         if (!authCheck()) {
@@ -44,7 +48,7 @@ internal class CallDispatcher(
         var attempt = 0
         var refreshedAfterUnauthorized = false
         while (true) {
-            val permit = rateLimiter?.acquire()
+            val permit = rateLimiter?.acquire(isWrite)
             val usedToken = tokenHolder?.token
             try {
                 return mapError(itemId, call)
@@ -75,7 +79,8 @@ internal class CallDispatcher(
     }
 
     /**
-     * Calculates how long to wait after [rateLimitException]. Does exponential back-off.
+     * Calculates how long to wait after [rateLimitException]. Does exponential back-off with
+     * up to [MAX_JITTER] jitter, so concurrent retries don't all fire at the same moment.
      *
      * @return the delay duration or `null` if not needed.
      */
@@ -86,7 +91,7 @@ internal class CallDispatcher(
         val limiter = rateLimiter ?: return null
         if (attempt >= limiter.maxRetries) return null
 
-        val backoff = 2.0.pow(attempt).seconds
+        val backoff = (2.0.pow(attempt) * (1 + random.nextDouble() * MAX_JITTER)).seconds
         val retryDelay = maxOf(rateLimitException.retryAfter ?: Duration.ZERO, backoff)
         return retryDelay.takeIf { it <= limiter.maxRetryDelay }
     }
@@ -108,3 +113,9 @@ internal class CallDispatcher(
         }
     }
 }
+
+/**
+ * Maximum fraction of the back-off jitter to randomly add (to prevent everything firing again
+ * at the same time).
+ */
+private const val MAX_JITTER = 0.5

@@ -135,7 +135,16 @@ public abstract class OAuthCloudService internal constructor(
         return "Bearer ${token.accessToken}"
     }
 
-    protected suspend fun <T> tryCall(itemId: String = "unknown", call: suspend () -> T): T {
-        return callDispatcher.tryCall(itemId, call = call)
+    /**
+     * Executes [call] through the rate limiter, with retries and token refreshing.
+     *
+     * @param isWrite Whether [call] writes, so it's limited by [RateLimiter.maxConcurrentWrites].
+     */
+    protected suspend fun <T> tryCall(
+        itemId: String = "unknown",
+        isWrite: Boolean = false,
+        call: suspend () -> T
+    ): T {
+        return callDispatcher.tryCall(itemId, isWrite, call)
     }
 }

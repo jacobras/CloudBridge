@@ -47,7 +47,10 @@ public class DropboxService internal constructor(
     httpClientOverride: HttpClient? = null,
     rateLimiter: RateLimiter? = RateLimiter(
         maxConcurrent = 5,
-        maxRatePerSecond = 5.0
+        maxRatePerSecond = 5.0,
+        // Writes take a lock on the namespace, so concurrent writes cause too_many_write_operations.
+        // See https://developers.dropbox.com/dbx-performance-guide
+        maxConcurrentWrites = 1
     ),
     tokenRefresher: TokenRefresher = OAuthTokenRefresher(clientInfo),
     onTokenRefreshed: ((CloudAccessToken) -> Unit)? = null,
@@ -138,41 +141,47 @@ public class DropboxService internal constructor(
         return move(id, newPath.toString()) as CloudFolder
     }
 
-    private suspend fun move(id: CloudItemId, newPath: String): CloudItem = tryCall(id.value) {
-        val response = api.move(
-            Json.encodeToString(MoveArg(fromPath = id.value, toPath = newPath))
-        )
-        response.metadata.toCloudItem()
-    }
-
-    override suspend fun createFolder(path: FolderPath): CloudFolder = tryCall {
-        val response = api.createFolder(
-            Json.encodeToString(
-                CreateFolderRequest(path = path.toString())
+    private suspend fun move(id: CloudItemId, newPath: String): CloudItem {
+        return tryCall(id.value, isWrite = true) {
+            val response = api.move(
+                Json.encodeToString(MoveArg(fromPath = id.value, toPath = newPath))
             )
-        )
-        CloudFolder(
-            id = CloudItemId(response.metadata.id),
-            path = response.metadata.pathDisplay.asFolderPath(),
-            name = response.metadata.name
-        )
+            response.metadata.toCloudItem()
+        }
     }
 
-    override suspend fun createFile(path: FilePath, content: String): CloudFile = tryCall {
-        val response = api.uploadFile(
-            arguments = Json.encodeToString(
-                DropboxUploadArg(
-                    path = path.toString(),
-                    mode = Mode.Add
+    override suspend fun createFolder(path: FolderPath): CloudFolder {
+        return tryCall(path.toString(), isWrite = true) {
+            val response = api.createFolder(
+                Json.encodeToString(
+                    CreateFolderRequest(path = path.toString())
                 )
-            ),
-            content = content.toByteArray()
-        )
-        response.toCloudFile()
+            )
+            CloudFolder(
+                id = CloudItemId(response.metadata.id),
+                path = response.metadata.pathDisplay.asFolderPath(),
+                name = response.metadata.name
+            )
+        }
     }
 
-    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile =
-        tryCall(id.value) {
+    override suspend fun createFile(path: FilePath, content: String): CloudFile {
+        return tryCall(path.toString(), isWrite = true) {
+            val response = api.uploadFile(
+                arguments = Json.encodeToString(
+                    DropboxUploadArg(
+                        path = path.toString(),
+                        mode = Mode.Add
+                    )
+                ),
+                content = content.toByteArray()
+            )
+            response.toCloudFile()
+        }
+    }
+
+    override suspend fun updateFile(id: CloudItemId, content: String): CloudFile {
+        return tryCall(id.value, isWrite = true) {
             val response = api.uploadFile(
                 arguments = Json.encodeToString(
                     DropboxUploadArg(
@@ -184,6 +193,7 @@ public class DropboxService internal constructor(
             )
             response.toCloudFile()
         }
+    }
 
     override suspend fun createFile(
         path: FilePath,
@@ -227,7 +237,8 @@ public class DropboxService internal constructor(
         var sessionId: String? = null
         var response: UploadResponse? = null
         forEachChunk(source, uploadChunkSize) { chunk, offset, isLast ->
-            tryCall(arg.path) {
+            // Only the last request commits the file, so only that one locks the namespace.
+            tryCall(arg.path, isWrite = isLast) {
                 when {
                     isLast && offset == 0L -> {
                         // Just one chunk: immediate upload.
@@ -294,7 +305,7 @@ public class DropboxService internal constructor(
         api.downloadFileStreaming(arg).execute { it.bodyAsChannel().transferTo(sink) }
     }
 
-    override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
+    override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value, isWrite = true) {
         api.deleteByPath(DeleteRequest(path = id.value))
     }
 

@@ -346,7 +346,7 @@ public class WebDavService internal constructor(
         itemId: String = "unknown",
         call: suspend () -> T
     ): T {
-        return callDispatcher.tryCall(itemId, call)
+        return callDispatcher.tryCall(itemId, call = call)
     }
 }
 
