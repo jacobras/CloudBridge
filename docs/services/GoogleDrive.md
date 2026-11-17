@@ -71,6 +71,18 @@ the [shared API](../api/Overview.md) is available.
     - **Web**: the implicit flow has no refresh token, so tokens can't be refreshed. Re-authenticate
       when a `NotAuthenticatedException` is thrown.
 
+=== "appProperties"
+
+    Apps that used to store data in Drive's [`appProperties`](https://developers.google.com/workspace/drive/api/guides/properties) can read
+    them with `getFileAppProperties()`, to migrate that data:
+    
+    ```kotlin
+    val properties: Map<String, String> = service.getFileAppProperties(file.id)
+    ```
+    
+    This is a migration helper only. CloudBridge offers a unified API across services, so it doesn't
+    support setting or managing these properties.
+
 ## Registration in Cloud Console
 
 !!! info
