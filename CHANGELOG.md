@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Linking Google Drive on Android no longer fails with `NotAuthenticatedException` when Google
+  Identity Services returns a cached access token that Google no longer accepts. The token is
+  cleared and authorization is requested once more.
 - Google Drive file revisions are now based on `md5Checksum` instead of `version`, which also
   changes on server-side changes outside the library (for example right after every upload).
 - WebDAV folder IDs no longer end with a trailing slash, so they're the same whether the server adds
