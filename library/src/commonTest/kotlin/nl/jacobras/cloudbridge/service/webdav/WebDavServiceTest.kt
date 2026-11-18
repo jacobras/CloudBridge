@@ -463,7 +463,7 @@ class WebDavServiceTest {
     }
 
     @Test
-    fun `creating a folder with a missing parent throws ConflictException-Unknown`() = runTest {
+    fun `creating a folder with a missing parent throws NotFoundException`() = runTest {
         val engine = MockEngine {
             respond(content = "", status = HttpStatusCode.Conflict)
         }
@@ -477,7 +477,10 @@ class WebDavServiceTest {
         )
 
         assertFailure { service.createFolder("/Missing/Sub".asFolderPath()) }
-            .isInstanceOf<CloudBridgeException.Unknown>()
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
+            .prop(Throwable::message)
+            .isEqualTo("The requested item '/Missing' could not be found")
+        assertThat(engine.requestHistory).single()
     }
 
     @Test

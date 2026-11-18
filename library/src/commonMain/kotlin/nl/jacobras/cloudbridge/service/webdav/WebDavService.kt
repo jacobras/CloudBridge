@@ -37,6 +37,7 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Path
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -142,11 +143,17 @@ public class WebDavService internal constructor(
                     method = HttpMethod("MKCOL")
                 }
             } catch (e: ClientRequestException) {
-                // RFC 4918 §9.3.1: MKCOL responds with a 405 when the folder already exists
-                if (e.response.status == HttpStatusCode.MethodNotAllowed) {
-                    throw CloudBridgeException.ConflictException(path.toString())
+                // RFC 4918 §9.3.1: MKCOL responds with a 405 when the folder already exists,
+                // and with a 409 when its parent folder doesn't exist
+                throw when (e.response.status) {
+                    HttpStatusCode.MethodNotAllowed -> {
+                        CloudBridgeException.ConflictException(path.toString())
+                    }
+                    HttpStatusCode.Conflict -> {
+                        CloudBridgeException.NotFoundException(path.parent.toString())
+                    }
+                    else -> e
                 }
-                throw e
             }
         }
 
@@ -260,12 +267,12 @@ public class WebDavService internal constructor(
     }
 
     override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
-        return move(id, newPath.toString(), isFolder = false) as CloudFile
+        return move(id, newPath) as CloudFile
     }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
-        return move(id, newPath.toString(), isFolder = true) as CloudFolder
+        return move(id, newPath) as CloudFolder
     }
 
     /**
@@ -277,12 +284,13 @@ public class WebDavService internal constructor(
      * RFC 4918 §9.9.4: MOVE responds with a 409 when the parent folder of [newPath] doesn't
      * exist. That throws a [CloudBridgeException.NotFoundException] for the parent folder.
      */
-    private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
+    private suspend fun move(id: CloudItemId, newPath: Path): CloudItem {
+        val isFolder = newPath is FolderPath
         tryCall(id.value) {
             try {
                 client.request(buildUrl(id.value, suffixSlash = isFolder)) {
                     method = HttpMethod("MOVE")
-                    header("Destination", buildUrl(newPath, suffixSlash = isFolder))
+                    header("Destination", buildUrl(newPath.toString(), suffixSlash = isFolder))
                     header("Overwrite", "F")
                 }
             } catch (e: ResponseException) {
@@ -295,16 +303,16 @@ public class WebDavService internal constructor(
                         )
                     }
                     HttpStatusCode.Conflict -> {
-                        CloudBridgeException.NotFoundException(newPath.substringBeforeLast('/'))
+                        CloudBridgeException.NotFoundException(newPath.parent.toString())
                     }
                     else -> e
                 }
             }
         }
 
-        return tryCall(newPath) {
+        return tryCall(newPath.toString()) {
             // MOVE doesn't return any metadata, so fetch it separately
-            propfind(newPath, depth = 0, suffixSlash = isFolder).single().toCloudItem()
+            propfind(newPath.toString(), depth = 0, suffixSlash = isFolder).single().toCloudItem()
         }
     }
 

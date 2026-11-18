@@ -22,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already exists.
 - WebDAV moves throw `SetupException` instead of `Unknown` when the server rejects MOVE with 405
   or 501.
-- WebDAV moves throw `NotFoundException` instead of `Unknown` when the destination's parent folder
-  doesn't exist.
+- WebDAV moves and `createFolder` throw `NotFoundException` instead of `Unknown` when the
+  (destination's) parent folder doesn't exist.
 
 ## [0.13.0] - 2026-11-17
 
