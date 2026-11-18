@@ -13,11 +13,11 @@ import kotlin.time.TimeSource
  * Network call rate limiter, to prevent getting rate limited by the cloud services.
  *
  * @param maxConcurrent Maximum number of concurrent network requests.
+ * @param maxConcurrentWrites Maximum number of concurrent write requests. These also count towards
+ * [maxConcurrent].
  * @param maxRatePerSecond Maximum number of network requests per second. Requests are spaced evenly.
  * @param maxRetries Maximum number of retries of a single request that gets rate-limited.
  * @param maxRetryDelay Max delay to wait for before rethrowing the [CloudBridgeException.RateLimitException].
- * @param maxConcurrentWrites Maximum number of concurrent write requests. These also count towards
- * [maxConcurrent].
  */
 internal class RateLimiter internal constructor(
     val maxConcurrent: Int,

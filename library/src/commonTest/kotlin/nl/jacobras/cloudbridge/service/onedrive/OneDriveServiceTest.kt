@@ -20,6 +20,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
@@ -44,6 +45,7 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class OneDriveServiceTest {
 
     @Test

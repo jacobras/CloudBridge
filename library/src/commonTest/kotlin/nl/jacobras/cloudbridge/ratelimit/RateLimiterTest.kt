@@ -23,7 +23,7 @@ class RateLimiterTest {
     @Test
     fun `concurrency never exceeds maxConcurrent`() = runTest {
         val limiter = RateLimiter(
-            2,
+            maxConcurrent = 2,
             maxRatePerSecond = Double.POSITIVE_INFINITY,
             maxRetries = 0,
             maxRetryDelay = 1.minutes,
