@@ -25,9 +25,9 @@ import kotlinx.io.Buffer
 import kotlinx.io.RawSource
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
-import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -119,7 +119,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine()
         val service = webDavService(
             engine = engine,
-            rateLimiter = RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
 
         service.createFile("/Notes for Android/note.txt".asFilePath(), "hello")
@@ -139,7 +143,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine(putBodies)
         val service = webDavService(
             engine,
-            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         var opened = 0
         val progress = mutableListOf<Pair<Long, Long?>>()
@@ -171,7 +179,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine()
         val service = webDavService(
             engine,
-            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         val source = bufferOf(10)
 
@@ -190,7 +202,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine()
         val service = webDavService(
             engine,
-            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         val stream: RawSource = bufferOf(10)
 
@@ -709,7 +725,10 @@ private const val WEBDAV_FOLDER_RESPONSE =
 
 private fun webDavService(
     engine: MockEngine,
-    rateLimiter: RateLimiter? = RateLimiter(10, Double.POSITIVE_INFINITY)
+    rateLimiter: RateLimiter? = RateLimiter(
+        maxConcurrent = 10,
+        maxRatePerSecond = Double.POSITIVE_INFINITY
+    )
 ) = WebDavService(
     credentials = WebDavCredentials(
         serverUrl = "https://webdav.example.com/server.php",

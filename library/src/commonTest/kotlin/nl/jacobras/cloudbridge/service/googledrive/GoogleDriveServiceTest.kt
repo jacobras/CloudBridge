@@ -396,7 +396,11 @@ class GoogleDriveServiceTest {
             clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
-            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 5,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
 
         val file = service.updateFile(
@@ -960,7 +964,11 @@ class GoogleDriveServiceTest {
             clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
-            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 5,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         service.uploadChunkSize = 4
 
