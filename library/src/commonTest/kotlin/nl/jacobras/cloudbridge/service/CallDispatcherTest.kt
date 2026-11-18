@@ -270,12 +270,12 @@ class CallDispatcherTest {
         maxRetryDelay: Duration = 1.minutes,
         maxConcurrentWrites: Int = maxConcurrent
     ) = RateLimiter(
-        maxConcurrent,
-        Double.POSITIVE_INFINITY,
-        maxRetries,
-        maxRetryDelay,
-        testTimeSource,
-        maxConcurrentWrites
+        maxConcurrent = maxConcurrent,
+        maxRatePerSecond = Double.POSITIVE_INFINITY,
+        maxRetries = maxRetries,
+        maxRetryDelay = maxRetryDelay,
+        timeSource = testTimeSource,
+        maxConcurrentWrites = maxConcurrentWrites
     )
 
     /**
