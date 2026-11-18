@@ -72,7 +72,7 @@ abstract class nl.jacobras.cloudbridge.service.oauth/OAuthCloudService : nl.jaco
         final fun <get-ktorfit>(): de.jensklingenberg.ktorfit/Ktorfit // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.ktorfit.<get-ktorfit>|<get-ktorfit>(){}[0]
 
     final fun setToken(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.setToken|setToken(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
-    final suspend fun <#A1: kotlin/Any?> tryCall(kotlin/String = ..., kotlin.coroutines/SuspendFunction0<#A1>): #A1 // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.tryCall|tryCall(kotlin.String;kotlin.coroutines.SuspendFunction0<0:0>){0§<kotlin.Any?>}[0]
+    final suspend fun <#A1: kotlin/Any?> tryCall(kotlin/String = ..., kotlin/Boolean = ..., kotlin.coroutines/SuspendFunction0<#A1>): #A1 // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.tryCall|tryCall(kotlin.String;kotlin.Boolean;kotlin.coroutines.SuspendFunction0<0:0>){0§<kotlin.Any?>}[0]
     open fun isAuthenticated(): kotlin/Boolean // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.isAuthenticated|isAuthenticated(){}[0]
 }
 

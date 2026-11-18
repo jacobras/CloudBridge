@@ -374,8 +374,8 @@ public abstract class nl/jacobras/cloudbridge/service/oauth/OAuthCloudService : 
 	protected final fun getKtorfit ()Lde/jensklingenberg/ktorfit/Ktorfit;
 	public fun isAuthenticated ()Z
 	public final fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
-	protected final fun tryCall (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun tryCall$default (Lnl/jacobras/cloudbridge/service/oauth/OAuthCloudService;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	protected final fun tryCall (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun tryCall$default (Lnl/jacobras/cloudbridge/service/oauth/OAuthCloudService;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class nl/jacobras/cloudbridge/service/onedrive/AuthenticateKt {
