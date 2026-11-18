@@ -111,7 +111,7 @@ public class GoogleDriveAuthenticator(
                 e.statusCode == CommonStatusCodes.CANCELED -> onDenied()
                 e.isSetupError() -> {
                     onFailure(
-                        CloudBridgeException.SetupException(
+                        CloudBridgeException.ServiceSetupException(
                             message = "The app is not registered in the Google Cloud Console (${e.message})"
                         )
                     )

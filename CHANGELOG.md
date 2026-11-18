@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `maxConcurrentWrites` to `RateLimiter`. Only set by Dropbox for now (to `1`), to fix excessive
   rate limiting.
 
+### Changed
+
+- **Breaking:** renamed `SetupException` to `ServiceSetupException`.
+
 ### Fixed
 
 - Google Drive file revisions are now based on `md5Checksum` instead of `version`, which also
@@ -20,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one.
 - WebDAV `createFolder` now throws `ConflictException` instead of `Unknown` when the folder
   already exists.
-- WebDAV moves throw `SetupException` instead of `Unknown` when the server rejects MOVE with 405
-  or 501.
+- WebDAV moves throw new `WebDavMoveException` instead of `Unknown` when the server rejects MOVE
+  with 405 or 501.
 - WebDAV moves and `createFolder` throw `NotFoundException` instead of `Unknown` when the
   (destination's) parent folder doesn't exist.
 

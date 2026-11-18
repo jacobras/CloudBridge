@@ -151,7 +151,7 @@ public interface CloudService {
      * @throws CloudBridgeException.ConflictException when an item at [newPath] already exists.
      * @throws CloudBridgeException.NotFoundException on WebDAV, when the parent folder of
      * [newPath] doesn't exist.
-     * @throws CloudBridgeException.SetupException on WebDAV, when the server doesn't allow MOVE.
+     * @throws CloudBridgeException.WebDavMoveException when the WebDAV server doesn't allow MOVE.
      * @throws CloudBridgeException
      */
     public suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile
@@ -167,7 +167,7 @@ public interface CloudService {
      * @throws CloudBridgeException.ConflictException when an item at [newPath] already exists.
      * @throws CloudBridgeException.NotFoundException on WebDAV, when the parent folder of
      * [newPath] doesn't exist.
-     * @throws CloudBridgeException.SetupException on WebDAV, when the server doesn't allow MOVE.
+     * @throws CloudBridgeException.WebDavMoveException when the WebDAV server doesn't allow MOVE.
      * @throws CloudBridgeException
      */
     public suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder

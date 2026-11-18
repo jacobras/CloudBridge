@@ -410,8 +410,8 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
             final fun <get-retryAfter>(): kotlin.time/Duration? // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException.retryAfter.<get-retryAfter>|<get-retryAfter>(){}[0]
     }
 
-    final class SetupException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SetupException|null[0]
-        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.SetupException.<init>|<init>(kotlin.String){}[0]
+    final class ServiceSetupException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.ServiceSetupException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.ServiceSetupException.<init>|<init>(kotlin.String){}[0]
     }
 
     final class SinkWriteException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SinkWriteException|null[0]
@@ -424,6 +424,10 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
 
     final class Unknown : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.Unknown|null[0]
         constructor <init>(kotlin/Throwable) // nl.jacobras.cloudbridge/CloudBridgeException.Unknown.<init>|<init>(kotlin.Throwable){}[0]
+    }
+
+    final class WebDavMoveException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.WebDavMoveException|null[0]
+        constructor <init>() // nl.jacobras.cloudbridge/CloudBridgeException.WebDavMoveException.<init>|<init>(){}[0]
     }
 }
 

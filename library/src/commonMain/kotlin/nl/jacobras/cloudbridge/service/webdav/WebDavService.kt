@@ -279,7 +279,7 @@ public class WebDavService internal constructor(
      * Moves [id] to [newPath]. `Overwrite: F` makes the server respond with 412 Precondition
      * Failed if the target already exists.
      *
-     * Some setups reject MOVE at the web server. That throws a [CloudBridgeException.SetupException].
+     * Some setups reject MOVE at the web server. That throws a [CloudBridgeException.WebDavMoveException].
      *
      * RFC 4918 §9.9.4: MOVE responds with a 409 when the parent folder of [newPath] doesn't
      * exist. That throws a [CloudBridgeException.NotFoundException] for the parent folder.
@@ -296,11 +296,7 @@ public class WebDavService internal constructor(
             } catch (e: ResponseException) {
                 throw when (e.response.status) {
                     HttpStatusCode.MethodNotAllowed, HttpStatusCode.NotImplemented -> {
-                        CloudBridgeException.SetupException(
-                            "The WebDAV server doesn't allow MOVE (HTTP ${e.response.status.value}), " +
-                                    "so files and folders can't be moved or renamed. Check the web " +
-                                    "server configuration."
-                        )
+                        CloudBridgeException.WebDavMoveException()
                     }
                     HttpStatusCode.Conflict -> {
                         CloudBridgeException.NotFoundException(newPath.parent.toString())

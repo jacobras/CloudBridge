@@ -43,7 +43,7 @@ public final class nl/jacobras/cloudbridge/CloudBridgeException$RateLimitExcepti
 	public final fun getRetryAfter-FghU774 ()Lkotlin/time/Duration;
 }
 
-public final class nl/jacobras/cloudbridge/CloudBridgeException$SetupException : nl/jacobras/cloudbridge/CloudBridgeException {
+public final class nl/jacobras/cloudbridge/CloudBridgeException$ServiceSetupException : nl/jacobras/cloudbridge/CloudBridgeException {
 	public fun <init> (Ljava/lang/String;)V
 }
 
@@ -57,6 +57,10 @@ public final class nl/jacobras/cloudbridge/CloudBridgeException$SourceReadExcept
 
 public final class nl/jacobras/cloudbridge/CloudBridgeException$Unknown : nl/jacobras/cloudbridge/CloudBridgeException {
 	public fun <init> (Ljava/lang/Throwable;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$WebDavMoveException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> ()V
 }
 
 public abstract interface class nl/jacobras/cloudbridge/CloudService {

@@ -46,7 +46,16 @@ public open class CloudBridgeException : Exception {
     /**
      * Indicates an issue with service setup (usually in the service's cloud console/admin panel).
      */
-    public class SetupException(message: String) : CloudBridgeException(message)
+    public class ServiceSetupException(message: String) : CloudBridgeException(message)
+
+    /**
+     * Thrown when a WebDAV server rejects MOVE (HTTP 405 or 501), so files and folders can't be
+     * moved or renamed. This is usually the web server's configuration.
+     */
+    public class WebDavMoveException : CloudBridgeException(
+        "The WebDAV server doesn't allow MOVE, so files and folders can't be moved or renamed. " +
+            "Check the web server configuration."
+    )
 
     public class ConnectionException(cause: IOException) : CloudBridgeException(
         cause = cause

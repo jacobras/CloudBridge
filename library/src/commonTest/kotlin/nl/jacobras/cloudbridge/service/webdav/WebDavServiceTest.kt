@@ -772,7 +772,7 @@ class WebDavServiceTest {
     }
 
     @Test
-    fun `move rejected by the web server throws SetupException`() = runTest {
+    fun `move rejected by the web server throws WebDavMoveException`() = runTest {
         val engine = MockEngine {
             respond(
                 content = "<title>405 Method Not Allowed</title>",
@@ -783,17 +783,17 @@ class WebDavServiceTest {
         val service = webDavService(engine)
 
         assertFailure { service.moveFile(CloudItemId("/note.txt"), "/renamed.txt".asFilePath()) }
-            .isInstanceOf<CloudBridgeException.SetupException>()
+            .isInstanceOf<CloudBridgeException.WebDavMoveException>()
         assertThat(engine.requestHistory).single()
     }
 
     @Test
-    fun `move not supported by the server throws SetupException`() = runTest {
+    fun `move not supported by the server throws WebDavMoveException`() = runTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.NotImplemented) }
         val service = webDavService(engine)
 
         assertFailure { service.moveFolder(CloudItemId("/Notes"), "/Archive".asFolderPath()) }
-            .isInstanceOf<CloudBridgeException.SetupException>()
+            .isInstanceOf<CloudBridgeException.WebDavMoveException>()
     }
 
     @Test
