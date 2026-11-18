@@ -395,12 +395,14 @@ class WebDavServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val folder =
-            service.moveFolder(CloudItemId("/Notes for Android/"), "/Archive".asFolderPath())
+        val folder = service.moveFolder(
+            id = CloudItemId("/Notes for Android"),
+            newPath = "/Archive".asFolderPath()
+        )
 
         assertThat(folder).isEqualTo(
             CloudFolder(
-                id = CloudItemId("/Archive/"),
+                id = CloudItemId("/Archive"),
                 path = "/Archive".asFolderPath(),
                 name = "Archive"
             )
@@ -500,7 +502,7 @@ class WebDavServiceTest {
 
         assertThat(items).containsExactly(
             CloudFolder(
-                id = CloudItemId("/Notes for Android/"),
+                id = CloudItemId("/Notes for Android"),
                 path = "/Notes for Android".asFolderPath(),
                 name = "Notes for Android"
             )
@@ -663,7 +665,7 @@ class WebDavServiceTest {
 
         assertThat(folder).isEqualTo(
             CloudFolder(
-                id = CloudItemId("/Notes for Android/"),
+                id = CloudItemId("/Notes for Android"),
                 path = "/Notes for Android".asFolderPath(),
                 name = "Notes for Android"
             )

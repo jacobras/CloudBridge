@@ -309,9 +309,10 @@ public class WebDavService internal constructor(
         val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
         val relativePath = href.removePrefix(serverPath)
         return if (isCollection) {
+            val folderPath = relativePath.asFolderPath()
             CloudFolder(
-                id = CloudItemId(relativePath),
-                path = relativePath.asFolderPath(),
+                id = CloudItemId(folderPath.toString()),
+                path = folderPath,
                 name = displayName
             )
         } else {
