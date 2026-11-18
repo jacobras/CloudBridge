@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rate limiting.
 - `Logger.warn(message, throwable)`, used for failures like authentication errors. Defaults to
   `log()`; override it to log at warning level.
+- `NotAuthenticatedException` now has the underlying error as `cause` (like the service's response
+  with `invalid_grant`).
 
 ### Changed
 

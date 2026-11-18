@@ -44,7 +44,7 @@ internal class OAuthTokenRefresher(private val clientInfo: ClientInfo) : TokenRe
             throw when (e.response.status) {
                 // Refresh token revoked or expired: user needs to re-authenticate.
                 HttpStatusCode.BadRequest,
-                HttpStatusCode.Unauthorized -> CloudBridgeException.NotAuthenticatedException()
+                HttpStatusCode.Unauthorized -> CloudBridgeException.NotAuthenticatedException(e)
                 else -> CloudBridgeException.Unknown(e)
             }
         }

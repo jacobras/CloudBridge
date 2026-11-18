@@ -15,11 +15,12 @@ public open class CloudBridgeException : Exception {
 
     private constructor(
         message: String,
-        cause: Throwable
+        cause: Throwable?
     ) : super(message, cause)
 
-    public class NotAuthenticatedException : CloudBridgeException(
-        "The cloud service is not (yet) authenticated"
+    public class NotAuthenticatedException(cause: Throwable? = null) : CloudBridgeException(
+        message = "The cloud service is not (yet) authenticated",
+        cause = cause
     )
 
     public class NotFoundException(itemId: String) : CloudBridgeException(

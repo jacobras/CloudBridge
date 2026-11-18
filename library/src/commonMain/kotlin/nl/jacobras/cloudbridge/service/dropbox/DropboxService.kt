@@ -85,7 +85,7 @@ public class DropboxService internal constructor(
                 CloudBridgeException.RateLimitException(response.retryAfter())
             }
             HttpStatusCode.Unauthorized -> {
-                CloudBridgeException.NotAuthenticatedException()
+                CloudBridgeException.NotAuthenticatedException(cause = this)
             }
             else -> {
                 CloudBridgeException.Unknown(this)

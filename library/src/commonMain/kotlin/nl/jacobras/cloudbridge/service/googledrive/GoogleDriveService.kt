@@ -92,7 +92,7 @@ public class GoogleDriveService internal constructor(
                 CloudBridgeException.NotFoundException(itemId)
             }
             HttpStatusCode.Unauthorized -> {
-                CloudBridgeException.NotAuthenticatedException()
+                CloudBridgeException.NotAuthenticatedException(cause = this)
             }
             HttpStatusCode.TooManyRequests -> {
                 CloudBridgeException.RateLimitException(response.retryAfter())

@@ -32,6 +32,8 @@ public final class nl/jacobras/cloudbridge/CloudBridgeException$InsufficientSpac
 
 public final class nl/jacobras/cloudbridge/CloudBridgeException$NotAuthenticatedException : nl/jacobras/cloudbridge/CloudBridgeException {
 	public fun <init> ()V
+	public fun <init> (Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class nl/jacobras/cloudbridge/CloudBridgeException$NotFoundException : nl/jacobras/cloudbridge/CloudBridgeException {

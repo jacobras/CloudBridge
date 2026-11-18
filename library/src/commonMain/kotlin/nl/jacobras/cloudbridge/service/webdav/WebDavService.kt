@@ -76,7 +76,7 @@ public class WebDavService internal constructor(
         responseErrorMapper = { itemId ->
             when (response.status) {
                 HttpStatusCode.Unauthorized -> {
-                    CloudBridgeException.NotAuthenticatedException()
+                    CloudBridgeException.NotAuthenticatedException(cause = this)
                 }
                 HttpStatusCode.NotFound -> {
                     CloudBridgeException.NotFoundException(itemId)

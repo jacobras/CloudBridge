@@ -397,7 +397,7 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
     }
 
     final class NotAuthenticatedException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException|null[0]
-        constructor <init>() // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException.<init>|<init>(){}[0]
+        constructor <init>(kotlin/Throwable? = ...) // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException.<init>|<init>(kotlin.Throwable?){}[0]
     }
 
     final class NotFoundException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.NotFoundException|null[0]
