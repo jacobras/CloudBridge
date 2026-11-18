@@ -17,7 +17,7 @@ abstract interface nl.jacobras.cloudbridge.delta/DeltaCloudService { // nl.jacob
 
 abstract interface nl.jacobras.cloudbridge.logging/Logger { // nl.jacobras.cloudbridge.logging/Logger|null[0]
     abstract fun log(kotlin/String) // nl.jacobras.cloudbridge.logging/Logger.log|log(kotlin.String){}[0]
-    open fun warn(kotlin/String, kotlin/Throwable? = ...) // nl.jacobras.cloudbridge.logging/Logger.warn|warn(kotlin.String;kotlin.Throwable?){}[0]
+    abstract fun warn(kotlin/String, kotlin/Throwable? = ...) // nl.jacobras.cloudbridge.logging/Logger.warn|warn(kotlin.String;kotlin.Throwable?){}[0]
 }
 
 abstract interface nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbridge/CloudService|null[0]
