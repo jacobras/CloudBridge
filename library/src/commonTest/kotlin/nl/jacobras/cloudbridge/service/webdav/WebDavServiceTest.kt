@@ -767,6 +767,43 @@ class WebDavServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/B/in%20B.txt")
         }
     }
+
+    @Test
+    fun `move rejected by the web server throws SetupException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "<title>405 Method Not Allowed</title>",
+                status = HttpStatusCode.MethodNotAllowed,
+                headers = headersOf(HttpHeaders.ContentType, "text/html")
+            )
+        }
+        val service = webDavService(engine)
+
+        assertFailure { service.moveFile(CloudItemId("/note.txt"), "/renamed.txt".asFilePath()) }
+            .isInstanceOf<CloudBridgeException.SetupException>()
+        assertThat(engine.requestHistory).single()
+    }
+
+    @Test
+    fun `move not supported by the server throws SetupException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.NotImplemented) }
+        val service = webDavService(engine)
+
+        assertFailure { service.moveFolder(CloudItemId("/Notes"), "/Archive".asFolderPath()) }
+            .isInstanceOf<CloudBridgeException.SetupException>()
+    }
+
+    @Test
+    fun `moving into a missing folder throws NotFoundException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.Conflict) }
+        val service = webDavService(engine)
+
+        assertFailure { service.moveFile(CloudItemId("/note.txt"), "/Missing/note.txt".asFilePath()) }
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
+            .prop(Throwable::message)
+            .isEqualTo("The requested item '/Missing' could not be found")
+        assertThat(engine.requestHistory).single()
+    }
 }
 
 private const val WEBDAV_FILE_RESPONSE =

@@ -2,6 +2,7 @@ package nl.jacobras.cloudbridge.service.webdav
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
@@ -270,13 +271,34 @@ public class WebDavService internal constructor(
     /**
      * Moves [id] to [newPath]. `Overwrite: F` makes the server respond with 412 Precondition
      * Failed if the target already exists.
+     *
+     * Some setups reject MOVE at the web server. That throws a [CloudBridgeException.SetupException].
+     *
+     * RFC 4918 §9.9.4: MOVE responds with a 409 when the parent folder of [newPath] doesn't
+     * exist. That throws a [CloudBridgeException.NotFoundException] for the parent folder.
      */
     private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
         tryCall(id.value) {
-            client.request(buildUrl(id.value, suffixSlash = isFolder)) {
-                method = HttpMethod("MOVE")
-                header("Destination", buildUrl(newPath, suffixSlash = isFolder))
-                header("Overwrite", "F")
+            try {
+                client.request(buildUrl(id.value, suffixSlash = isFolder)) {
+                    method = HttpMethod("MOVE")
+                    header("Destination", buildUrl(newPath, suffixSlash = isFolder))
+                    header("Overwrite", "F")
+                }
+            } catch (e: ResponseException) {
+                throw when (e.response.status) {
+                    HttpStatusCode.MethodNotAllowed, HttpStatusCode.NotImplemented -> {
+                        CloudBridgeException.SetupException(
+                            "The WebDAV server doesn't allow MOVE (HTTP ${e.response.status.value}), " +
+                                    "so files and folders can't be moved or renamed. Check the web " +
+                                    "server configuration."
+                        )
+                    }
+                    HttpStatusCode.Conflict -> {
+                        CloudBridgeException.NotFoundException(newPath.substringBeforeLast('/'))
+                    }
+                    else -> e
+                }
             }
         }
 
