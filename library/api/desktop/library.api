@@ -185,6 +185,13 @@ public abstract interface annotation class nl/jacobras/cloudbridge/internal/Inte
 
 public abstract interface class nl/jacobras/cloudbridge/logging/Logger {
 	public abstract fun log (Ljava/lang/String;)V
+	public fun warn (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public static synthetic fun warn$default (Lnl/jacobras/cloudbridge/logging/Logger;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+}
+
+public final class nl/jacobras/cloudbridge/logging/Logger$DefaultImpls {
+	public static fun warn (Lnl/jacobras/cloudbridge/logging/Logger;Ljava/lang/String;Ljava/lang/Throwable;)V
+	public static synthetic fun warn$default (Lnl/jacobras/cloudbridge/logging/Logger;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
 }
 
 public final class nl/jacobras/cloudbridge/model/CloudFile : nl/jacobras/cloudbridge/model/CloudItem {

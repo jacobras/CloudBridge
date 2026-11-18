@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `maxConcurrentWrites` to `RateLimiter`. Only set by Dropbox for now (to `1`), to fix excessive
   rate limiting.
+- `Logger.warn(message, throwable)`, used for failures like authentication errors. Defaults to
+  `log()`; override it to log at warning level.
 
 ### Changed
 

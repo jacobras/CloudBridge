@@ -61,7 +61,7 @@ internal class CallDispatcher(
                 refreshedAfterUnauthorized = true
 
                 if (!tokenHolder.refresh(usedToken)) {
-                    logger.log("Failed to refresh token")
+                    logger.warn("Request on $itemId unauthorized and token can't be refreshed", e)
                     throw e
                 }
 

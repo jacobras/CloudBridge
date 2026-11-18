@@ -84,16 +84,16 @@ internal class TokenHolder(
         return try {
             block()
         } catch (e: CloudBridgeException) {
-            logger.log("Failed to refresh access token: $e")
+            logger.warn("Failed to refresh access token", e)
             throw e
         } catch (e: IOException) {
-            logger.log("Failed to refresh access token: $e")
+            logger.warn("Failed to refresh access token", e)
             throw CloudBridgeException.ConnectionException(e)
         } catch (e: CancellationException) {
-            logger.log("Failed to refresh access token: $e")
+            logger.log("Refreshing access token cancelled: $e")
             throw e
         } catch (e: Throwable) {
-            logger.log("Failed to refresh access token: $e")
+            logger.warn("Failed to refresh access token", e)
             throw CloudBridgeException.Unknown(e)
         }
     }

@@ -45,7 +45,7 @@ public class GoogleDriveAuthenticator(
         val authorization = try {
             completeAuthentication(result.data)
         } catch (e: CloudBridgeException) {
-            logger.log("Failed to complete Google Drive authentication: $e")
+            logger.warn("Failed to complete Google Drive authentication", e)
             onFailure(e)
             return@registerForActivityResult
         }
@@ -106,7 +106,7 @@ public class GoogleDriveAuthenticator(
             Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(intent)
             onDenied()
         } catch (e: ApiException) {
-            logger.log("Google Drive not OK: $e")
+            logger.warn("Google Drive authorization not OK", e)
             when {
                 e.statusCode == CommonStatusCodes.CANCELED -> onDenied()
                 e.isSetupError() -> {
