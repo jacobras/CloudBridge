@@ -1,6 +1,7 @@
 package nl.jacobras.cloudbridge.service.webdav
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
@@ -27,8 +28,8 @@ import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
-import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
@@ -135,8 +136,16 @@ public class WebDavService internal constructor(
 
     override suspend fun createFolder(path: FolderPath): CloudFolder {
         tryCall(path.toString()) {
-            client.request(buildUrl(path.toString(), suffixSlash = true)) {
-                method = HttpMethod(("MKCOL"))
+            try {
+                client.request(buildUrl(path.toString(), suffixSlash = true)) {
+                    method = HttpMethod("MKCOL")
+                }
+            } catch (e: ClientRequestException) {
+                // RFC 4918 §9.3.1: MKCOL responds with a 405 when the folder already exists
+                if (e.response.status == HttpStatusCode.MethodNotAllowed) {
+                    throw CloudBridgeException.ConflictException(path.toString())
+                }
+                throw e
             }
         }
 

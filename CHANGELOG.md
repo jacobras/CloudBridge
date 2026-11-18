@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changes on server-side changes outside the library (for example right after every upload).
 - WebDAV folder IDs no longer end with a trailing slash, so they're the same whether the server adds
   one.
+- WebDAV `createFolder` now throws `ConflictException` instead of `Unknown` when the folder
+  already exists.
 
 ## [0.13.0] - 2026-11-17
 

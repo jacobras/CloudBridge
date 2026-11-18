@@ -54,6 +54,7 @@ public interface CloudService {
      * Creates a folder at [path].
      *
      * @return The created folder.
+     * @throws CloudBridgeException.ConflictException when an item at [path] already exists.
      * @throws CloudBridgeException
      */
     public suspend fun createFolder(path: FolderPath): CloudFolder

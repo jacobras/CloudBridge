@@ -433,6 +433,54 @@ class WebDavServiceTest {
     }
 
     @Test
+    fun `creating an existing folder throws ConflictException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <d:error xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns">
+                      <s:sabredav-version>4.5.1</s:sabredav-version>
+                      <s:exception>Sabre\DAV\Exception\MethodNotAllowed</s:exception>
+                      <s:message>The resource you tried to create already exists</s:message>
+                    </d:error>
+                """.trimIndent(),
+                status = HttpStatusCode.MethodNotAllowed,
+                headers = headersOf(HttpHeaders.ContentType, "application/xml; charset=utf-8")
+            )
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFolder("/Notes for Android/.notebooks".asFolderPath()) }
+            .isInstanceOf<CloudBridgeException.ConflictException>()
+        assertThat(engine.requestHistory).single()
+    }
+
+    @Test
+    fun `creating a folder with a missing parent throws ConflictException-Unknown`() = runTest {
+        val engine = MockEngine {
+            respond(content = "", status = HttpStatusCode.Conflict)
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFolder("/Missing/Sub".asFolderPath()) }
+            .isInstanceOf<CloudBridgeException.Unknown>()
+    }
+
+    @Test
     fun `create binary file streams content`() = runTest {
         val engine = MockEngine { request ->
             if (request.method == HttpMethod.Put) {
