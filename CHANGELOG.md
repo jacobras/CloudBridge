@@ -7,34 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-18
+
 ### Added
 
 - `maxConcurrentWrites` to `RateLimiter`. Only set by Dropbox for now (to `1`), to fix excessive
-  rate limiting.
+  rate limiting ([#124](https://github.com/jacobras/CloudBridge/pull/124)).
 - `Logger.warn(message, throwable)`, used for failures like authentication errors. Defaults to
-  `log()`; override it to log at warning level.
+  `log()`; override it to log at warning level
+  ([#128](https://github.com/jacobras/CloudBridge/pull/128)).
 - `NotAuthenticatedException` now has the underlying error as `cause` (like the service's response
-  with `invalid_grant`).
+  with `invalid_grant`) ([#128](https://github.com/jacobras/CloudBridge/pull/128)).
 
 ### Changed
 
-- **Breaking:** renamed `SetupException` to `ServiceSetupException`.
+- **Breaking:** renamed `SetupException` to `ServiceSetupException`
+  ([#127](https://github.com/jacobras/CloudBridge/pull/127)).
 
 ### Fixed
 
 - Linking Google Drive on Android no longer fails with `NotAuthenticatedException` when Google
   Identity Services returns a cached access token that Google no longer accepts. The token is
-  cleared and authorization is requested once more.
+  cleared and authorization is requested once more
+  ([#128](https://github.com/jacobras/CloudBridge/pull/128)).
 - Google Drive file revisions are now based on `md5Checksum` instead of `version`, which also
-  changes on server-side changes outside the library (for example right after every upload).
+  changes on server-side changes outside the library (for example right after every upload)
+  ([#125](https://github.com/jacobras/CloudBridge/pull/125)).
 - WebDAV folder IDs no longer end with a trailing slash, so they're the same whether the server adds
-  one.
+  one ([#127](https://github.com/jacobras/CloudBridge/pull/127)).
 - WebDAV `createFolder` now throws `ConflictException` instead of `Unknown` when the folder
-  already exists.
+  already exists ([#127](https://github.com/jacobras/CloudBridge/pull/127)).
 - WebDAV moves throw new `WebDavMoveException` instead of `Unknown` when the server rejects MOVE
-  with 405 or 501.
+  with 405 or 501 ([#127](https://github.com/jacobras/CloudBridge/pull/127)).
 - WebDAV moves and `createFolder` throw `NotFoundException` instead of `Unknown` when the
-  (destination's) parent folder doesn't exist.
+  (destination's) parent folder doesn't exist
+  ([#127](https://github.com/jacobras/CloudBridge/pull/127)).
 
 ## [0.13.0] - 2026-11-17
 
@@ -178,7 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file details
   and downloading file content.
 
-[Unreleased]: https://github.com/jacobras/CloudBridge/compare/0.13.0...HEAD
+[Unreleased]: https://github.com/jacobras/CloudBridge/compare/0.14.0...HEAD
+[0.14.0]: https://github.com/jacobras/CloudBridge/releases/tag/0.14.0
 [0.13.0]: https://github.com/jacobras/CloudBridge/releases/tag/0.13.0
 [0.12.1]: https://github.com/jacobras/CloudBridge/releases/tag/0.12.1
 [0.12.0]: https://github.com/jacobras/CloudBridge/releases/tag/0.12.0
