@@ -8,6 +8,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
 import assertk.assertions.isInstanceOf
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -19,6 +20,12 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
@@ -40,9 +47,11 @@ import nl.jacobras.cloudbridge.util.failingSink
 import nl.jacobras.cloudbridge.util.failingSource
 import nl.jacobras.cloudbridge.util.testClientInfo
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DropboxServiceTest {
 
     @Test
@@ -501,6 +510,51 @@ class DropboxServiceTest {
     }
 
     @Test
+    fun `writes are sent sequentially but reads concurrently`() = runTest {
+        val lock = Mutex()
+        val inFlight = mutableMapOf<String, Int>()
+        val maxInFlight = mutableMapOf<String, Int>()
+        val engine = MockEngine { request ->
+            val endpoint = request.url.encodedPath.substringAfterLast('/')
+            lock.withLock {
+                val count = inFlight.getOrElse(endpoint) { 0 } + 1
+                inFlight[endpoint] = count
+                maxInFlight[endpoint] = maxOf(maxInFlight.getOrElse(endpoint) { 0 }, count)
+            }
+            delay(50.milliseconds)
+            lock.withLock { inFlight[endpoint] = inFlight.getValue(endpoint) - 1 }
+            if (endpoint == "upload") {
+                respond(
+                    content = UPLOAD_RESPONSE,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            } else {
+                respond(content = "content", status = HttpStatusCode.OK)
+            }
+        }
+        val service = DropboxService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() },
+            rateLimiter = RateLimiter(
+                maxConcurrent = 5,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource,
+                maxConcurrentWrites = 1
+            )
+        )
+
+        coroutineScope {
+            repeat(3) { launch { service.updateFile(CloudItemId("id:$it"), "ab") } }
+            repeat(3) { launch { service.downloadFile(CloudItemId("id:$it")) } }
+        }
+
+        assertThat(maxInFlight["upload"]).isEqualTo(1)
+        assertThat(maxInFlight.getValue("download")).isGreaterThan(1)
+    }
+
+    @Test
     fun `rate-limited chunk is retried on its own`() = runTest {
         var appendAttempts = 0
         val engine = MockEngine { request ->
@@ -530,7 +584,11 @@ class DropboxServiceTest {
             clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
-            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 5,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         service.uploadChunkSize = 4
 

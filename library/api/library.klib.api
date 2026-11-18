@@ -17,6 +17,7 @@ abstract interface nl.jacobras.cloudbridge.delta/DeltaCloudService { // nl.jacob
 
 abstract interface nl.jacobras.cloudbridge.logging/Logger { // nl.jacobras.cloudbridge.logging/Logger|null[0]
     abstract fun log(kotlin/String) // nl.jacobras.cloudbridge.logging/Logger.log|log(kotlin.String){}[0]
+    abstract fun warn(kotlin/String, kotlin/Throwable? = ...) // nl.jacobras.cloudbridge.logging/Logger.warn|warn(kotlin.String;kotlin.Throwable?){}[0]
 }
 
 abstract interface nl.jacobras.cloudbridge/CloudService { // nl.jacobras.cloudbridge/CloudService|null[0]
@@ -72,7 +73,7 @@ abstract class nl.jacobras.cloudbridge.service.oauth/OAuthCloudService : nl.jaco
         final fun <get-ktorfit>(): de.jensklingenberg.ktorfit/Ktorfit // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.ktorfit.<get-ktorfit>|<get-ktorfit>(){}[0]
 
     final fun setToken(nl.jacobras.cloudbridge.auth/CloudAccessToken?) // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.setToken|setToken(nl.jacobras.cloudbridge.auth.CloudAccessToken?){}[0]
-    final suspend fun <#A1: kotlin/Any?> tryCall(kotlin/String = ..., kotlin.coroutines/SuspendFunction0<#A1>): #A1 // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.tryCall|tryCall(kotlin.String;kotlin.coroutines.SuspendFunction0<0:0>){0§<kotlin.Any?>}[0]
+    final suspend fun <#A1: kotlin/Any?> tryCall(kotlin/String = ..., kotlin/Boolean = ..., kotlin.coroutines/SuspendFunction0<#A1>): #A1 // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.tryCall|tryCall(kotlin.String;kotlin.Boolean;kotlin.coroutines.SuspendFunction0<0:0>){0§<kotlin.Any?>}[0]
     open fun isAuthenticated(): kotlin/Boolean // nl.jacobras.cloudbridge.service.oauth/OAuthCloudService.isAuthenticated|isAuthenticated(){}[0]
 }
 
@@ -396,7 +397,7 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
     }
 
     final class NotAuthenticatedException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException|null[0]
-        constructor <init>() // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException.<init>|<init>(){}[0]
+        constructor <init>(kotlin/Throwable? = ...) // nl.jacobras.cloudbridge/CloudBridgeException.NotAuthenticatedException.<init>|<init>(kotlin.Throwable?){}[0]
     }
 
     final class NotFoundException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.NotFoundException|null[0]
@@ -410,8 +411,8 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
             final fun <get-retryAfter>(): kotlin.time/Duration? // nl.jacobras.cloudbridge/CloudBridgeException.RateLimitException.retryAfter.<get-retryAfter>|<get-retryAfter>(){}[0]
     }
 
-    final class SetupException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SetupException|null[0]
-        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.SetupException.<init>|<init>(kotlin.String){}[0]
+    final class ServiceSetupException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.ServiceSetupException|null[0]
+        constructor <init>(kotlin/String) // nl.jacobras.cloudbridge/CloudBridgeException.ServiceSetupException.<init>|<init>(kotlin.String){}[0]
     }
 
     final class SinkWriteException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.SinkWriteException|null[0]
@@ -424,6 +425,10 @@ open class nl.jacobras.cloudbridge/CloudBridgeException : kotlin/Exception { // 
 
     final class Unknown : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.Unknown|null[0]
         constructor <init>(kotlin/Throwable) // nl.jacobras.cloudbridge/CloudBridgeException.Unknown.<init>|<init>(kotlin.Throwable){}[0]
+    }
+
+    final class WebDavMoveException : nl.jacobras.cloudbridge/CloudBridgeException { // nl.jacobras.cloudbridge/CloudBridgeException.WebDavMoveException|null[0]
+        constructor <init>() // nl.jacobras.cloudbridge/CloudBridgeException.WebDavMoveException.<init>|<init>(){}[0]
     }
 }
 

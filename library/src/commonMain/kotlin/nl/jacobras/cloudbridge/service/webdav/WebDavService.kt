@@ -1,6 +1,8 @@
 package nl.jacobras.cloudbridge.service.webdav
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
@@ -27,14 +29,15 @@ import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.CloudBridge.defaultHttpClient
-import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.Path
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -73,7 +76,7 @@ public class WebDavService internal constructor(
         responseErrorMapper = { itemId ->
             when (response.status) {
                 HttpStatusCode.Unauthorized -> {
-                    CloudBridgeException.NotAuthenticatedException()
+                    CloudBridgeException.NotAuthenticatedException(cause = this)
                 }
                 HttpStatusCode.NotFound -> {
                     CloudBridgeException.NotFoundException(itemId)
@@ -135,8 +138,22 @@ public class WebDavService internal constructor(
 
     override suspend fun createFolder(path: FolderPath): CloudFolder {
         tryCall(path.toString()) {
-            client.request(buildUrl(path.toString(), suffixSlash = true)) {
-                method = HttpMethod(("MKCOL"))
+            try {
+                client.request(buildUrl(path.toString(), suffixSlash = true)) {
+                    method = HttpMethod("MKCOL")
+                }
+            } catch (e: ClientRequestException) {
+                // RFC 4918 §9.3.1: MKCOL responds with a 405 when the folder already exists,
+                // and with a 409 when its parent folder doesn't exist
+                throw when (e.response.status) {
+                    HttpStatusCode.MethodNotAllowed -> {
+                        CloudBridgeException.ConflictException(path.toString())
+                    }
+                    HttpStatusCode.Conflict -> {
+                        CloudBridgeException.NotFoundException(path.parent.toString())
+                    }
+                    else -> e
+                }
             }
         }
 
@@ -250,30 +267,48 @@ public class WebDavService internal constructor(
     }
 
     override suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile {
-        return move(id, newPath.toString(), isFolder = false) as CloudFile
+        return move(id, newPath) as CloudFile
     }
 
     override suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder {
         require(!newPath.isRoot) { "Can't move a folder to the root folder itself" }
-        return move(id, newPath.toString(), isFolder = true) as CloudFolder
+        return move(id, newPath) as CloudFolder
     }
 
     /**
      * Moves [id] to [newPath]. `Overwrite: F` makes the server respond with 412 Precondition
      * Failed if the target already exists.
+     *
+     * Some setups reject MOVE at the web server. That throws a [CloudBridgeException.WebDavMoveException].
+     *
+     * RFC 4918 §9.9.4: MOVE responds with a 409 when the parent folder of [newPath] doesn't
+     * exist. That throws a [CloudBridgeException.NotFoundException] for the parent folder.
      */
-    private suspend fun move(id: CloudItemId, newPath: String, isFolder: Boolean): CloudItem {
+    private suspend fun move(id: CloudItemId, newPath: Path): CloudItem {
+        val isFolder = newPath is FolderPath
         tryCall(id.value) {
-            client.request(buildUrl(id.value, suffixSlash = isFolder)) {
-                method = HttpMethod("MOVE")
-                header("Destination", buildUrl(newPath, suffixSlash = isFolder))
-                header("Overwrite", "F")
+            try {
+                client.request(buildUrl(id.value, suffixSlash = isFolder)) {
+                    method = HttpMethod("MOVE")
+                    header("Destination", buildUrl(newPath.toString(), suffixSlash = isFolder))
+                    header("Overwrite", "F")
+                }
+            } catch (e: ResponseException) {
+                throw when (e.response.status) {
+                    HttpStatusCode.MethodNotAllowed, HttpStatusCode.NotImplemented -> {
+                        CloudBridgeException.WebDavMoveException()
+                    }
+                    HttpStatusCode.Conflict -> {
+                        CloudBridgeException.NotFoundException(newPath.parent.toString())
+                    }
+                    else -> e
+                }
             }
         }
 
-        return tryCall(newPath) {
+        return tryCall(newPath.toString()) {
             // MOVE doesn't return any metadata, so fetch it separately
-            propfind(newPath, depth = 0, suffixSlash = isFolder).single().toCloudItem()
+            propfind(newPath.toString(), depth = 0, suffixSlash = isFolder).single().toCloudItem()
         }
     }
 
@@ -309,9 +344,10 @@ public class WebDavService internal constructor(
         val serverPath = Url(credentials.serverUrl).encodedPath.decodeURLPart().trimEnd('/')
         val relativePath = href.removePrefix(serverPath)
         return if (isCollection) {
+            val folderPath = relativePath.asFolderPath()
             CloudFolder(
-                id = CloudItemId(relativePath),
-                path = relativePath.asFolderPath(),
+                id = CloudItemId(folderPath.toString()),
+                path = folderPath,
                 name = displayName
             )
         } else {
@@ -346,7 +382,7 @@ public class WebDavService internal constructor(
         itemId: String = "unknown",
         call: suspend () -> T
     ): T {
-        return callDispatcher.tryCall(itemId, call)
+        return callDispatcher.tryCall(itemId, call = call)
     }
 }
 

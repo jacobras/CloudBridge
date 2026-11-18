@@ -82,7 +82,7 @@ public class OneDriveService internal constructor(
                 CloudBridgeException.NotFoundException(itemId)
             }
             HttpStatusCode.Unauthorized -> {
-                CloudBridgeException.NotAuthenticatedException()
+                CloudBridgeException.NotAuthenticatedException(cause = this)
             }
             HttpStatusCode.InsufficientStorage -> {
                 CloudBridgeException.InsufficientSpaceException()

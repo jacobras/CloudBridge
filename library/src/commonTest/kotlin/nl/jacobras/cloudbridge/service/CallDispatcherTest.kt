@@ -3,10 +3,13 @@ package nl.jacobras.cloudbridge.service
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.isBetween
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
@@ -18,9 +21,11 @@ import nl.jacobras.cloudbridge.auth.TokenResponse
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
 import nl.jacobras.cloudbridge.service.oauth.TokenHolder
 import nl.jacobras.cloudbridge.util.testClientInfo
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -98,6 +103,58 @@ class CallDispatcherTest {
             }
         }
         assertThat(attemptTimes).containsExactly(0L, 1_000L, 3_000L, 7_000L)
+    }
+
+    @Test
+    fun `add up to 50 percent jitter to the back-off`() = runTest {
+        val dispatcher = dispatcher(limiter(maxRetries = 3), random = Random(seed = 42))
+        val attemptTimes = mutableListOf<Long>()
+
+        assertFailure {
+            dispatcher.tryCall("item") {
+                attemptTimes += currentTime
+                throw CloudBridgeException.RateLimitException(null)
+            }
+        }
+        val delays = attemptTimes.zipWithNext { a, b -> b - a }
+        assertThat(delays[0]).isBetween(1_000L, 1_500L)
+        assertThat(delays[1]).isBetween(2_000L, 3_000L)
+        assertThat(delays[2]).isBetween(4_000L, 6_000L)
+    }
+
+    @Test
+    fun `writes run one at a time when maxConcurrentWrites is 1`() = runTest {
+        val dispatcher = dispatcher(limiter(maxRetries = 0, maxConcurrentWrites = 1))
+        var activeWrites = 0
+        var maxActiveWrites = 0
+        var activeTotal = 0
+        var maxActiveTotal = 0
+
+        suspend fun work(isWrite: Boolean) {
+            dispatcher.tryCall("item", isWrite) {
+                activeTotal++
+
+                if (isWrite) {
+                    activeWrites++
+                }
+
+                maxActiveTotal = maxOf(maxActiveTotal, activeTotal)
+                maxActiveWrites = maxOf(maxActiveWrites, activeWrites)
+                delay(100.milliseconds)
+
+                if (isWrite) {
+                    activeWrites--
+                }
+
+                activeTotal--
+            }
+        }
+        repeat(3) { launch { work(isWrite = true) } }
+        repeat(3) { launch { work(isWrite = false) } }
+        testScheduler.advanceUntilIdle()
+
+        assertThat(maxActiveWrites).isEqualTo(1)
+        assertThat(maxActiveTotal).isEqualTo(4)
     }
 
     @Test
@@ -210,13 +267,15 @@ class CallDispatcherTest {
     private fun TestScope.limiter(
         maxConcurrent: Int = 5,
         maxRetries: Int,
-        maxRetryDelay: Duration = 1.minutes
+        maxRetryDelay: Duration = 1.minutes,
+        maxConcurrentWrites: Int = maxConcurrent
     ) = RateLimiter(
-        maxConcurrent,
-        Double.POSITIVE_INFINITY,
-        maxRetries,
-        maxRetryDelay,
-        testTimeSource
+        maxConcurrent = maxConcurrent,
+        maxConcurrentWrites = maxConcurrentWrites,
+        maxRatePerSecond = Double.POSITIVE_INFINITY,
+        maxRetries = maxRetries,
+        maxRetryDelay = maxRetryDelay,
+        timeSource = testTimeSource
     )
 
     /**
@@ -250,11 +309,17 @@ class CallDispatcherTest {
 
     private fun dispatcher(
         rateLimiter: RateLimiter?,
-        tokenHolder: FakeTokenHolder? = null
+        tokenHolder: FakeTokenHolder? = null,
+        random: Random = AlwaysZeroRandom
     ) = CallDispatcher(
         rateLimiter = rateLimiter,
         authCheck = { true },
         tokenHolder = tokenHolder?.holder,
+        random = random,
         responseErrorMapper = { CloudBridgeException.Unknown(this) }
     )
+}
+
+private object AlwaysZeroRandom : Random() {
+    override fun nextBits(bitCount: Int): Int = 0
 }

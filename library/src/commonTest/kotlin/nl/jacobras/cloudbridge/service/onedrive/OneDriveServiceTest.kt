@@ -20,6 +20,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
@@ -44,6 +45,7 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class OneDriveServiceTest {
 
     @Test
@@ -428,7 +430,11 @@ class OneDriveServiceTest {
             clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
-            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 5,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
 
         val file = service.moveFile(CloudItemId("file1"), "/Notes/new.txt".asFilePath())
@@ -894,7 +900,11 @@ class OneDriveServiceTest {
             clientInfo = testClientInfo,
             token = CloudAccessToken("valid"),
             httpClientOverride = HttpClient(engine) { applyDefaults() },
-            rateLimiter = RateLimiter(5, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 5,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         service.uploadChunkSize = 4
 

@@ -22,6 +22,8 @@ These are not expected to happen during normal use.
 | Exception                                       | Cause                                                                                     |
 |-------------------------------------------------|-------------------------------------------------------------------------------------------|
 | `CloudBridgeException.IllegalArgumentException` | An argument is invalid, e.g. a missing or wrong `sizeInBytes` for a large OneDrive upload |
+| `CloudBridgeException.ServiceSetupException`    | The service is set up wrong, usually in its cloud console or admin panel                  |
 | `CloudBridgeException.SinkWriteException`       | Writing the download to the `Sink` failed                                                 |
 | `CloudBridgeException.SourceReadException`      | Reading the `Source` to upload failed, or it was already read                             |
+| `CloudBridgeException.WebDavMoveException`      | The WebDAV server rejects MOVE (HTTP 405/501), so items can't be moved or renamed         |
 | `CloudBridgeException.Unknown`                  | Any other unexpected error                                                                |

@@ -19,15 +19,16 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
 import kotlinx.io.RawSource
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.internal.CloudBridgeInternals.applyDefaults
 import nl.jacobras.cloudbridge.internal.InternalCloudBridgeApi
-import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
@@ -43,6 +44,7 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class WebDavServiceTest {
 
     @Test
@@ -119,7 +121,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine()
         val service = webDavService(
             engine = engine,
-            rateLimiter = RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            rateLimiter = RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
 
         service.createFile("/Notes for Android/note.txt".asFilePath(), "hello")
@@ -139,7 +145,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine(putBodies)
         val service = webDavService(
             engine,
-            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         var opened = 0
         val progress = mutableListOf<Pair<Long, Long?>>()
@@ -171,7 +181,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine()
         val service = webDavService(
             engine,
-            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         val source = bufferOf(10)
 
@@ -190,7 +204,11 @@ class WebDavServiceTest {
         val engine = rateLimitOncePutEngine()
         val service = webDavService(
             engine,
-            RateLimiter(10, Double.POSITIVE_INFINITY, timeSource = testTimeSource)
+            RateLimiter(
+                maxConcurrent = 10,
+                maxRatePerSecond = Double.POSITIVE_INFINITY,
+                timeSource = testTimeSource
+            )
         )
         val stream: RawSource = bufferOf(10)
 
@@ -377,12 +395,14 @@ class WebDavServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val folder =
-            service.moveFolder(CloudItemId("/Notes for Android/"), "/Archive".asFolderPath())
+        val folder = service.moveFolder(
+            id = CloudItemId("/Notes for Android"),
+            newPath = "/Archive".asFolderPath()
+        )
 
         assertThat(folder).isEqualTo(
             CloudFolder(
-                id = CloudItemId("/Archive/"),
+                id = CloudItemId("/Archive"),
                 path = "/Archive".asFolderPath(),
                 name = "Archive"
             )
@@ -409,6 +429,57 @@ class WebDavServiceTest {
 
         assertFailure { service.moveFile(CloudItemId("/note.txt"), "/taken.txt".asFilePath()) }
             .isInstanceOf<CloudBridgeException.ConflictException>()
+        assertThat(engine.requestHistory).single()
+    }
+
+    @Test
+    fun `creating an existing folder throws ConflictException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <d:error xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns">
+                      <s:sabredav-version>4.5.1</s:sabredav-version>
+                      <s:exception>Sabre\DAV\Exception\MethodNotAllowed</s:exception>
+                      <s:message>The resource you tried to create already exists</s:message>
+                    </d:error>
+                """.trimIndent(),
+                status = HttpStatusCode.MethodNotAllowed,
+                headers = headersOf(HttpHeaders.ContentType, "application/xml; charset=utf-8")
+            )
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFolder("/Notes for Android/.notebooks".asFolderPath()) }
+            .isInstanceOf<CloudBridgeException.ConflictException>()
+        assertThat(engine.requestHistory).single()
+    }
+
+    @Test
+    fun `creating a folder with a missing parent throws NotFoundException`() = runTest {
+        val engine = MockEngine {
+            respond(content = "", status = HttpStatusCode.Conflict)
+        }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure { service.createFolder("/Missing/Sub".asFolderPath()) }
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
+            .prop(Throwable::message)
+            .isEqualTo("The requested item '/Missing' could not be found")
         assertThat(engine.requestHistory).single()
     }
 
@@ -482,7 +553,7 @@ class WebDavServiceTest {
 
         assertThat(items).containsExactly(
             CloudFolder(
-                id = CloudItemId("/Notes for Android/"),
+                id = CloudItemId("/Notes for Android"),
                 path = "/Notes for Android".asFolderPath(),
                 name = "Notes for Android"
             )
@@ -645,7 +716,7 @@ class WebDavServiceTest {
 
         assertThat(folder).isEqualTo(
             CloudFolder(
-                id = CloudItemId("/Notes for Android/"),
+                id = CloudItemId("/Notes for Android"),
                 path = "/Notes for Android".asFolderPath(),
                 name = "Notes for Android"
             )
@@ -699,6 +770,43 @@ class WebDavServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php/Notes%20for%20Android/B/in%20B.txt")
         }
     }
+
+    @Test
+    fun `move rejected by the web server throws WebDavMoveException`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = "<title>405 Method Not Allowed</title>",
+                status = HttpStatusCode.MethodNotAllowed,
+                headers = headersOf(HttpHeaders.ContentType, "text/html")
+            )
+        }
+        val service = webDavService(engine)
+
+        assertFailure { service.moveFile(CloudItemId("/note.txt"), "/renamed.txt".asFilePath()) }
+            .isInstanceOf<CloudBridgeException.WebDavMoveException>()
+        assertThat(engine.requestHistory).single()
+    }
+
+    @Test
+    fun `move not supported by the server throws WebDavMoveException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.NotImplemented) }
+        val service = webDavService(engine)
+
+        assertFailure { service.moveFolder(CloudItemId("/Notes"), "/Archive".asFolderPath()) }
+            .isInstanceOf<CloudBridgeException.WebDavMoveException>()
+    }
+
+    @Test
+    fun `moving into a missing folder throws NotFoundException`() = runTest {
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.Conflict) }
+        val service = webDavService(engine)
+
+        assertFailure { service.moveFile(CloudItemId("/note.txt"), "/Missing/note.txt".asFilePath()) }
+            .isInstanceOf<CloudBridgeException.NotFoundException>()
+            .prop(Throwable::message)
+            .isEqualTo("The requested item '/Missing' could not be found")
+        assertThat(engine.requestHistory).single()
+    }
 }
 
 private const val WEBDAV_FILE_RESPONSE =
@@ -709,7 +817,10 @@ private const val WEBDAV_FOLDER_RESPONSE =
 
 private fun webDavService(
     engine: MockEngine,
-    rateLimiter: RateLimiter? = RateLimiter(10, Double.POSITIVE_INFINITY)
+    rateLimiter: RateLimiter? = RateLimiter(
+        maxConcurrent = 10,
+        maxRatePerSecond = Double.POSITIVE_INFINITY
+    )
 ) = WebDavService(
     credentials = WebDavCredentials(
         serverUrl = "https://webdav.example.com/server.php",

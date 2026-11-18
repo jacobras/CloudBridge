@@ -32,6 +32,8 @@ public final class nl/jacobras/cloudbridge/CloudBridgeException$InsufficientSpac
 
 public final class nl/jacobras/cloudbridge/CloudBridgeException$NotAuthenticatedException : nl/jacobras/cloudbridge/CloudBridgeException {
 	public fun <init> ()V
+	public fun <init> (Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class nl/jacobras/cloudbridge/CloudBridgeException$NotFoundException : nl/jacobras/cloudbridge/CloudBridgeException {
@@ -43,7 +45,7 @@ public final class nl/jacobras/cloudbridge/CloudBridgeException$RateLimitExcepti
 	public final fun getRetryAfter-FghU774 ()Lkotlin/time/Duration;
 }
 
-public final class nl/jacobras/cloudbridge/CloudBridgeException$SetupException : nl/jacobras/cloudbridge/CloudBridgeException {
+public final class nl/jacobras/cloudbridge/CloudBridgeException$ServiceSetupException : nl/jacobras/cloudbridge/CloudBridgeException {
 	public fun <init> (Ljava/lang/String;)V
 }
 
@@ -57,6 +59,10 @@ public final class nl/jacobras/cloudbridge/CloudBridgeException$SourceReadExcept
 
 public final class nl/jacobras/cloudbridge/CloudBridgeException$Unknown : nl/jacobras/cloudbridge/CloudBridgeException {
 	public fun <init> (Ljava/lang/Throwable;)V
+}
+
+public final class nl/jacobras/cloudbridge/CloudBridgeException$WebDavMoveException : nl/jacobras/cloudbridge/CloudBridgeException {
+	public fun <init> ()V
 }
 
 public abstract interface class nl/jacobras/cloudbridge/CloudService {
@@ -181,6 +187,12 @@ public abstract interface annotation class nl/jacobras/cloudbridge/internal/Inte
 
 public abstract interface class nl/jacobras/cloudbridge/logging/Logger {
 	public abstract fun log (Ljava/lang/String;)V
+	public abstract fun warn (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public static synthetic fun warn$default (Lnl/jacobras/cloudbridge/logging/Logger;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+}
+
+public final class nl/jacobras/cloudbridge/logging/Logger$DefaultImpls {
+	public static synthetic fun warn$default (Lnl/jacobras/cloudbridge/logging/Logger;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
 }
 
 public final class nl/jacobras/cloudbridge/model/CloudFile : nl/jacobras/cloudbridge/model/CloudItem {
@@ -374,8 +386,8 @@ public abstract class nl/jacobras/cloudbridge/service/oauth/OAuthCloudService : 
 	protected final fun getKtorfit ()Lde/jensklingenberg/ktorfit/Ktorfit;
 	public fun isAuthenticated ()Z
 	public final fun setToken (Lnl/jacobras/cloudbridge/auth/CloudAccessToken;)V
-	protected final fun tryCall (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun tryCall$default (Lnl/jacobras/cloudbridge/service/oauth/OAuthCloudService;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	protected final fun tryCall (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun tryCall$default (Lnl/jacobras/cloudbridge/service/oauth/OAuthCloudService;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class nl/jacobras/cloudbridge/service/onedrive/AuthenticateKt {

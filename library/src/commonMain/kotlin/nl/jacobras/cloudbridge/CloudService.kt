@@ -54,6 +54,9 @@ public interface CloudService {
      * Creates a folder at [path].
      *
      * @return The created folder.
+     * @throws CloudBridgeException.ConflictException when an item at [path] already exists.
+     * @throws CloudBridgeException.NotFoundException on WebDAV, when the parent folder of [path]
+     * doesn't exist.
      * @throws CloudBridgeException
      */
     public suspend fun createFolder(path: FolderPath): CloudFolder
@@ -146,6 +149,9 @@ public interface CloudService {
      *
      * @return The moved file.
      * @throws CloudBridgeException.ConflictException when an item at [newPath] already exists.
+     * @throws CloudBridgeException.NotFoundException on WebDAV, when the parent folder of
+     * [newPath] doesn't exist.
+     * @throws CloudBridgeException.WebDavMoveException when the WebDAV server doesn't allow MOVE.
      * @throws CloudBridgeException
      */
     public suspend fun moveFile(id: CloudItemId, newPath: FilePath): CloudFile
@@ -159,6 +165,9 @@ public interface CloudService {
      * @return The moved folder.
      * @throws IllegalArgumentException when [newPath] is the root folder.
      * @throws CloudBridgeException.ConflictException when an item at [newPath] already exists.
+     * @throws CloudBridgeException.NotFoundException on WebDAV, when the parent folder of
+     * [newPath] doesn't exist.
+     * @throws CloudBridgeException.WebDavMoveException when the WebDAV server doesn't allow MOVE.
      * @throws CloudBridgeException
      */
     public suspend fun moveFolder(id: CloudItemId, newPath: FolderPath): CloudFolder

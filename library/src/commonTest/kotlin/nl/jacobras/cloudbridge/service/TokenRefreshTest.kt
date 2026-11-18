@@ -4,13 +4,16 @@ package nl.jacobras.cloudbridge.service
 
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
@@ -175,6 +178,11 @@ class TokenRefreshTest {
 
         assertFailure { service.getUserInfo() }
             .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
+            .transform { it.cause }
+            .isNotNull()
+            .isInstanceOf<ResponseException>()
+            .transform { it.message.orEmpty() }
+            .contains("invalid_grant")
         assertThat(refreshed).isEmpty()
     }
 
@@ -193,8 +201,14 @@ class TokenRefreshTest {
             clock = clock
         )
 
+        // Keeps Google's response, so it's clear why the token was rejected.
         assertFailure { service.getUserInfo() }
             .isInstanceOf<CloudBridgeException.NotAuthenticatedException>()
+            .transform { it.cause }
+            .isNotNull()
+            .isInstanceOf<ResponseException>()
+            .transform { it.response.status }
+            .isEqualTo(HttpStatusCode.Unauthorized)
         assertThat(engine.requestHistory.map { it.url.encodedPath }).containsExactly(
             "/drive/v3/about"
         )

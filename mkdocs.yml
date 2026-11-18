@@ -53,6 +53,7 @@ nav:
   - 'Introduction':
     - 'README.md'
     - 'Vision': 'Vision.md'
+    - 'Changelog': 'Changelog.md'
   - 'Cloud services':
       - 'services/Overview.md'
       - 'Dropbox': 'services/Dropbox.md'

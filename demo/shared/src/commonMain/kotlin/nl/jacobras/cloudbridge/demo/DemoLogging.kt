@@ -15,6 +15,10 @@ private class KermitLogger : nl.jacobras.cloudbridge.logging.Logger {
     override fun log(message: String) {
         Logger.d(message)
     }
+
+    override fun warn(message: String, throwable: Throwable?) {
+        Logger.w(message, throwable)
+    }
 }
 
 /**
