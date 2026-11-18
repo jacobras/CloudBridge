@@ -210,6 +210,16 @@ internal data class DriveFile(
     @SerialName("parents")
     val parents: List<String> = emptyList(),
 
+    /**
+     * Only populated for files with binary content (not Docs Editors files, shortcuts or folders).
+     */
+    @SerialName("md5Checksum")
+    val md5Checksum: String? = null,
+
+    /**
+     * Changes on every server-side change, including ones not visible to the user, so
+     * it can differ from the value returned right after an upload. Prefer [md5Checksum].
+     */
     @SerialName("version")
     val version: String? = null,
 
@@ -256,4 +266,4 @@ internal data class CreateFolderRequest(
     val parents: List<String>
 )
 
-internal const val FILE_FIELDS = "id,name,mimeType,size,modifiedTime,parents,version,trashed"
+internal const val FILE_FIELDS = "id,name,mimeType,size,modifiedTime,parents,version,md5Checksum,trashed"

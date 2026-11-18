@@ -23,6 +23,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import kotlinx.io.Buffer
@@ -47,6 +48,7 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GoogleDriveServiceTest {
 
     @Test
@@ -295,7 +297,7 @@ class GoogleDriveServiceTest {
             assertThat(it.method).isEqualTo(HttpMethod.Patch)
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/upload/drive/v3/files/1lH3t_0YffDLwRj5pr1LZGu386IJ9XHaCOu3MSxApjShLLUD-fg?uploadType=media" +
-                        "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
+                        "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Cmd5Checksum%2Ctrashed"
             )
         }
     }
@@ -313,7 +315,8 @@ class GoogleDriveServiceTest {
                       "name": "hello.txt",
                       "trashed": false,
                       "modifiedTime": "2025-10-12T10:00:00.000Z",
-                      "version": "2"
+                      "version": "2",
+                      "md5Checksum": "6c6f2ff1b6b2d8e1a6ef7a3d3a1d7c55"
                     }
                 """.trimIndent()
             } else {
@@ -347,7 +350,7 @@ class GoogleDriveServiceTest {
                 name = "hello.txt",
                 sizeInBytes = 8,
                 modified = Instant.parse("2025-10-12T10:00:00.000Z"),
-                revision = "2"
+                revision = "6c6f2ff1b6b2d8e1a6ef7a3d3a1d7c55"
             )
         )
         // The appDataFolder id is fetched once, then cached
@@ -515,7 +518,7 @@ class GoogleDriveServiceTest {
         engine.requestHistory.last().let {
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart" +
-                        "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
+                        "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Cmd5Checksum%2Ctrashed"
             )
         }
     }
@@ -564,7 +567,7 @@ class GoogleDriveServiceTest {
         engine.requestHistory.last().let {
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/drive/v3/files" +
-                        "?fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
+                        "?fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Cmd5Checksum%2Ctrashed"
             )
         }
     }
@@ -891,7 +894,7 @@ class GoogleDriveServiceTest {
         val (start, chunks) = uploadRequests.first() to uploadRequests.drop(1)
         assertThat(start.url.toString()).isEqualTo(
             "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable" +
-                    "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed"
+                    "&fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Cmd5Checksum%2Ctrashed"
         )
         assertThat(start.headers["X-Upload-Content-Type"]).isEqualTo("application/zip")
         assertThat(start.body.toByteArray().decodeToString())
@@ -1106,7 +1109,8 @@ class GoogleDriveServiceTest {
                           "name": "hello.txt",
                           "trashed": false,
                           "modifiedTime": "2025-10-11T16:31:27.438Z",
-                          "version": "5"
+                          "version": "5",
+                          "md5Checksum": "5eb63bbbe01eeed093cb22bb8f5acdc3"
                         }
                       ]
                     }
@@ -1135,14 +1139,14 @@ class GoogleDriveServiceTest {
                 name = "hello.txt",
                 sizeInBytes = 10,
                 modified = Instant.parse("2025-10-11T16:31:27.438Z"),
-                revision = "5"
+                revision = "5eb63bbbe01eeed093cb22bb8f5acdc3"
             )
         )
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/drive/v3/files?q=%27appDataFolder%27+in+parents&spaces=appDataFolder" +
-                        "&fields=nextPageToken%2Cfiles%28id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Ctrashed%29" +
+                        "&fields=nextPageToken%2Cfiles%28id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Cmd5Checksum%2Ctrashed%29" +
                         "&pageSize=100"
             )
         }

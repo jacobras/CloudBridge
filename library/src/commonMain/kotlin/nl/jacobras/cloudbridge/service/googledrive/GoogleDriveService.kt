@@ -176,7 +176,7 @@ public class GoogleDriveService internal constructor(
                     path = it.toFilePath(isRoot = path.isRoot),
                     sizeInBytes = it.size?.toLongOrNull() ?: 0L,
                     modified = Instant.parse(it.modified),
-                    revision = it.version ?: error("Missing version for file")
+                    revision = it.revision ?: error("Missing revision for file")
                 )
             }
         }
@@ -461,7 +461,7 @@ public class GoogleDriveService internal constructor(
             path = toFilePath(isRoot = isRoot),
             sizeInBytes = size?.toLongOrNull() ?: 0L,
             modified = Instant.parse(modified),
-            revision = version ?: error("Missing version for file $name")
+            revision = revision ?: error("Missing revision for file $name")
         )
     }
 
@@ -481,8 +481,10 @@ public class GoogleDriveService internal constructor(
      *
      * Docs: https://developers.google.com/workspace/drive/api/guides/properties
      */
-    public suspend fun getFileAppProperties(id: CloudItemId): Map<String, String> = tryCall(id.value) {
-        api.getFileAppProperties(id.value).appProperties
+    public suspend fun getFileAppProperties(id: CloudItemId): Map<String, String> {
+        return tryCall(id.value) {
+            api.getFileAppProperties(id.value).appProperties
+        }
     }
 
     override suspend fun delete(id: CloudItemId): Unit = tryCall(id.value) {
@@ -557,7 +559,7 @@ public class GoogleDriveService internal constructor(
             itemId = CloudItemId(id),
             path = if (isFolder) toFolderPath(isRoot) else toFilePath(isRoot),
             name = name,
-            revision = version,
+            revision = revision,
             modified = Instant.parse(modified)
         )
     }
@@ -573,5 +575,13 @@ public class GoogleDriveService internal constructor(
 
 private val DriveFile.isFolder: Boolean
     get() = mimeType == "application/vnd.google-apps.folder"
+
+/**
+ * The content checksum. First `md5checksum`, then `version` only as a fallback, as the latter
+ * changes also on server changes outside the library (happens after every file upload after
+ * internal Google Drive bookkeeping or something).
+ */
+private val DriveFile.revision: String?
+    get() = md5Checksum ?: version
 
 private const val DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024
