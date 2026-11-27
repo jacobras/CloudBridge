@@ -32,6 +32,8 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
+import nl.jacobras.cloudbridge.model.ListResult
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -136,30 +138,41 @@ public class OneDriveService internal constructor(
         }
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
-        val response = if (path.isRoot) {
-            api.listFiles()
-        } else {
-            api.listFiles(path.toString(withLeadingSlash = false))
+    @Suppress("UseRequire")
+    override suspend fun listFiles(path: FolderPath, cursor: ListCursor?): ListResult {
+        if (cursor != null && !cursor.value.startsWith(baseUrl)) {
+            throw CloudBridgeException.IllegalArgumentException("Invalid OneDrive list cursor")
         }
-        response.files.map {
-            val childPath = if (path.isRoot) "/${it.name}" else "$path/${it.name}"
-            if (it.folder != null) {
-                CloudFolder(
-                    id = CloudItemId(it.id),
-                    path = childPath.asFolderPath(),
-                    name = it.name,
-                )
-            } else {
-                CloudFile(
-                    id = CloudItemId(it.id),
-                    path = childPath.asFilePath(),
-                    name = it.name,
-                    sizeInBytes = it.size ?: error("Missing size for folder"),
-                    modified = Instant.parse(it.lastModified),
-                    revision = it.eTag ?: error("Missing eTag for file")
-                )
+        return tryCall(path.toString()) {
+            val response = when {
+                cursor != null -> api.listFilesByUrl(cursor.value)
+                path.isRoot -> api.listFiles()
+                else -> api.listFiles(path.toString(withLeadingSlash = false))
             }
+            ListResult(
+                items = response.files.map { it.toCloudItem(parent = path) },
+                nextCursor = response.nextLink?.let(::ListCursor)
+            )
+        }
+    }
+
+    private fun DriveItem.toCloudItem(parent: FolderPath): CloudItem {
+        val childPath = if (parent.isRoot) "/$name" else "$parent/$name"
+        return if (folder != null) {
+            CloudFolder(
+                id = CloudItemId(id),
+                path = childPath.asFolderPath(),
+                name = name,
+            )
+        } else {
+            CloudFile(
+                id = CloudItemId(id),
+                path = childPath.asFilePath(),
+                name = name,
+                sizeInBytes = size ?: error("Missing size for folder"),
+                modified = Instant.parse(lastModified),
+                revision = eTag ?: error("Missing eTag for file")
+            )
         }
     }
 

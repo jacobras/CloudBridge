@@ -36,6 +36,7 @@ import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
@@ -1125,9 +1126,10 @@ class GoogleDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        val items = service.listFiles(FolderPath("/"))
+        val result = service.listFiles(FolderPath("/"))
 
-        assertThat(items).containsExactly(
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
             CloudFolder(
                 id = CloudItemId("131oVBv55ScZRUNJiUft_pihQWdnJP3FoTM4kgLpgW52VJqkHbA"),
                 path = "/131oVBv55ScZRUNJiUft_pihQWdnJP3FoTM4kgLpgW52VJqkHbA".asFolderPath(),
@@ -1147,8 +1149,73 @@ class GoogleDriveServiceTest {
             assertThat(it.url.toString()).isEqualTo(
                 "https://www.googleapis.com/drive/v3/files?q=%27appDataFolder%27+in+parents&spaces=appDataFolder" +
                         "&fields=nextPageToken%2Cfiles%28id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2Cversion%2Cmd5Checksum%2Ctrashed%29" +
-                        "&pageSize=100"
+                        "&pageSize=200"
             )
+        }
+    }
+
+    @Test
+    fun `list files returns next cursor`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"files":[],"nextPageToken":"token2"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = GoogleDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val result = service.listFiles(FolderPath("/"))
+
+        assertThat(result.nextCursor).isEqualTo(ListCursor("token2"))
+    }
+
+    @Test
+    fun `list files with cursor fetches next page`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "files": [
+                        {
+                          "mimeType": "application/vnd.google-apps.folder",
+                          "parents": ["1THG-A2vXis2oKtcHO7fK6u_1VLRN"],
+                          "id": "folder2",
+                          "name": "Page2",
+                          "trashed": false,
+                          "modifiedTime": "2025-10-11T15:22:38.925Z",
+                          "version": "1"
+                        }
+                      ]
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = GoogleDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val result = service.listFiles(FolderPath("/"), ListCursor("token2"))
+
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
+            CloudFolder(
+                id = CloudItemId("folder2"),
+                path = "/folder2".asFolderPath(),
+                name = "Page2"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.url.parameters["pageToken"]).isEqualTo("token2")
+            assertThat(it.url.parameters["q"]).isEqualTo("'appDataFolder' in parents")
         }
     }
 

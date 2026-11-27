@@ -10,6 +10,7 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
@@ -33,6 +34,7 @@ import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
@@ -977,9 +979,10 @@ class OneDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        val items = service.listFiles(FolderPath("/"))
+        val result = service.listFiles(FolderPath("/"))
 
-        assertThat(items).containsExactly(
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
             CloudFolder(
                 id = CloudItemId("33488461260C4A76!sc4581cc0f018449d9f07fb9cf832adab"),
                 path = "Work".asFolderPath(),
@@ -996,8 +999,101 @@ class OneDriveServiceTest {
         )
         assertThat(engine.requestHistory).single().given {
             assertThat(it.method).isEqualTo(HttpMethod.Get)
-            assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot/children")
+            assertThat(it.url.toString()).isEqualTo("https://graph.microsoft.com/v1.0/me/drive/special/approot/children?%24top=200")
         }
+    }
+
+    @Test
+    fun `list files returns next cursor`() = runTest {
+        val nextLink =
+            "https://graph.microsoft.com/v1.0/me/drive/special/approot/children?\$top=200&\$skiptoken=abc"
+        val engine = MockEngine {
+            respond(
+                content = """{"value":[],"@odata.nextLink":"$nextLink"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val result = service.listFiles(FolderPath("/"))
+
+        assertThat(result.nextCursor).isEqualTo(ListCursor(nextLink))
+    }
+
+    @Test
+    fun `list files with cursor fetches next page`() = runTest {
+        val nextLink =
+            "https://graph.microsoft.com/v1.0/me/drive/special/approot/children?\$top=200&\$skiptoken=abc"
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "value": [
+                        {
+                          "id": "fileId",
+                          "lastModifiedDateTime": "2025-10-11T16:32:05Z",
+                          "eTag": "etag",
+                          "name": "page2.txt",
+                          "size": 1,
+                          "parentReference": {
+                            "path": "/drive/root:/Apps/CloudBridge Demo"
+                          },
+                          "file": {
+                            "mimeType": "text/plain"
+                          }
+                        }
+                      ]
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = OneDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val result = service.listFiles(FolderPath("/"), ListCursor(nextLink))
+
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
+            CloudFile(
+                id = CloudItemId("fileId"),
+                path = "/page2.txt".asFilePath(),
+                name = "page2.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:32:05Z"),
+                revision = "etag"
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.encodedPath).isEqualTo("/v1.0/me/drive/special/approot/children")
+            assertThat(it.url.parameters["\$skiptoken"]).isEqualTo("abc")
+            assertThat(it.headers[HttpHeaders.Authorization]).isEqualTo("Bearer valid")
+        }
+    }
+
+    @Test
+    fun `list files with foreign cursor url throws`() = runTest {
+        val engine = MockEngine { error("Shouldn't be called") }
+        val service = OneDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure {
+            service.listFiles(FolderPath("/"), ListCursor("https://evil.example.com/steal"))
+        }.isInstanceOf<CloudBridgeException.IllegalArgumentException>()
+        assertThat(engine.requestHistory).isEmpty()
     }
 
     @Test
@@ -1047,7 +1143,7 @@ class OneDriveServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        val items = service.listFiles(FolderPath("/My Notes"))
+        val items = service.listFiles(FolderPath("/My Notes")).items
 
         assertThat(items).containsExactly(
             CloudFolder(
