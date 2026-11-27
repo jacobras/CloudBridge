@@ -11,8 +11,8 @@ import kotlinx.io.Buffer
 import kotlinx.io.IOException
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
-import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.delta.DeltaCloudService
 import nl.jacobras.cloudbridge.delta.DeltaCursor
 import nl.jacobras.cloudbridge.delta.DeltaResult
@@ -21,6 +21,7 @@ import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import org.jetbrains.compose.resources.decodeToImageBitmap
@@ -59,7 +60,13 @@ internal class ServiceViewModel(
      */
     private fun refresh(clearError: Boolean = true) = viewModelScope.launch {
         try {
-            val items = service.listFiles(path.value)
+            val items = mutableListOf<CloudItem>()
+            var cursor: ListCursor? = null
+            do {
+                val page = service.listFiles(path.value, cursor)
+                items += page.items
+                cursor = page.nextCursor
+            } while (cursor != null)
             files.update { items }
             if (clearError) {
                 error.update { "" }

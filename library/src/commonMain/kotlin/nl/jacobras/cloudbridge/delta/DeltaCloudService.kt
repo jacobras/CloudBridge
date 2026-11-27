@@ -9,6 +9,9 @@ public interface DeltaCloudService {
     /**
      * Retrieves the changes in the cloud services since [previousCursor].
      *
+     * All pages of changes are fetched internally and returned in a single [DeltaResult]. On large
+     * accounts, the first call (with [DeltaCursor.INITIAL]) can therefore take a while.
+     *
      * @param previousCursor The cursor returned in [DeltaResult.newCursor] the last time
      * this method was called. For the first time, pass in [DeltaCursor.INITIAL].
      */

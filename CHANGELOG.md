@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** `listFiles()` is now paged. It takes an optional `cursor` and returns a
+  `ListResult` with `items` and a `nextCursor` (`null` on the last page). Pages hold up to about
+  200 items. See [Listing files](https://jacobras.github.io/CloudBridge/api/Files/#listing-files).
 - Dropbox and OneDrive now also set `prompt=consent`, like Google Drive, so a user can choose the
   desired account when connecting.
 
@@ -18,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exceptions.
 - OneDrive's `listFiles()` now returns correct relative paths
   (fixes [#18](https://github.com/jacobras/CloudBridge/issues/18)).
+- `listFiles()` on Dropbox, Google Drive and OneDrive silently dropped items beyond the first page
+  (100 items on Google Drive, 200 on OneDrive). These can now be fetched with `nextCursor`.
 
 ## [0.14.0] - 2026-11-18
 

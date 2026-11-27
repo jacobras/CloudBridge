@@ -11,15 +11,36 @@ val root = "/".asFolderPath()
 
 ## Listing files
 
-Lists all files and folders one level deep; nested content is not fetched.
+Lists files and folders one level deep; nested content is not fetched. Results are paged: each
+call returns one page of up to about 200 items, plus a `nextCursor` to fetch the next page with.
+`nextCursor` is `null` when there are no more pages.
 
 ```kotlin
 try {
-    val items = service.listFiles("/".asFolderPath())
+    val result = service.listFiles("/".asFolderPath())
+    val items = result.items
+    val nextCursor = result.nextCursor // null if this was the last page
 } catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
+
+To fetch all items, keep calling `listFiles()` with the same path and the previous `nextCursor`:
+
+```kotlin
+val items = mutableListOf<CloudItem>()
+var cursor: ListCursor? = null
+do {
+    val page = service.listFiles(path, cursor)
+    items += page.items
+    cursor = page.nextCursor
+} while (cursor != null)
+```
+
+* A page can hold fewer items than the page size. Google Drive can
+  even [return an empty page](https://developers.google.com/workspace/drive/api/reference/rest/v2/files/list#query-parameters)
+  that still has a `nextCursor`, so always check `nextCursor` instead of the number of items.
+* WebDAV has no paging, so it returns all items at once with a `null` cursor.
 
 ## Listing delta changes
 
@@ -29,12 +50,16 @@ see [Cloud services](../services/Overview.md) for the support matrix.
 ```kotlin
 try {
     val result = service.getDelta(previousCursor)
-    val previouCursor = result.newCursor
+    val previousCursor = result.newCursor
     val changes = result.changes
 } catch (e: CloudBridgeException) {
     // Handle...
 }
 ```
+
+Unlike `listFiles()`, `getDelta()` isn't paged: all pages of changes are fetched internally and
+returned in one result. On large accounts, the first call (with `DeltaCursor.INITIAL`) can
+therefore take a while.
 
 ## Getting file or folder info
 

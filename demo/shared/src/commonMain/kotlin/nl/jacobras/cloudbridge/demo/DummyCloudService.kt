@@ -18,6 +18,8 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
+import nl.jacobras.cloudbridge.model.ListResult
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -68,12 +70,15 @@ class DummyCloudService(
         return UserInfo(name = "Dummy", emailAddress = "dummy@example.com")
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> {
+    override suspend fun listFiles(path: FolderPath, cursor: ListCursor?): ListResult {
         if (!isAuthenticated()) {
             throw CloudBridgeException.NotAuthenticatedException()
         }
 
-        return cloudItems.filter { it.path.startsWith(path) }
+        return ListResult(
+            items = cloudItems.filter { it.path.startsWith(path) },
+            nextCursor = null
+        )
     }
 
     override suspend fun getFileInfo(path: FilePath): CloudFile {

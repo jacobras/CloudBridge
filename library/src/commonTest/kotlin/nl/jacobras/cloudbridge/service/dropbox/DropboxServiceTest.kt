@@ -10,6 +10,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isGreaterThan
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
@@ -38,6 +39,7 @@ import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
@@ -709,9 +711,10 @@ class DropboxServiceTest {
             httpClientOverride = HttpClient(engine) { applyDefaults() }
         )
 
-        val items = service.listFiles(FolderPath("/"))
+        val result = service.listFiles(FolderPath("/"))
 
-        assertThat(items).containsExactly(
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
             CloudFolder(
                 id = CloudItemId("id:uwStUuhj4qYAAAAAAAAACg"),
                 path = "/Work".asFolderPath(),
@@ -729,7 +732,71 @@ class DropboxServiceTest {
         val request = engine.requestHistory.single()
         assertThat(request.method).isEqualTo(HttpMethod.Post)
         assertThat(request.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/list_folder")
-        assertThat(request.body.toByteArray().decodeToString()).isEqualTo("""{"path":""}""")
+        assertThat(request.body.toByteArray().decodeToString()).isEqualTo("""{"path":"","limit":200}""")
+    }
+
+    @Test
+    fun `list files returns next cursor`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"cursor":"cursor1","entries":[],"has_more":true}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val result = service.listFiles(FolderPath("/"))
+
+        assertThat(result.nextCursor).isEqualTo(ListCursor("cursor1"))
+    }
+
+    @Test
+    fun `list files with cursor fetches next page`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "cursor": "cursor2",
+                      "entries": [
+                        {
+                          ".tag": "folder",
+                          "id": "id:folder2",
+                          "name": "Page2",
+                          "path_display": "/Page2",
+                          "path_lower": "/page2"
+                        }
+                      ],
+                      "has_more": false
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val service = DropboxService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val result = service.listFiles(FolderPath("/"), ListCursor("cursor1"))
+
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
+            CloudFolder(
+                id = CloudItemId("id:folder2"),
+                path = "/Page2".asFolderPath(),
+                name = "Page2"
+            )
+        )
+        val request = engine.requestHistory.single()
+        assertThat(request.url.toString()).isEqualTo("https://api.dropboxapi.com/2/files/list_folder/continue")
+        assertThat(request.body.toByteArray().decodeToString()).isEqualTo("""{"cursor":"cursor1"}""")
     }
 
     @Test

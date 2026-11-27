@@ -38,10 +38,11 @@ import nl.jacobras.cloudbridge.delta.DeltaResult
 import nl.jacobras.cloudbridge.delta.UpdatedDeltaChange
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
+import nl.jacobras.cloudbridge.model.ListResult
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
@@ -156,13 +157,17 @@ public class GoogleDriveService internal constructor(
         }
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
+    override suspend fun listFiles(
+        path: FolderPath,
+        cursor: ListCursor?
+    ): ListResult = tryCall(path.toString()) {
         val query = if (path.isRoot) {
             "'appDataFolder' in parents"
         } else {
             "'${path.name}' in parents"
         }
-        api.listFiles(query = query).files.map {
+        val response = api.listFiles(query = query, pageToken = cursor?.value)
+        val items = response.files.map {
             if (it.isFolder) {
                 CloudFolder(
                     id = CloudItemId(it.id),
@@ -180,6 +185,7 @@ public class GoogleDriveService internal constructor(
                 )
             }
         }
+        ListResult(items = items, nextCursor = response.nextPageToken?.let(::ListCursor))
     }
 
     override suspend fun createFolder(path: FolderPath): CloudFolder {

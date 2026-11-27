@@ -8,6 +8,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import io.ktor.client.HttpClient
@@ -33,6 +34,7 @@ import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
@@ -549,9 +551,10 @@ class WebDavServiceTest {
             httpClient = HttpClient(engine) { applyDefaults() }
         )
 
-        val items = service.listFiles(FolderPath("/"))
+        val result = service.listFiles(FolderPath("/"))
 
-        assertThat(items).containsExactly(
+        assertThat(result.nextCursor).isNull()
+        assertThat(result.items).containsExactly(
             CloudFolder(
                 id = CloudItemId("/Notes for Android"),
                 path = "/Notes for Android".asFolderPath(),
@@ -563,6 +566,24 @@ class WebDavServiceTest {
             assertThat(it.url.toString()).isEqualTo("https://webdav.example.com/server.php")
             assertThat(it.headers["Depth"]).isEqualTo("1")
         }
+    }
+
+    @Test
+    fun `list files with cursor throws`() = runTest {
+        val engine = MockEngine { error("Shouldn't be called") }
+        val service = WebDavService(
+            credentials = WebDavCredentials(
+                serverUrl = "https://webdav.example.com/server.php",
+                username = "user",
+                password = "pass"
+            ),
+            httpClient = HttpClient(engine) { applyDefaults() }
+        )
+
+        assertFailure {
+            service.listFiles(FolderPath("/"), ListCursor("anything"))
+        }.isInstanceOf<CloudBridgeException.IllegalArgumentException>()
+        assertThat(engine.requestHistory).isEmpty()
     }
 
     @Test
@@ -801,7 +822,12 @@ class WebDavServiceTest {
         val engine = MockEngine { respond(content = "", status = HttpStatusCode.Conflict) }
         val service = webDavService(engine)
 
-        assertFailure { service.moveFile(CloudItemId("/note.txt"), "/Missing/note.txt".asFilePath()) }
+        assertFailure {
+            service.moveFile(
+                CloudItemId("/note.txt"),
+                "/Missing/note.txt".asFilePath()
+            )
+        }
             .isInstanceOf<CloudBridgeException.NotFoundException>()
             .prop(Throwable::message)
             .isEqualTo("The requested item '/Missing' could not be found")

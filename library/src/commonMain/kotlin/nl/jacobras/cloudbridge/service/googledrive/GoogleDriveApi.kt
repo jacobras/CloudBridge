@@ -18,6 +18,7 @@ import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
+import nl.jacobras.cloudbridge.service.LIST_PAGE_SIZE
 
 /**
  * Docs: https://developers.google.com/workspace/drive/api/reference/rest/v3/files
@@ -53,7 +54,7 @@ internal interface GoogleDriveApi {
         @Query("pageToken") pageToken: String? = null,
         @Query("spaces") spaces: String = "appDataFolder",
         @Query("fields") fields: String = "nextPageToken,files($FILE_FIELDS)",
-        @Query("pageSize") pageSize: Int = 100
+        @Query("pageSize") pageSize: Int = LIST_PAGE_SIZE
     ): FileResponse
 
     @GET("drive/v3/files/appDataFolder?fields=id")

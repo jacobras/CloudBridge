@@ -175,7 +175,10 @@ internal data class ListFolderArg(
     val includeDeleted: Boolean = false,
 
     @SerialName("recursive")
-    val recursive: Boolean = false
+    val recursive: Boolean = false,
+
+    @SerialName("limit")
+    val limit: Int? = null
 )
 
 @Serializable
