@@ -59,11 +59,15 @@ internal class ServiceViewModel(
      * Reloads the current folder.
      */
     private fun refresh(clearError: Boolean = true) = viewModelScope.launch {
+        val folder = path.value
         try {
             val items = mutableListOf<CloudItem>()
             var cursor: ListCursor? = null
             do {
-                val page = service.listFiles(path.value, cursor)
+                val page = service.listFiles(folder, cursor)
+                if (path.value != folder) {
+                    return@launch
+                }
                 items += page.items
                 cursor = page.nextCursor
             } while (cursor != null)
@@ -72,7 +76,9 @@ internal class ServiceViewModel(
                 error.update { "" }
             }
         } catch (e: CloudBridgeException) {
-            error.update { e.toString() }
+            if (path.value == folder) {
+                error.update { e.toString() }
+            }
         }
     }
 
