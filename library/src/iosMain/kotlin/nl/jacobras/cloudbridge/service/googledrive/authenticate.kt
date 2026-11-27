@@ -1,5 +1,6 @@
 package nl.jacobras.cloudbridge.service.googledrive
 
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.queryParameter
 import nl.jacobras.cloudbridge.auth.startWebFlow
@@ -8,6 +9,8 @@ import nl.jacobras.cloudbridge.security.SecurityUtil
 
 /**
  * Runs the Google Drive PKCE sign-in flow. Opens a web modal to do so.
+ *
+ * @throws CloudBridgeException
  */
 public suspend fun GoogleDriveService.authenticate(
     redirectUri: String

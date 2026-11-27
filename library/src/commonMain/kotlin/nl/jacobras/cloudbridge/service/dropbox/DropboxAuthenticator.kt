@@ -3,7 +3,6 @@ package nl.jacobras.cloudbridge.service.dropbox
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.auth.toCloudAccessToken
-import nl.jacobras.cloudbridge.persistence.librarySettings
 
 internal class DropboxAuthenticator(
     private val api: DropboxApi,
@@ -25,17 +24,12 @@ internal class DropboxAuthenticator(
         "prompt" to "consent"
     )
 
-    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
-        try {
-            val token = api.getToken(
-                clientId = clientId,
-                redirectUri = redirectUri,
-                code = code,
-                codeVerifier = codeVerifier
-            )
-            return token.toCloudAccessToken()
-        } finally {
-            librarySettings.codeVerifier = null
-        }
+    override suspend fun requestToken(code: String): CloudAccessToken {
+        return api.getToken(
+            clientId = clientId,
+            redirectUri = redirectUri,
+            code = code,
+            codeVerifier = codeVerifier
+        ).toCloudAccessToken()
     }
 }
