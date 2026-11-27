@@ -33,7 +33,7 @@ public interface CloudService {
      *
      * WebDAV has no paging, so it always returns all items with a `null` [ListResult.nextCursor].
      *
-     * @param cursor the [ListResult.nextCursor] of the previous page, of `null` for the first page.
+     * @param cursor the [ListResult.nextCursor] of the previous page, or `null` for the first page.
      * @throws CloudBridgeException.IllegalArgumentException when [cursor] isn't valid for the
      * service.
      * @throws CloudBridgeException
