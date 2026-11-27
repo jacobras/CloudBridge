@@ -20,6 +20,11 @@ internal class OneDriveAuthenticator(
     // `offline_access` is needed to receive a refresh token.
     override val scope = "files.readwrite openid profile email offline_access"
 
+    override val extraParams = mapOf(
+        // Always prompt, so user can choose (a different) account
+        "prompt" to "select_account"
+    )
+
     override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
         try {
             val token = api.getToken(

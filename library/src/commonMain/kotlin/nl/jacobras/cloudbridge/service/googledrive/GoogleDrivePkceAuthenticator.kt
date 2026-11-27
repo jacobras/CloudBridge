@@ -21,7 +21,9 @@ internal class GoogleDrivePkceAuthenticator(
 
     // Needed to receive a refresh token.
     override val extraParams = mapOf(
+        // Needed to receive a refresh token
         "access_type" to "offline",
+        // Always prompt, so user can choose (a different) account
         "prompt" to "consent"
     )
 
