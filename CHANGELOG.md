@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-27
+
 ### Changed
 
 - **Breaking:** `listFiles()` is now paged. It takes an optional `cursor` and returns a
@@ -202,7 +204,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file details
   and downloading file content.
 
-[Unreleased]: https://github.com/jacobras/CloudBridge/compare/0.14.0...HEAD
+[Unreleased]: https://github.com/jacobras/CloudBridge/compare/0.15.0...HEAD
+[0.15.0]: https://github.com/jacobras/CloudBridge/releases/tag/0.15.0
 [0.14.0]: https://github.com/jacobras/CloudBridge/releases/tag/0.14.0
 [0.13.0]: https://github.com/jacobras/CloudBridge/releases/tag/0.13.0
 [0.12.1]: https://github.com/jacobras/CloudBridge/releases/tag/0.12.1
