@@ -3,7 +3,6 @@ package nl.jacobras.cloudbridge.service.googledrive
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.auth.toCloudAccessToken
-import nl.jacobras.cloudbridge.persistence.librarySettings
 
 internal class GoogleDrivePkceAuthenticator(
     private val api: GoogleDriveApi,
@@ -21,22 +20,19 @@ internal class GoogleDrivePkceAuthenticator(
 
     // Needed to receive a refresh token.
     override val extraParams = mapOf(
+        // Needed to receive a refresh token
         "access_type" to "offline",
+        // Always prompt, so user can choose (a different) account
         "prompt" to "consent"
     )
 
-    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
-        try {
-            val token = api.getToken(
-                clientId = clientId,
-                clientSecret = clientSecret,
-                redirectUri = redirectUri,
-                code = code,
-                codeVerifier = codeVerifier
-            )
-            return token.toCloudAccessToken()
-        } finally {
-            librarySettings.codeVerifier = null
-        }
+    override suspend fun requestToken(code: String): CloudAccessToken {
+        return api.getToken(
+            clientId = clientId,
+            clientSecret = clientSecret,
+            redirectUri = redirectUri,
+            code = code,
+            codeVerifier = codeVerifier
+        ).toCloudAccessToken()
     }
 }

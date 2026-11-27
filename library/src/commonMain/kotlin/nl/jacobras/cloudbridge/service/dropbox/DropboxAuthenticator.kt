@@ -3,7 +3,6 @@ package nl.jacobras.cloudbridge.service.dropbox
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.auth.toCloudAccessToken
-import nl.jacobras.cloudbridge.persistence.librarySettings
 
 internal class DropboxAuthenticator(
     private val api: DropboxApi,
@@ -18,20 +17,19 @@ internal class DropboxAuthenticator(
     override val baseUrl = "https://www.dropbox.com/oauth2/authorize"
     override val scope = ""
 
-    // Needed to receive a refresh token.
-    override val extraParams = mapOf("token_access_type" to "offline")
+    override val extraParams = mapOf(
+        // Needed to receive a refresh token
+        "token_access_type" to "offline",
+        // Always prompt, so user can choose (a different) account
+        "prompt" to "consent"
+    )
 
-    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
-        try {
-            val token = api.getToken(
-                clientId = clientId,
-                redirectUri = redirectUri,
-                code = code,
-                codeVerifier = codeVerifier
-            )
-            return token.toCloudAccessToken()
-        } finally {
-            librarySettings.codeVerifier = null
-        }
+    override suspend fun requestToken(code: String): CloudAccessToken {
+        return api.getToken(
+            clientId = clientId,
+            redirectUri = redirectUri,
+            code = code,
+            codeVerifier = codeVerifier
+        ).toCloudAccessToken()
     }
 }

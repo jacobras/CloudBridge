@@ -4,6 +4,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.demo.BuildConfig
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -47,20 +48,32 @@ fun main() {
             onFinishAuthOnWeb = { service ->
                 when (service) {
                     is DropboxService -> scope.launch {
-                        service.completeAuthentication(redirectUri = REDIRECT_URI)
-                            ?.let(viewModel::connectDropbox)
+                        catchAuthError {
+                            service.completeAuthentication(redirectUri = REDIRECT_URI)
+                                ?.let(viewModel::connectDropbox)
+                        }
                     }
                     is GoogleDriveService -> {
                         service.completeAuthentication()
                             ?.let(viewModel::connectGoogleDrive)
                     }
                     is OneDriveService -> scope.launch {
-                        service.completeAuthentication(redirectUri = REDIRECT_URI)
-                            ?.let(viewModel::connectOneDrive)
+                        catchAuthError {
+                            service.completeAuthentication(redirectUri = REDIRECT_URI)
+                                ?.let(viewModel::connectOneDrive)
+                        }
                     }
                 }
             }
         )
+    }
+}
+
+private inline fun catchAuthError(block: () -> Unit) {
+    try {
+        block()
+    } catch (e: CloudBridgeException) {
+        window.alert("Authentication failed: ${e.message ?: e.cause?.message}")
     }
 }
 

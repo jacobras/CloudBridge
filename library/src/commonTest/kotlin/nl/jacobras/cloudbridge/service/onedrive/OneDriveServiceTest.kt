@@ -1001,6 +1001,76 @@ class OneDriveServiceTest {
     }
 
     @Test
+    fun `list files in subfolder`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                    {
+                      "value": [
+                        {
+                          "id": "subFolderId",
+                          "lastModifiedDateTime": "2025-10-11T15:22:39Z",
+                          "name": "Sub",
+                          "size": 0,
+                          "parentReference": {
+                            "id": "notesFolderId",
+                            "path": "/drive/root:/Apps/CloudBridge%20Demo/My%20Notes"
+                          },
+                          "folder": {
+                            "childCount": 0
+                          }
+                        },
+                        {
+                          "id": "nestedFileId",
+                          "lastModifiedDateTime": "2025-10-11T16:32:05Z",
+                          "eTag": "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\"",
+                          "name": "nested.txt",
+                          "size": 1,
+                          "parentReference": {
+                            "id": "notesFolderId",
+                            "path": "/drive/root:/Apps/CloudBridge%20Demo/My%20Notes"
+                          },
+                          "file": {
+                            "mimeType": "text/plain"
+                          }
+                        }
+                      ]
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json; charset=utf-8")
+            )
+        }
+        val service = OneDriveService(
+            clientInfo = testClientInfo,
+            token = CloudAccessToken("valid"),
+            httpClientOverride = HttpClient(engine) { applyDefaults() }
+        )
+
+        val items = service.listFiles(FolderPath("/My Notes"))
+
+        assertThat(items).containsExactly(
+            CloudFolder(
+                id = CloudItemId("subFolderId"),
+                path = FolderPath("/My Notes/Sub"),
+                name = "Sub"
+            ),
+            CloudFile(
+                id = CloudItemId("nestedFileId"),
+                path = "/My Notes/nested.txt".asFilePath(),
+                name = "nested.txt",
+                sizeInBytes = 1,
+                modified = Instant.parse("2025-10-11T16:32:05Z"),
+                revision = "\"{361FE060-EFD6-41F5-86D9-B4AF4478F0DC},2\""
+            )
+        )
+        assertThat(engine.requestHistory).single().given {
+            assertThat(it.method).isEqualTo(HttpMethod.Get)
+            assertThat(it.url.encodedPath).isEqualTo("/v1.0/me/drive/special/approot:/My%20Notes:/children")
+        }
+    }
+
+    @Test
     fun `get file info`() = runTest {
         val engine = MockEngine {
             respond(

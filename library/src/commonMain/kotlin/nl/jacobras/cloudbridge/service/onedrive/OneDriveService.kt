@@ -143,26 +143,17 @@ public class OneDriveService internal constructor(
             api.listFiles(path.toString(withLeadingSlash = false))
         }
         response.files.map {
+            val childPath = if (path.isRoot) "/${it.name}" else "$path/${it.name}"
             if (it.folder != null) {
-                val folderPath = if (path.isRoot) {
-                    it.name.asFolderPath()
-                } else {
-                    "${it.parent.path}/${it.name}".asFolderPath() // FIXME: parent includes internal Drive structure
-                }
                 CloudFolder(
                     id = CloudItemId(it.id),
-                    path = folderPath,
+                    path = childPath.asFolderPath(),
                     name = it.name,
                 )
             } else {
-                val filePath = if (path.isRoot) {
-                    it.name.asFilePath()
-                } else {
-                    "${it.parent.path}/${it.name}".asFilePath()
-                }
                 CloudFile(
                     id = CloudItemId(it.id),
-                    path = filePath,
+                    path = childPath.asFilePath(),
                     name = it.name,
                     sizeInBytes = it.size ?: error("Missing size for folder"),
                     modified = Instant.parse(it.lastModified),

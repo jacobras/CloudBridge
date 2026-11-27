@@ -1,7 +1,12 @@
 package nl.jacobras.cloudbridge.auth
 
+import io.ktor.client.plugins.ResponseException
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
+import kotlinx.io.IOException
 import net.thauvin.erik.urlencoder.UrlEncoderUtil
 import nl.jacobras.cloudbridge.CloudBridgeException
+import nl.jacobras.cloudbridge.persistence.librarySettings
 import nl.jacobras.cloudbridge.security.SecurityUtil
 
 internal abstract class CloudAuthenticator(
@@ -89,7 +94,35 @@ internal abstract class PkceAuthenticator(
     fun buildPkceUri(): String = buildUri(codeChallenge = codeChallenge)
 
     /**
+     * Exchanges the authorization [code] for a token. Clears the stored code verifier afterwards.
+     *
      * @throws CloudBridgeException
      */
-    abstract suspend fun exchangeCodeForToken(code: String): CloudAccessToken
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
+        try {
+            return requestToken(code)
+        } catch (e: ResponseException) {
+            throw when (e.response.status) {
+                HttpStatusCode.BadRequest,
+                HttpStatusCode.Unauthorized -> CloudBridgeException.NotAuthenticatedException(e)
+                else -> CloudBridgeException.Unknown(e)
+            }
+        } catch (e: IOException) {
+            throw CloudBridgeException.ConnectionException(e)
+        } catch (e: CloudBridgeException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CloudBridgeException.Unknown(e)
+        } finally {
+            librarySettings.codeVerifier = null
+        }
+    }
+
+    /**
+     * Exchanges the authorization [code] for an OAuth token.
+     */
+    protected abstract suspend fun requestToken(code: String): CloudAccessToken
 }

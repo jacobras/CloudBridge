@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import nl.jacobras.cloudbridge.CloudBridgeException
 import nl.jacobras.cloudbridge.CloudService
 import nl.jacobras.cloudbridge.demo.ui.DemoScreen
 import nl.jacobras.cloudbridge.demo.ui.DemoViewModel
@@ -94,24 +95,32 @@ internal class MainActivity : ComponentActivity() {
     }
 
     private fun completeAuthentication(uri: Uri) = scope.launch {
-        when (val service = authenticatingService) {
-            is DropboxService -> {
-                val token = service.completeAuthentication(
-                    redirectUri = REDIRECT_URI,
-                    intentUri = uri
-                ) ?: return@launch
-                viewModel.connectDropbox(token)
-            }
+        try {
+            when (val service = authenticatingService) {
+                is DropboxService -> {
+                    val token = service.completeAuthentication(
+                        redirectUri = REDIRECT_URI,
+                        intentUri = uri
+                    ) ?: return@launch
+                    viewModel.connectDropbox(token)
+                }
 
-            is OneDriveService -> {
-                val token = service.completeAuthentication(
-                    redirectUri = REDIRECT_URI,
-                    intentUri = uri
-                ) ?: return@launch
-                viewModel.connectOneDrive(token)
-            }
+                is OneDriveService -> {
+                    val token = service.completeAuthentication(
+                        redirectUri = REDIRECT_URI,
+                        intentUri = uri
+                    ) ?: return@launch
+                    viewModel.connectOneDrive(token)
+                }
 
-            else -> Unit
+                else -> Unit
+            }
+        } catch (e: CloudBridgeException) {
+            Toast.makeText(
+                this@MainActivity,
+                "Authentication failed: ${e.message ?: e.cause?.message}",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 }

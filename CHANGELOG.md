@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dropbox and OneDrive now also set `prompt=consent`, like Google Drive, so a user can choose the
+  desired account when connecting.
+
+### Fixed
+
+- `completeAuthentication()` on Android and web now throw `CloudBridgeException` instead of raw Ktor
+  exceptions.
+- OneDrive's `listFiles()` now returns correct relative paths
+  (fixes [#18](https://github.com/jacobras/CloudBridge/issues/18)).
+
 ## [0.14.0] - 2026-11-18
 
 ### Added

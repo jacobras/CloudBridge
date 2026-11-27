@@ -3,7 +3,6 @@ package nl.jacobras.cloudbridge.service.onedrive
 import nl.jacobras.cloudbridge.auth.CloudAccessToken
 import nl.jacobras.cloudbridge.auth.PkceAuthenticator
 import nl.jacobras.cloudbridge.auth.toCloudAccessToken
-import nl.jacobras.cloudbridge.persistence.librarySettings
 
 internal class OneDriveAuthenticator(
     private val api: OneDriveApi,
@@ -20,17 +19,17 @@ internal class OneDriveAuthenticator(
     // `offline_access` is needed to receive a refresh token.
     override val scope = "files.readwrite openid profile email offline_access"
 
-    override suspend fun exchangeCodeForToken(code: String): CloudAccessToken {
-        try {
-            val token = api.getToken(
-                clientId = clientId,
-                redirectUri = redirectUri,
-                code = code,
-                codeVerifier = codeVerifier
-            )
-            return token.toCloudAccessToken()
-        } finally {
-            librarySettings.codeVerifier = null
-        }
+    override val extraParams = mapOf(
+        // Always prompt, so user can choose (a different) account
+        "prompt" to "select_account"
+    )
+
+    override suspend fun requestToken(code: String): CloudAccessToken {
+        return api.getToken(
+            clientId = clientId,
+            redirectUri = redirectUri,
+            code = code,
+            codeVerifier = codeVerifier
+        ).toCloudAccessToken()
     }
 }

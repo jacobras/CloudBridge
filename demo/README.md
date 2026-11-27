@@ -21,4 +21,4 @@ Run from Android Studio or Xcode.
 
 ### Web
 
-`gradlew :demo:web:jsBrowserDevelopmentRun`
+`gradlew :demo:web:wasmJsBrowserDevelopmentRun`
