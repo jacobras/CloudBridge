@@ -11,12 +11,14 @@ import de.jensklingenberg.ktorfit.http.PATCH
 import de.jensklingenberg.ktorfit.http.POST
 import de.jensklingenberg.ktorfit.http.PUT
 import de.jensklingenberg.ktorfit.http.Path
+import de.jensklingenberg.ktorfit.http.QueryMap
 import de.jensklingenberg.ktorfit.http.Streaming
 import de.jensklingenberg.ktorfit.http.Url
 import io.ktor.client.statement.HttpStatement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.jacobras.cloudbridge.auth.TokenResponse
+import nl.jacobras.cloudbridge.service.LIST_PAGE_SIZE
 
 /**
  * Docs: https://learn.microsoft.com/en-us/onedrive/developer/rest-api/resources/driveitem
@@ -48,13 +50,24 @@ internal interface OneDriveApi {
     @GET("oidc/userinfo")
     suspend fun getUserInfo(): OneDriveUserInfo
 
+    // Note: `$top` is passed through a @QueryMap, because Ktorfit copies a @Query name into the
+    // generated code unescaped, which turns "$top" into a string template.
     @GET("v1.0/me/drive/special/approot/children")
-    suspend fun listFiles(): FileResponse
+    suspend fun listFiles(
+        @QueryMap query: Map<String, String> = PAGE_SIZE_QUERY
+    ): FileResponse
 
     @GET("v1.0/me/drive/special/approot:/{folderPath}:/children")
     suspend fun listFiles(
-        @Path("folderPath", encoded = true) folderPath: String
+        @Path("folderPath", encoded = true) folderPath: String,
+        @QueryMap query: Map<String, String> = PAGE_SIZE_QUERY
     ): FileResponse
+
+    /**
+     * Follows an `@odata.nextLink` from a previous [listFiles] call.
+     */
+    @GET
+    suspend fun listFilesByUrl(@Url url: String): FileResponse
 
     @POST("v1.0/me/drive/special/approot/children")
     @Headers("Content-Type: application/json")
@@ -152,6 +165,9 @@ internal interface OneDriveApi {
     suspend fun getDeltaByUrl(@Url url: String): DeltaResponse
 }
 
+@Suppress("CanConvertToMultiDollarString")
+internal val PAGE_SIZE_QUERY = mapOf("\$top" to LIST_PAGE_SIZE.toString())
+
 @Serializable
 internal data class OneDriveUserInfo(
     @SerialName("givenname")
@@ -168,7 +184,13 @@ internal data class OneDriveUserInfo(
 internal data class FileResponse(
 
     @SerialName("value")
-    val files: List<DriveItem>
+    val files: List<DriveItem>,
+
+    /**
+     * URL of the next page, absent on the last page.
+     */
+    @SerialName("@odata.nextLink")
+    val nextLink: String? = null
 )
 
 @Serializable

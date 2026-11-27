@@ -25,10 +25,13 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
+import nl.jacobras.cloudbridge.model.ListResult
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
 import nl.jacobras.cloudbridge.model.asFolderPath
 import nl.jacobras.cloudbridge.ratelimit.RateLimiter
+import nl.jacobras.cloudbridge.service.LIST_PAGE_SIZE
 import nl.jacobras.cloudbridge.service.oauth.OAuthCloudService
 import nl.jacobras.cloudbridge.util.forEachChunk
 import nl.jacobras.cloudbridge.util.mapUnknownErrors
@@ -110,11 +113,23 @@ public class DropboxService internal constructor(
         )
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall(path.toString()) {
-        val arg = Json.encodeToString(
-            ListFolderArg(path = path.toString(withLeadingSlash = !path.isRoot))
+    override suspend fun listFiles(
+        path: FolderPath,
+        cursor: ListCursor?
+    ): ListResult = tryCall(path.toString()) {
+        val response = if (cursor == null) {
+            val arg = ListFolderArg(
+                path = path.toString(withLeadingSlash = !path.isRoot),
+                limit = LIST_PAGE_SIZE
+            )
+            api.listFiles(Json.encodeToString(arg))
+        } else {
+            api.listFilesContinue(Json.encodeToString(ListFolderContinueArg(cursor.value)))
+        }
+        ListResult(
+            items = response.entries.map { it.toCloudItem() },
+            nextCursor = if (response.hasMore) ListCursor(response.cursor) else null
         )
-        api.listFiles(arg).entries.map { it.toCloudItem() }
     }
 
     override suspend fun getFileInfo(path: FilePath): CloudFile = tryCall(path.toString()) {

@@ -37,6 +37,8 @@ import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
+import nl.jacobras.cloudbridge.model.ListResult
 import nl.jacobras.cloudbridge.model.Path
 import nl.jacobras.cloudbridge.model.UserInfo
 import nl.jacobras.cloudbridge.model.asFilePath
@@ -130,10 +132,18 @@ public class WebDavService internal constructor(
         }
     }
 
-    override suspend fun listFiles(path: FolderPath): List<CloudItem> = tryCall {
-        propfind(path.toString(), depth = 1)
-            .drop(1) // Skip the self-entity
-            .map { it.toCloudItem() }
+    @Suppress("UseRequire")
+    override suspend fun listFiles(path: FolderPath, cursor: ListCursor?): ListResult {
+        if (cursor != null) {
+            // WebDAV doesn't use cursors.
+            throw CloudBridgeException.IllegalArgumentException("WebDAV doesn't support list cursors")
+        }
+        return tryCall {
+            val items = propfind(path.toString(), depth = 1)
+                .drop(1) // Skip the self-entity
+                .map { it.toCloudItem() }
+            ListResult(items = items, nextCursor = null)
+        }
     }
 
     override suspend fun createFolder(path: FolderPath): CloudFolder {

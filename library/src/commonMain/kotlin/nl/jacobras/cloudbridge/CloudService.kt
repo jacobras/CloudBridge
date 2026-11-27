@@ -4,10 +4,11 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import nl.jacobras.cloudbridge.model.CloudFile
 import nl.jacobras.cloudbridge.model.CloudFolder
-import nl.jacobras.cloudbridge.model.CloudItem
 import nl.jacobras.cloudbridge.model.CloudItemId
 import nl.jacobras.cloudbridge.model.FilePath
 import nl.jacobras.cloudbridge.model.FolderPath
+import nl.jacobras.cloudbridge.model.ListCursor
+import nl.jacobras.cloudbridge.model.ListResult
 import nl.jacobras.cloudbridge.model.UserInfo
 
 public interface CloudService {
@@ -25,11 +26,19 @@ public interface CloudService {
     public suspend fun getUserInfo(): UserInfo
 
     /**
-     * Lists all files and folders, one level deep. Does not fetch nested content.
+     * Lists one page of files and folders in [path], one level deep. Does not fetch nested content.
      *
+     * A page holds up to about 200 items, but can be smaller. To get the next page, call this again
+     * with the same [path] and the [ListResult.nextCursor] of the previous page, until it's `null`.
+     *
+     * WebDAV has no paging, so it always returns all items with a `null` [ListResult.nextCursor].
+     *
+     * @param cursor the [ListResult.nextCursor] of the previous page, or `null` for the first page.
+     * @throws CloudBridgeException.IllegalArgumentException when [cursor] isn't valid for the
+     * service.
      * @throws CloudBridgeException
      */
-    public suspend fun listFiles(path: FolderPath): List<CloudItem>
+    public suspend fun listFiles(path: FolderPath, cursor: ListCursor? = null): ListResult
 
     /**
      * Fetches the metadata of the file at [path].

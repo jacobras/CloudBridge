@@ -67,7 +67,7 @@ val service = CloudBridge.dropbox()
 service.authenticate("clientId", "example://redirect-uri")
 
 // 3: Ready for use!
-service.listFiles("/".asFolderPath())
+val items = service.listFiles("/".asFolderPath()).items
 ```
 
 - See <https://jacobras.github.io/CloudBridge/services/Overview/> on how to authenticate each
